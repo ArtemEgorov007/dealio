@@ -3,6 +3,9 @@ import {account} from '@/utils/appwrite'
 
 import {useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
 
+const { app } = useRuntimeConfig()
+const baseURL = app.baseURL
+
 const router = useRouter()
 const isOpen = ref(true)
 
@@ -29,12 +32,11 @@ const logout = async () => {
   <aside class="sidebar" :class="{ 'sidebar--collapsed': !isOpen }">
     <div class="sidebar__header">
       <NuxtLink to="/" class="logo-link">
-        <NuxtImg
-            src="/logo.svg"
+        <img
+            :src="`${baseURL}logo.svg`"
             alt="Логотип Dealio"
             class="logo"
             width="100"
-            height="auto"
         />
       </NuxtLink>
 

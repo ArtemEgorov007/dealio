@@ -1,15 +1,17 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+const { app } = useRuntimeConfig()
+const baseURL = app.baseURL
+</script>
 
 <template>
   <transition name="fade-loader">
     <div class="loader-wrapper">
       <div class="loader-container">
-        <NuxtImg
-            src="/loader.svg"
+        <img
+            :src="`${baseURL}loader.svg`"
             alt="Загрузка..."
             class="loader-image"
             width="220"
-            height="auto"
         />
         <p class="loader-text">Загрузка данных...</p>
       </div>

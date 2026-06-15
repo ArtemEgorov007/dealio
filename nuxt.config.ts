@@ -1,12 +1,13 @@
 export default defineNuxtConfig({
     compatibilityDate: '2025-07-15',
 
+    ssr: false,
+
     devtools: {
         enabled: false
     },
 
     modules: [
-        '@nuxt/image',
         '@nuxt/icon',
         '@pinia/nuxt',
         '@nuxt/ui',
