@@ -31,7 +31,7 @@ const logout = async () => {
       <NuxtLink to="/" class="logo-link">
         <NuxtImg
             src="/logo.svg"
-            alt="Логотип CRM системы"
+            alt="Логотип Dealio"
             class="logo"
             width="100"
             height="auto"
