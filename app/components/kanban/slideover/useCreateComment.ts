@@ -1,7 +1,6 @@
 import {useMutation} from '@tanstack/vue-query'
-import {v4 as uuid} from 'uuid'
-import {COLLECTION_COMMENTS, DB_ID} from '~~/app.constants'
 import {isGuestSession} from '~~/store/auth.store'
+import {createComment} from '~/utils/appwrite-comments'
 
 export function useCreateComment({refetch}: { refetch: () => void }) {
     const store = useCardSlideStore()
@@ -13,10 +12,10 @@ export function useCreateComment({refetch}: { refetch: () => void }) {
             if (import.meta.client && isGuestSession()) {
                 return Promise.resolve(null)
             }
-            return DB.createDocument(DB_ID, COLLECTION_COMMENTS, uuid(), {
-                text: commentRef.value,
-                deal: store.card?.id,
-            })
+            if (!store.card?.id) {
+                throw new Error('Карточка не выбрана')
+            }
+            return createComment(commentRef.value.trim(), store.card.id)
         },
         onSuccess: () => {
             if (import.meta.client && isGuestSession()) {

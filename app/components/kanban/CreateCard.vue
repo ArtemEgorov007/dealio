@@ -4,11 +4,11 @@ import {useMutation, useQueryClient} from '@tanstack/vue-query'
 import {v4 as uuid} from 'uuid'
 import {useForm} from 'vee-validate'
 
-import {COLLECTION_CARDS, DB_ID} from '~~/app.constants'
 import type {ICardRecord} from '~~/types/cards.types'
 import {isGuestSession} from '~~/store/auth.store'
 import {CATEGORY_OPTIONS} from '~/components/kanban/kanban.labels'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
+import {createCard} from '~/utils/appwrite-cards'
 
 interface ICardFormState {
   name: string
@@ -61,7 +61,8 @@ const {mutate, isPending, isError, error} = useMutation({
       throw new Error('Выберите категорию')
     }
 
-    const payload: Partial<ICardRecord> = {
+    const documentId = uuid()
+    const payload = {
       name: data.name.trim(),
       price: data.price,
       status: data.status as ICardRecord['status'],
@@ -69,22 +70,21 @@ const {mutate, isPending, isError, error} = useMutation({
         name: data.customer.name.trim(),
         email: data.customer.email.trim() || 'noreply@dealio.app'
       },
-      $id: uuid(),
-      $createdAt: new Date().toISOString()
+      comments: [] as ICardRecord['comments'],
     }
 
     if (import.meta.client && isGuestSession()) {
       const newCard: ICardRecord = {
-        $id: payload.$id!,
-        $createdAt: payload.$createdAt!,
-        name: payload.name!,
-        price: payload.price!,
-        status: payload.status!,
+        $id: documentId,
+        $createdAt: new Date().toISOString(),
+        name: payload.name,
+        price: payload.price,
+        status: payload.status,
         customer: {
           $id: uuid(),
           $createdAt: new Date().toISOString(),
-          name: data.customer.name.trim(),
-          email: data.customer.email.trim() || 'noreply@dealio.app',
+          name: payload.customer.name,
+          email: payload.customer.email,
           avatar_url: '',
         },
         comments: []
@@ -92,7 +92,7 @@ const {mutate, isPending, isError, error} = useMutation({
       return newCard
     }
 
-    return DB.createDocument(DB_ID, COLLECTION_CARDS, payload.$id!, payload)
+    return createCard(documentId, payload)
   },
   onSuccess: (result) => {
     if (import.meta.client && isGuestSession() && result) {

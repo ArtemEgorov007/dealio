@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query'
-import { COLLECTION_CARDS, DB_ID } from '~~/app.constants'
 import type { ICardRecord } from '~~/types/cards.types'
 import { EnumStatus } from '~~/types/cards.types'
 import { MOCK_CARDS } from '~/components/kanban/kanban.mock'
 import { CARDS_STATS_QUERY_KEY } from '~/components/kanban/kanban.types'
 import { isGuestSession } from '~~/store/auth.store'
+import { listCards } from '~/utils/appwrite-cards'
 
 const { data: cardsData, isLoading } = useQuery({
   queryKey: [CARDS_STATS_QUERY_KEY],
@@ -14,7 +14,7 @@ const { data: cardsData, isLoading } = useQuery({
       return MOCK_CARDS
     }
     try {
-      const response = await DB.listDocuments(DB_ID, COLLECTION_CARDS)
+      const response = await listCards()
       return response.documents as unknown as ICardRecord[]
     } catch {
       throw new Error('Не удалось загрузить статистику')

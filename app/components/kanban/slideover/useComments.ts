@@ -1,5 +1,6 @@
 import {useQuery} from '@tanstack/vue-query'
 import {COLLECTION_CARDS, DB_ID} from '~~/app.constants'
+import {DB} from '~/utils/appwrite'
 import {MOCK_CARDS} from '~/components/kanban/kanban.mock'
 import {isGuestSession} from '~~/store/auth.store'
 

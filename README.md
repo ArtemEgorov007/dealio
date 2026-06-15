@@ -31,6 +31,20 @@ store/              — auth, card-slide
 types/cards.types.ts — типы (Appwrite collection `deals`)
 ```
 
+## Appwrite + GitHub Pages
+
+Проект: `crm-system-nuxt-record123` · БД: `data-base` · коллекции: `deals`, `comments`.
+
+В [Appwrite Console](https://cloud.appwrite.io/console/project-fra-crm-system-nuxt-record123) настроено:
+
+- **Platforms** — `localhost`, `artemegorov007.github.io`
+- **Auth** — Email/Password включён
+- **deals / comments** — Users: Create на уровне таблицы; Row security включён; read/update/delete — на уровне документа из приложения
+
+Деплой: push в `main` → GitHub Actions собирает с `NUXT_APP_BASE_URL=/dealio/`.
+
+Демо-режим на `/login` работает без Appwrite; регистрация и свои карточки — только с аккаунтом.
+
 ## Скрипты
 
 | Команда | Описание |

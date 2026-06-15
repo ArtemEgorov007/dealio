@@ -6,9 +6,9 @@ import {ref} from 'vue'
 import {useMutation, useQueryClient} from '@tanstack/vue-query'
 
 import CreateCard from '~/components/kanban/CreateCard.vue'
-import {COLLECTION_CARDS, DB_ID} from '~~/app.constants'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {isGuestSession} from '~~/store/auth.store'
+import {updateCardStatus} from '~/utils/appwrite-cards'
 
 const props = defineProps<{
   column: IColumn,
@@ -31,7 +31,7 @@ const {mutate, isPending} = useMutation({
     if (import.meta.client && isGuestSession()) {
       return Promise.resolve({docId, status})
     }
-    return DB.updateDocument(DB_ID, COLLECTION_CARDS, docId, {status})
+    return updateCardStatus(docId, status)
   },
   onSuccess: (_, variables) => {
     if (import.meta.client && isGuestSession()) {

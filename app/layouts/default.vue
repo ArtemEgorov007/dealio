@@ -2,6 +2,7 @@
 import {onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {account} from '~/utils/appwrite'
+import {mapAppwriteUser} from '~/utils/appwrite-user'
 
 import {useAuthStore, useIsLoadingStore, isGuestSession} from '~~/store/auth.store'
 import { useTheme } from '~/composables/useTheme'
@@ -13,10 +14,13 @@ const authStore = useAuthStore()
 const { initTheme } = useTheme()
 
 onMounted(async () => {
-  // Initialize theme
   initTheme()
 
-  // Guest/demo mode: skip Appwrite entirely
+  if (route.path === '/login') {
+    isLoadingStore.set(false)
+    return
+  }
+
   if (isGuestSession()) {
     authStore.setGuest()
     isLoadingStore.set(false)
@@ -25,11 +29,9 @@ onMounted(async () => {
 
   try {
     const user = await account.get()
-    if (user) {
-      authStore.set(user)
-    }
+    authStore.set(mapAppwriteUser(user))
   } catch {
-    router.push('/login')
+    await router.replace('/login')
   } finally {
     isLoadingStore.set(false)
   }

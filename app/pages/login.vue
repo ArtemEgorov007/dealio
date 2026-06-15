@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import {v4 as uuid} from 'uuid'
 import {account} from '@/utils/appwrite'
-import {useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
+import {mapAppwriteUser} from '@/utils/appwrite-user'
+import {clearGuestSession, useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
 import {useRouter} from 'vue-router'
 
 useSeoMeta({title: 'Вход | Dealio'})
@@ -19,9 +20,19 @@ const router = useRouter()
 const isLoadingStore = useIsLoadingStore()
 const authStore = useAuthStore()
 
-onMounted(() => {
+onMounted(async () => {
   if (authStore.isAuth) {
-    router.replace('/')
+    await router.replace('/')
+    return
+  }
+
+  try {
+    const user = await account.get()
+    clearGuestSession()
+    authStore.set(mapAppwriteUser(user))
+    await router.replace('/')
+  } catch {
+    // нет активной сессии
   }
 })
 
@@ -91,15 +102,9 @@ const login = async () => {
     await account.createEmailPasswordSession(email.value, password.value)
     const response = await account.get()
 
-    if (response) {
-      authStore.set({
-        email: response.email,
-        name: response.name,
-        status: response.status
-      })
-
-      await router.push('/')
-    }
+    clearGuestSession()
+    authStore.set(mapAppwriteUser(response))
+    await router.push('/')
   } catch (error: any) {
     console.error('Ошибка входа:', error)
     errors.value.general = error.message || 'Ошибка входа. Проверьте данные.'

@@ -17,7 +17,8 @@ export function clearGuestSession(): void {
     localStorage.removeItem(GUEST_STORAGE_KEY)
 }
 
-interface IUser {
+export interface IUser {
+    id?: string
     email: string
     name: string
     status: boolean
@@ -45,8 +46,9 @@ export const useAuthStore = defineStore('auth', {
     }),
 
     getters: {
-        isAuth: (state) => state.user.status,
+        isAuth: (state) => state.user.status === true,
         isGuest: (state) => state.user.isGuest === true,
+        userId: (state) => state.user.id,
         userEmail: (state) => state.user.email,
         userName: (state) => state.user.name
     },
@@ -64,6 +66,7 @@ export const useAuthStore = defineStore('auth', {
         setGuest() {
             setGuestSession()
             this.user = {
+                id: undefined,
                 email: 'guest@dealio.demo',
                 name: 'Гость',
                 status: true,

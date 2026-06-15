@@ -1,10 +1,10 @@
 import {useQuery} from '@tanstack/vue-query'
-import {COLLECTION_CARDS, DB_ID} from '~~/app.constants'
 import {KANBAN_DATA} from '~/components/kanban/kanban.data'
 import {MOCK_CARDS} from '~/components/kanban/kanban.mock'
 import type {ICardRecord} from '~~/types/cards.types'
 import {CARDS_QUERY_KEY, type ICard, type IColumn} from '~/components/kanban/kanban.types'
 import {isGuestSession} from '~~/store/auth.store'
+import {listCards} from '~/utils/appwrite-cards'
 
 export function useKanbanQuery() {
     return useQuery({
@@ -14,7 +14,7 @@ export function useKanbanQuery() {
                 return {documents: MOCK_CARDS, total: MOCK_CARDS.length}
             }
             try {
-                return await DB.listDocuments(DB_ID, COLLECTION_CARDS)
+                return await listCards()
             } catch {
                 throw new Error('Не удалось загрузить данные. Проверьте подключение и попробуйте снова.')
             }
