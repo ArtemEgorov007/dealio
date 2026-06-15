@@ -17,7 +17,7 @@ export function useKanbanQuery() {
     const authStore = useAuthStore()
 
     return useQuery({
-        queryKey: computed(() => [CARDS_QUERY_KEY, getCardsQueryScope(authStore.isGuest)]),
+        queryKey: computed(() => [CARDS_QUERY_KEY, getCardsQueryScope(authStore.isGuest, authStore.userId)]),
         queryFn: async () => {
             if (import.meta.client && authStore.isGuest) {
                 return {documents: MOCK_CARDS, total: MOCK_CARDS.length}

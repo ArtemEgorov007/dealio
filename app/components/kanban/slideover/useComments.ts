@@ -12,7 +12,7 @@ export function useComments() {
     const cardId = store.card?.id || ''
 
     return useQuery({
-        queryKey: computed(() => ['card', cardId, getCardsQueryScope(authStore.isGuest)]),
+        queryKey: computed(() => ['card', cardId, getCardsQueryScope(authStore.isGuest, authStore.userId)]),
         queryFn: () => {
             if (import.meta.client && authStore.isGuest) {
                 return MOCK_CARDS.find(record => record.$id === cardId) ?? null

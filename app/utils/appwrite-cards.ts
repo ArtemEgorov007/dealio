@@ -11,8 +11,26 @@ async function getSessionUserId(): Promise<string> {
     return user.$id
 }
 
+function filterDocumentsByUser<T extends { $permissions?: string[] }>(
+    documents: T[],
+    userId: string,
+): T[] {
+    const userRole = `user:${userId}`
+    return documents.filter(doc =>
+        doc.$permissions?.some(permission => permission.includes(userRole)),
+    )
+}
+
 export async function listCards(): Promise<Models.DocumentList<ICardRecord>> {
-    return DB.listDocuments<ICardRecord>(DB_ID, COLLECTION_CARDS)
+    const userId = await getSessionUserId()
+    const result = await DB.listDocuments<ICardRecord>(DB_ID, COLLECTION_CARDS)
+    const documents = filterDocumentsByUser(result.documents, userId)
+
+    return {
+        ...result,
+        documents,
+        total: documents.length,
+    }
 }
 
 export async function createCard(
