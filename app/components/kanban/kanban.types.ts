@@ -17,3 +17,9 @@ export interface IColumn {
 
 export const CARDS_QUERY_KEY = 'cards'
 export const CARDS_STATS_QUERY_KEY = 'cards-stats'
+
+export type CardsQueryScope = 'guest' | 'user'
+
+export function getCardsQueryScope(isGuest: boolean): CardsQueryScope {
+    return isGuest ? 'guest' : 'user'
+}

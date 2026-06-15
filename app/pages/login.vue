@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import {v4 as uuid} from 'uuid'
+import {useQueryClient} from '@tanstack/vue-query'
 import {account} from '@/utils/appwrite'
 import {mapAppwriteUser} from '@/utils/appwrite-user'
 import {clearGuestSession, useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
 import {useRouter} from 'vue-router'
+import {clearCardsCache} from '~/utils/cards-cache'
 
 useSeoMeta({title: 'Вход | Dealio'})
 
@@ -19,6 +21,7 @@ const isSubmitting = ref(false)
 const router = useRouter()
 const isLoadingStore = useIsLoadingStore()
 const authStore = useAuthStore()
+const queryClient = useQueryClient()
 
 onMounted(async () => {
   if (authStore.isAuth) {
@@ -30,6 +33,7 @@ onMounted(async () => {
     const user = await account.get()
     clearGuestSession()
     authStore.set(mapAppwriteUser(user))
+    clearCardsCache(queryClient)
     await router.replace('/')
   } catch {
     // нет активной сессии
@@ -104,6 +108,7 @@ const login = async () => {
 
     clearGuestSession()
     authStore.set(mapAppwriteUser(response))
+    clearCardsCache(queryClient)
     await router.push('/')
   } catch (error: any) {
     console.error('Ошибка входа:', error)
@@ -143,6 +148,7 @@ const handleSubmit = () => {
 
 const loginAsGuest = async () => {
   authStore.setGuest()
+  clearCardsCache(queryClient)
   isLoadingStore.set(false)
   await router.replace('/')
 }
