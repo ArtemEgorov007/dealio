@@ -1,6 +1,6 @@
 {
   "name": "dealio",
-  "description": "Современная CRM-система Dealio на Nuxt 3 с Kanban-доской и Appwrite",
+  "description": "Dealio — трекер идей, задач и желаний с kanban-доской на Nuxt 3",
   "type": "module",
   "private": true,
   "scripts": {

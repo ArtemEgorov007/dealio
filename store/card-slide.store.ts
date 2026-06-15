@@ -1,18 +1,18 @@
 import {defineStore} from 'pinia'
-import type {ICard} from "../app/components/kanban/kanban.types";
+import type {ICard} from '../app/components/kanban/kanban.types'
 
-interface DealSlideState {
+interface CardSlideState {
     card: ICard | null
     isOpen: boolean
 }
 
-const defaultValue: DealSlideState = {
+const defaultValue: CardSlideState = {
     card: null,
     isOpen: false,
 }
 
-export const useDealSlideStore = defineStore('deal-slide', {
-    state: (): DealSlideState => ({...defaultValue}),
+export const useCardSlideStore = defineStore('card-slide', {
+    state: (): CardSlideState => ({...defaultValue}),
     actions: {
         clear() {
             this.$patch({...defaultValue})

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import {computed} from 'vue'
-import {useDealSlideStore} from '~~/store/deal-slide.store'
+import {useCardSlideStore} from '~~/store/card-slide.store'
 
-const store = useDealSlideStore()
+const store = useCardSlideStore()
 
 const isLocalOpen = computed({
   get: () => store.isOpen,
@@ -29,13 +29,13 @@ const isLocalOpen = computed({
           class="slideover-panel"
           role="dialog"
           aria-modal="true"
-          aria-label="Детали сделки"
+          aria-label="Детали карточки"
           @click.stop
       >
         <div class="slideover-inner">
           <div class="slideover-header">
             <div class="slideover-header__title">
-              <span class="slideover-header__label">Детали сделки</span>
+              <span class="slideover-header__label">Детали карточки</span>
             </div>
             <button
               class="slideover-close"

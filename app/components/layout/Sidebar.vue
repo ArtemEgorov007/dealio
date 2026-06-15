@@ -1,46 +1,42 @@
 <script setup lang="ts">
-import {account} from '@/utils/appwrite'
+import {useAuthStore} from '~~/store/auth.store'
+import {useLogout} from '~/composables/useLogout'
 
-import {useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
-
-const { app } = useRuntimeConfig()
-const baseURL = app.baseURL
-
-const router = useRouter()
 const isOpen = ref(true)
 
 const toggleSidebar = () => {
   isOpen.value = !isOpen.value
 }
 
-const isLoadingStore = useIsLoadingStore()
-const authStore = useAuthStore()
-
-const logout = async () => {
-  try {
-    isLoadingStore.set(true)
-    await account.deleteSession('current')
-    authStore.clear()
-    await router.push('/login')
-  } finally {
-    isLoadingStore.set(false)
+const handleLogoClick = (event: MouseEvent) => {
+  if (!isOpen.value) {
+    event.preventDefault()
+    toggleSidebar()
   }
 }
+
+const authStore = useAuthStore()
+const {logout} = useLogout()
 </script>
 
 <template>
   <aside class="sidebar" :class="{ 'sidebar--collapsed': !isOpen }">
     <div class="sidebar__header">
-      <NuxtLink to="/" class="logo-link">
+      <NuxtLink to="/" class="logo-link" @click="handleLogoClick">
         <div class="logo-mark">
           <span class="logo-icon">D</span>
         </div>
         <span v-if="isOpen" class="logo-text">Dealio</span>
       </NuxtLink>
 
-      <button class="toggle-btn" @click="toggleSidebar" :aria-label="isOpen ? 'Свернуть меню' : 'Развернуть меню'">
+      <button
+          v-if="isOpen"
+          class="toggle-btn"
+          @click="toggleSidebar"
+          :aria-label="'Свернуть меню'"
+      >
         <Icon
-            :name="isOpen ? 'heroicons:chevron-left' : 'heroicons:chevron-right'"
+            name="heroicons:chevron-left"
             class="toggle-icon"
         />
       </button>
@@ -91,11 +87,16 @@ const logout = async () => {
   &--collapsed
     width: var(--sidebar-width-collapsed)
 
+    .sidebar__header
+      justify-content: center
+      padding: var(--spacing-4) var(--spacing-2)
+
     .logo-text
       display: none
 
     .logo-link
       justify-content: center
+      flex: 0
 
     .footer-label
       display: none
@@ -114,6 +115,8 @@ const logout = async () => {
     padding: var(--spacing-4) var(--spacing-4)
     border-bottom: var(--border-width) solid var(--color-border)
     height: 60px
+    min-width: 0
+    overflow: hidden
 
   &__nav
     flex: 1

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-useSeoMeta({ title: 'Помощь | CRM' })
+useSeoMeta({ title: 'Помощь | Dealio' })
 </script>
 
 <template>
   <div class="page-wrapper">
     <UiUnderDevelopment
       title="Раздел в разработке"
-      description="База знаний и центр поддержки появятся здесь в ближайшее время"
+      description="Гайды по доске, drag-and-drop и категориям — скоро"
     />
   </div>
 </template>

@@ -2,7 +2,8 @@
 import type {ICard} from '~/components/kanban/kanban.types'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import {useDealSlideStore} from '~~/store/deal-slide.store'
+import {useCardSlideStore} from '~~/store/card-slide.store'
+import {PRIORITY_LABELS} from '~/components/kanban/kanban.labels'
 
 dayjs.locale('ru')
 
@@ -16,7 +17,7 @@ const emit = defineEmits<{
   (e: 'dragend'): void
 }>()
 
-const dealSlideStore = useDealSlideStore()
+const cardSlideStore = useCardSlideStore()
 
 const handleDragStart = (event: DragEvent) => {
   event.dataTransfer?.setData('text/plain', props.card.id)
@@ -29,7 +30,7 @@ const handleDragEnd = () => {
 }
 
 const handleOpenSlideover = () => {
-  dealSlideStore.set(props.card)
+  cardSlideStore.set(props.card)
 }
 
 const formatDate = (dateString: string) => {
@@ -48,10 +49,15 @@ const formatDate = (dateString: string) => {
   }
 }
 
-const formatPrice = (price?: number) => {
-  if (!price) return '—'
-  return price.toLocaleString('ru-RU')
-}
+const priorityLevel = computed(() => {
+  const value = props.card.price
+  if (!value || value < 1 || value > 5) return 0
+  return value
+})
+
+const priorityLabel = computed(() =>
+    priorityLevel.value ? PRIORITY_LABELS[priorityLevel.value] : null
+)
 </script>
 
 <template>
@@ -63,18 +69,26 @@ const formatPrice = (price?: number) => {
       @dragend="handleDragEnd"
       @click="handleOpenSlideover"
       role="button"
-      :aria-label="`Сделка: ${card.name}`"
+      :aria-label="`Карточка: ${card.name}`"
       tabindex="0"
       @keydown.enter="handleOpenSlideover"
   >
     <div class="card-accent" :class="`card-accent--${columnId}`"></div>
 
     <div class="card-body">
-      <div class="card-company">{{ card.companyName }}</div>
+      <div class="card-category">{{ card.category }}</div>
       <div class="card-name">{{ card.name }}</div>
 
-      <div class="card-price-row">
-        <span class="card-price tabular-nums">{{ formatPrice(card.price) }} <span class="card-currency">₽</span></span>
+      <div v-if="priorityLevel" class="card-priority-row">
+        <div class="priority-dots" :aria-label="`Приоритет: ${priorityLabel}`">
+          <span
+              v-for="n in 5"
+              :key="n"
+              class="priority-dot"
+              :class="{ 'priority-dot--active': n <= priorityLevel }"
+          />
+        </div>
+        <span class="priority-label">{{ priorityLabel }}</span>
       </div>
 
       <div class="card-meta">
@@ -154,10 +168,10 @@ const formatPrice = (price?: number) => {
 .card-body
   padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) calc(var(--spacing-4) + 3px)
 
-.card-company
+.card-category
   font-size: var(--font-size-xs)
   font-weight: 700
-  color: var(--color-text-muted)
+  color: var(--color-primary)
   text-transform: uppercase
   letter-spacing: 0.5px
   margin-bottom: 3px
@@ -169,22 +183,30 @@ const formatPrice = (price?: number) => {
   line-height: 1.35
   margin-bottom: var(--spacing-3)
 
-.card-price-row
+.card-priority-row
+  display: flex
+  align-items: center
+  gap: var(--spacing-2)
   margin-bottom: var(--spacing-3)
 
-.card-price
-  font-size: var(--font-size-xl)
-  font-weight: 800
-  color: var(--color-text)
-  letter-spacing: -0.5px
-  font-variant-numeric: tabular-nums
-  font-feature-settings: "tnum"
-  line-height: 1
+.priority-dots
+  display: flex
+  gap: 3px
 
-.card-currency
-  font-size: var(--font-size-base)
+.priority-dot
+  width: 6px
+  height: 6px
+  border-radius: 50%
+  background-color: var(--color-border)
+  transition: background-color var(--transition-fast) ease
+
+  &--active
+    background-color: var(--color-accent)
+
+.priority-label
+  font-size: 11px
   font-weight: 600
-  color: var(--color-text-secondary)
+  color: var(--color-text-muted)
 
 .card-meta
   display: flex

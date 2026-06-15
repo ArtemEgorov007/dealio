@@ -1,28 +1,14 @@
 <script setup lang="ts">
 import {MENU_DATA} from "~/components/layout/menu.data"
-import {account} from '@/utils/appwrite'
-import {useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
-
-const router = useRouter()
-const isLoadingStore = useIsLoadingStore()
-const authStore = useAuthStore()
+import {useLogout} from '~/composables/useLogout'
 
 const mobileMenuItems = computed(() => {
   return MENU_DATA.filter(item =>
-      ['Home', 'Products', 'Orders', 'Customers', 'Settings'].includes(item.name)
+      ['Доска', 'Идеи', 'Задачи', 'Желания', 'Настройки'].includes(item.name)
   )
 })
 
-const logout = async () => {
-  try {
-    isLoadingStore.set(true)
-    await account.deleteSession('current')
-    authStore.clear()
-    await router.push('/login')
-  } finally {
-    isLoadingStore.set(false)
-  }
-}
+const {logout} = useLogout()
 
 const isLogoutVisible = ref(false)
 

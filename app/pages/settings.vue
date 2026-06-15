@@ -1,12 +1,12 @@
 <script setup lang="ts">
-useSeoMeta({ title: 'Настройки | CRM' })
+useSeoMeta({ title: 'Настройки | Dealio' })
 </script>
 
 <template>
   <div class="page-wrapper">
     <UiUnderDevelopment
       title="Раздел в разработке"
-      description="Настройки профиля, уведомлений и системы появятся здесь в ближайшее время"
+      description="Профиль, тема, уведомления и экспорт данных — скоро"
     />
   </div>
 </template>

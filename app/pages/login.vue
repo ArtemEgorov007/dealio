@@ -4,7 +4,7 @@ import {account} from '@/utils/appwrite'
 import {useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
 import {useRouter} from 'vue-router'
 
-useSeoMeta({title: 'Вход | Dealio CRM'})
+useSeoMeta({title: 'Вход | Dealio'})
 
 const isLoginMode = ref(true)
 const email = ref('')
@@ -18,6 +18,12 @@ const isSubmitting = ref(false)
 const router = useRouter()
 const isLoadingStore = useIsLoadingStore()
 const authStore = useAuthStore()
+
+onMounted(() => {
+  if (authStore.isAuth) {
+    router.replace('/')
+  }
+})
 
 const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -130,10 +136,10 @@ const handleSubmit = () => {
   }
 }
 
-const loginAsGuest = () => {
+const loginAsGuest = async () => {
   authStore.setGuest()
   isLoadingStore.set(false)
-  router.push('/')
+  await router.replace('/')
 }
 </script>
 
@@ -156,8 +162,8 @@ const loginAsGuest = () => {
         <p class="login__subtitle">
           {{
             isLoginMode
-                ? 'Войдите в свою CRM-систему'
-                : 'Заполните форму для регистрации'
+                ? 'Трекер идей, задач и желаний'
+                : 'Создайте аккаунт и начните собирать идеи'
           }}
         </p>
       </header>
@@ -246,7 +252,7 @@ const loginAsGuest = () => {
           </span>
           <span class="demo-btn__text">
             <span class="demo-btn__label">Демо-режим</span>
-            <span class="demo-btn__sub">Интерактивная доска без регистрации</span>
+            <span class="demo-btn__sub">Kanban-доска без регистрации</span>
           </span>
           <Icon name="heroicons:arrow-right" size="14" class="demo-btn__arrow"/>
         </button>

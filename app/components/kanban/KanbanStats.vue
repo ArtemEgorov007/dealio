@@ -1,33 +1,32 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query'
-import { COLLECTION_DEALS, DB_ID } from '~~/app.constants'
-import type { IDeal } from '~~/types/deals.types'
-import { EnumStatus } from '~~/types/deals.types'
-import { MOCK_DEALS } from '~/components/kanban/kanban.mock'
+import { COLLECTION_CARDS, DB_ID } from '~~/app.constants'
+import type { ICardRecord } from '~~/types/cards.types'
+import { EnumStatus } from '~~/types/cards.types'
+import { MOCK_CARDS } from '~/components/kanban/kanban.mock'
+import { CARDS_STATS_QUERY_KEY } from '~/components/kanban/kanban.types'
 import { isGuestSession } from '~~/store/auth.store'
 
-const { data: dealsData, isLoading } = useQuery({
-  queryKey: ['deals-stats'],
+const { data: cardsData, isLoading } = useQuery({
+  queryKey: [CARDS_STATS_QUERY_KEY],
   queryFn: async () => {
     if (import.meta.client && isGuestSession()) {
-      return MOCK_DEALS as IDeal[]
+      return MOCK_CARDS
     }
     try {
-      const response = await DB.listDocuments(DB_ID, COLLECTION_DEALS)
-      return response.documents as unknown as IDeal[]
-    } catch (error) {
-      console.error('Error fetching deals for stats:', error)
+      const response = await DB.listDocuments(DB_ID, COLLECTION_CARDS)
+      return response.documents as unknown as ICardRecord[]
+    } catch {
       throw new Error('Не удалось загрузить статистику')
     }
   }
 })
 
 const stats = computed(() => {
-  if (!dealsData.value) return null
+  if (!cardsData.value) return null
 
-  const deals = dealsData.value
-  const totalDeals = deals.length
-  const totalValue = deals.reduce((sum, deal) => sum + (deal.price || 0), 0)
+  const cards = cardsData.value
+  const totalCards = cards.length
 
   const statusCounts = {
     [EnumStatus.todo]: 0,
@@ -37,21 +36,26 @@ const stats = computed(() => {
     [EnumStatus.done]: 0
   }
 
-  deals.forEach(deal => {
-    if (deal.status in statusCounts) {
-      statusCounts[deal.status as EnumStatus]++
+  cards.forEach(card => {
+    if (card.status in statusCounts) {
+      statusCounts[card.status as EnumStatus]++
     }
   })
 
-  const conversionRate = totalDeals > 0
-    ? Math.round((statusCounts[EnumStatus.done] / totalDeals) * 100)
+  const inProgress = statusCounts[EnumStatus['in-progress']] + statusCounts[EnumStatus.produced]
+  const completed = statusCounts[EnumStatus.done]
+  const activeIdeas = statusCounts[EnumStatus.todo]
+
+  const completionRate = totalCards > 0
+    ? Math.round((completed / totalCards) * 100)
     : 0
 
   return {
-    totalDeals,
-    totalValue,
-    statusCounts,
-    conversionRate
+    totalCards,
+    inProgress,
+    completed,
+    activeIdeas,
+    completionRate
   }
 })
 </script>
@@ -59,7 +63,7 @@ const stats = computed(() => {
 <template>
   <div class="kanban-stats">
     <template v-if="isLoading">
-      <div v-for="i in 3" :key="i" class="stat-card stat-card--skeleton"></div>
+      <div v-for="i in 4" :key="i" class="stat-card stat-card--skeleton"></div>
     </template>
 
     <template v-else-if="stats">
@@ -68,41 +72,41 @@ const stats = computed(() => {
           <Icon name="heroicons:rectangle-stack" size="18"/>
         </div>
         <div class="stat-body">
-          <div class="stat-value tabular-nums">{{ stats.totalDeals }}</div>
-          <div class="stat-label">Всего сделок</div>
+          <div class="stat-value tabular-nums">{{ stats.totalCards }}</div>
+          <div class="stat-label">Всего карточек</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon stat-icon--amber">
+          <Icon name="heroicons:light-bulb" size="18"/>
+        </div>
+        <div class="stat-body">
+          <div class="stat-value tabular-nums">{{ stats.activeIdeas }}</div>
+          <div class="stat-label">Новые идеи</div>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon stat-icon--teal">
-          <Icon name="heroicons:currency-dollar" size="18"/>
+          <Icon name="heroicons:bolt" size="18"/>
         </div>
         <div class="stat-body">
-          <div class="stat-value tabular-nums">{{ stats.totalValue.toLocaleString('ru-RU') }} <span class="stat-unit">₽</span></div>
-          <div class="stat-label">Общая сумма</div>
+          <div class="stat-value tabular-nums">{{ stats.inProgress }}</div>
+          <div class="stat-label">В процессе</div>
         </div>
       </div>
 
-      <div class="stat-card">
+      <div class="stat-card stat-card--accent">
         <div class="stat-icon stat-icon--emerald">
           <Icon name="heroicons:check-badge" size="18"/>
         </div>
         <div class="stat-body">
           <div class="stat-value tabular-nums">
-            {{ stats.statusCounts[EnumStatus.done] }}
-            <span class="stat-sub">/ {{ stats.totalDeals }}</span>
+            {{ stats.completed }}
+            <span class="stat-sub">· {{ stats.completionRate }}%</span>
           </div>
           <div class="stat-label">Завершено</div>
-        </div>
-      </div>
-
-      <div class="stat-card stat-card--accent">
-        <div class="stat-icon stat-icon--violet">
-          <Icon name="heroicons:arrow-trending-up" size="18"/>
-        </div>
-        <div class="stat-body">
-          <div class="stat-value tabular-nums">{{ stats.conversionRate }}<span class="stat-unit">%</span></div>
-          <div class="stat-label">Конверсия</div>
         </div>
       </div>
     </template>
@@ -164,6 +168,10 @@ const stats = computed(() => {
     background-color: rgba(100, 116, 139, 0.1)
     color: #64748b
 
+  &--amber
+    background-color: rgba(245, 158, 11, 0.1)
+    color: var(--color-accent)
+
   &--teal
     background-color: var(--color-primary-light)
     color: var(--color-primary)
@@ -171,10 +179,6 @@ const stats = computed(() => {
   &--emerald
     background-color: rgba(16, 185, 129, 0.1)
     color: var(--color-success)
-
-  &--violet
-    background-color: rgba(139, 92, 246, 0.1)
-    color: #8b5cf6
 
 .stat-body
   min-width: 0
@@ -190,12 +194,6 @@ const stats = computed(() => {
   white-space: nowrap
   overflow: hidden
   text-overflow: ellipsis
-
-.stat-unit
-  font-size: var(--font-size-base)
-  font-weight: 600
-  color: var(--color-text-secondary)
-  letter-spacing: -0.2px
 
 .stat-sub
   font-size: var(--font-size-base)

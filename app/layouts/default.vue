@@ -7,6 +7,7 @@ import {useAuthStore, useIsLoadingStore, isGuestSession} from '~~/store/auth.sto
 import { useTheme } from '~/composables/useTheme'
 
 const router = useRouter()
+const route = useRoute()
 const isLoadingStore = useIsLoadingStore()
 const authStore = useAuthStore()
 const { initTheme } = useTheme()
@@ -40,14 +41,14 @@ onMounted(async () => {
     <LayoutLoader v-if="isLoadingStore.isLoading" class="loader-fixed"/>
   </transition>
 
-  <div v-show="!isLoadingStore.isLoading" :class="{ layout: authStore.isAuth }">
-    <LayoutSidebar v-if="authStore.isAuth" class="desktop-sidebar"/>
+  <div v-show="!isLoadingStore.isLoading" :class="{ layout: authStore.isAuth && route.path !== '/login' }">
+    <LayoutSidebar v-if="authStore.isAuth && route.path !== '/login'" class="desktop-sidebar"/>
 
-    <main class="layout__main" :class="{ 'layout__main--auth': authStore.isAuth }">
+    <main class="layout__main" :class="{ 'layout__main--auth': authStore.isAuth && route.path !== '/login' }">
       <slot/>
     </main>
 
-    <LayoutMobileBottomNav v-if="authStore.isAuth" class="mobile-bottom-nav"/>
+    <LayoutMobileBottomNav v-if="authStore.isAuth && route.path !== '/login'" class="mobile-bottom-nav"/>
   </div>
 </template>
 

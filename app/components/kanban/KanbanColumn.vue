@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type {IColumn, ICard} from '~/components/kanban/kanban.types'
-import type {EnumStatus, IDeal} from '~~/types/deals.types'
+import type {EnumStatus, ICardRecord} from '~~/types/cards.types'
 
 import {ref} from 'vue'
 import {useMutation, useQueryClient} from '@tanstack/vue-query'
 
-import CreateDeal from '~/components/kanban/CreateDeal.vue'
-import {COLLECTION_DEALS, DB_ID} from '~~/app.constants'
+import CreateCard from '~/components/kanban/CreateCard.vue'
+import {COLLECTION_CARDS, DB_ID} from '~~/app.constants'
+import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {isGuestSession} from '~~/store/auth.store'
 
 const props = defineProps<{
@@ -30,30 +31,29 @@ const {mutate, isPending} = useMutation({
     if (import.meta.client && isGuestSession()) {
       return Promise.resolve({docId, status})
     }
-    return DB.updateDocument(DB_ID, COLLECTION_DEALS, docId, {status})
+    return DB.updateDocument(DB_ID, COLLECTION_CARDS, docId, {status})
   },
   onSuccess: (_, variables) => {
     if (import.meta.client && isGuestSession()) {
-      queryClient.setQueryData(['deals'], (old: { documents: IDeal[]; total: number } | undefined) => {
+      queryClient.setQueryData([CARDS_QUERY_KEY], (old: { documents: ICardRecord[]; total: number } | undefined) => {
         if (!old) return old
-        const updated = old.documents.map(d =>
-          d.$id === variables.docId ? { ...d, status: variables.status } : d
+        const updated = old.documents.map(record =>
+            record.$id === variables.docId ? {...record, status: variables.status} : record
         )
-        return { ...old, documents: updated }
+        return {...old, documents: updated}
       })
-      queryClient.setQueryData(['deals-stats'], (old: IDeal[] | undefined) => {
+      queryClient.setQueryData([CARDS_STATS_QUERY_KEY], (old: ICardRecord[] | undefined) => {
         if (!old) return old
-        return old.map(d => d.$id === variables.docId ? { ...d, status: variables.status } : d)
+        return old.map(record =>
+            record.$id === variables.docId ? {...record, status: variables.status} : record
+        )
       })
       emit('card-moved')
       return
     }
-    queryClient.invalidateQueries({queryKey: ['deals']})
+    queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
     emit('card-moved')
   },
-  onError: (error) => {
-    console.error('Error moving card:', error)
-  }
 })
 
 const handleDragStart = (card: ICard, column: IColumn) => {
@@ -83,6 +83,11 @@ const handleDrop = (targetColumn: IColumn) => {
 const handleDragEnd = () => {
   emit('dragend')
 }
+
+const onCardCreated = () => {
+  if (import.meta.client && isGuestSession()) return
+  queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
+}
 </script>
 
 <template>
@@ -104,7 +109,7 @@ const handleDragEnd = () => {
       <span class="column-count">{{ column.items.length }}</span>
     </div>
 
-    <CreateDeal :status="column.id" @deal-created="() => queryClient.invalidateQueries({queryKey: ['deals']})"/>
+    <CreateCard :status="column.id" @card-created="onCardCreated"/>
 
     <div class="column-content">
       <div v-if="isPending" class="loading-indicator">
@@ -124,7 +129,7 @@ const handleDragEnd = () => {
 
       <div v-if="column.items.length === 0 && !isPending" class="empty-column">
         <Icon name="heroicons:inbox" size="20" class="empty-icon"/>
-        <span>Нет сделок</span>
+        <span>Пусто</span>
       </div>
     </div>
   </div>

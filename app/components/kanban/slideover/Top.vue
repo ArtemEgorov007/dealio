@@ -1,25 +1,24 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
-import {useDealSlideStore} from '~~/store/deal-slide.store'
+import {useCardSlideStore} from '~~/store/card-slide.store'
+import {COLUMN_LABELS, PRIORITY_LABELS} from '~/components/kanban/kanban.labels'
+import {EnumStatus} from '~~/types/cards.types'
 
 dayjs.locale('ru')
 
-const store = useDealSlideStore()
+const store = useCardSlideStore()
 
 const formatDate = (date?: string): string =>
     date ? dayjs(date).format('D MMMM YYYY') : '—'
 
-const formatCurrency = (value?: number): string =>
-    typeof value === 'number' ? `${value.toLocaleString('ru-RU')} ₽` : '—'
+const priorityLevel = computed(() => {
+  const value = store.card?.price
+  if (!value || value < 1 || value > 5) return 0
+  return value
+})
 
-const statusLabels: Record<string, string> = {
-  'todo': 'Входящие',
-  'to-be-agreed': 'Согласование',
-  'in-progress': 'В работе',
-  'produced': 'Произведено',
-  'done': 'Завершено'
-}
+const statusLabels = COLUMN_LABELS
 
 const statusVariants: Record<string, string> = {
   'todo': 'secondary',
@@ -31,31 +30,39 @@ const statusVariants: Record<string, string> = {
 </script>
 
 <template>
-  <div class="deal-info">
-    <div class="deal-info__name-row">
-      <h2 class="deal-info__name">{{ store.card?.name || '—' }}</h2>
+  <div class="card-info">
+    <div class="card-info__name-row">
+      <h2 class="card-info__name">{{ store.card?.name || '—' }}</h2>
     </div>
 
-    <div class="deal-info__price-row">
-      <span class="deal-info__price tabular-nums">{{ formatCurrency(store.card?.price) }}</span>
+    <div v-if="priorityLevel" class="card-info__priority">
+      <div class="priority-dots">
+        <span
+            v-for="n in 5"
+            :key="n"
+            class="priority-dot"
+            :class="{ 'priority-dot--active': n <= priorityLevel }"
+        />
+      </div>
+      <span class="priority-text">{{ PRIORITY_LABELS[priorityLevel] }}</span>
     </div>
 
-    <div class="deal-info__divider"></div>
+    <div class="card-info__divider"></div>
 
-    <div class="deal-info__grid">
-      <div class="deal-info__field">
-        <span class="field-label">Клиент</span>
-        <span class="field-value">{{ store.card?.companyName || '—' }}</span>
+    <div class="card-info__grid">
+      <div class="card-info__field">
+        <span class="field-label">Категория</span>
+        <span class="field-value field-value--category">{{ store.card?.category || '—' }}</span>
       </div>
 
-      <div class="deal-info__field">
+      <div class="card-info__field">
         <span class="field-label">Статус</span>
         <UiBadge :variant="(statusVariants[store.card?.status || ''] as any) || 'secondary'">
-          {{ statusLabels[store.card?.status || ''] || store.card?.status || '—' }}
+          {{ statusLabels[store.card?.status as EnumStatus] || store.card?.status || '—' }}
         </UiBadge>
       </div>
 
-      <div class="deal-info__field">
+      <div class="card-info__field">
         <span class="field-label">Дата создания</span>
         <span class="field-value">{{ formatDate(store.card?.$createdAt) }}</span>
       </div>
@@ -64,49 +71,58 @@ const statusVariants: Record<string, string> = {
 </template>
 
 <style scoped lang="sass">
-.deal-info
+.card-info
   display: flex
   flex-direction: column
   gap: var(--spacing-4)
 
-.deal-info__name-row
+.card-info__name-row
   display: flex
   align-items: flex-start
   justify-content: space-between
   gap: var(--spacing-3)
 
-.deal-info__name
+.card-info__name
   font-size: var(--font-size-xl)
   font-weight: 800
   color: var(--color-text)
   letter-spacing: -0.3px
   line-height: 1.25
 
-.deal-info__price-row
+.card-info__priority
   display: flex
-  align-items: baseline
-  gap: var(--spacing-2)
+  align-items: center
+  gap: var(--spacing-3)
 
-.deal-info__price
-  font-size: var(--font-size-4xl)
-  font-weight: 800
-  color: var(--color-text)
-  letter-spacing: -1px
-  line-height: 1
-  font-variant-numeric: tabular-nums
-  font-feature-settings: "tnum"
+.priority-dots
+  display: flex
+  gap: 4px
 
-.deal-info__divider
+.priority-dot
+  width: 8px
+  height: 8px
+  border-radius: 50%
+  background-color: var(--color-border)
+
+  &--active
+    background-color: var(--color-accent)
+
+.priority-text
+  font-size: var(--font-size-sm)
+  font-weight: 600
+  color: var(--color-text-secondary)
+
+.card-info__divider
   height: 1px
   background-color: var(--color-border)
   margin: var(--spacing-1) 0
 
-.deal-info__grid
+.card-info__grid
   display: flex
   flex-direction: column
   gap: var(--spacing-3)
 
-.deal-info__field
+.card-info__field
   display: flex
   align-items: center
   justify-content: space-between
@@ -130,4 +146,7 @@ const statusVariants: Record<string, string> = {
   font-weight: 600
   color: var(--color-text)
   text-align: right
+
+  &--category
+    color: var(--color-primary)
 </style>

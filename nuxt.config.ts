@@ -46,5 +46,15 @@ export default defineNuxtConfig({
 
     pinia: {
         storesDirs: ['./store/**']
+    },
+
+    routeRules: {
+        '/products': {redirect: '/ideas'},
+        '/orders': {redirect: '/tasks'},
+        '/customers': {redirect: '/wishlist'},
+        '/customers/**': {redirect: '/wishlist'},
+        '/payments': {redirect: '/archive'},
+        '/kanban': {redirect: '/'},
+        '/feedback': {redirect: '/help'},
     }
 })

@@ -4,16 +4,21 @@ import {useQueryClient} from '@tanstack/vue-query'
 
 import {useKanbanQuery} from '~/components/kanban/useKanbanQuery'
 import type {ICard, IColumn} from '~/components/kanban/kanban.types'
+import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {useAuthStore} from '~~/store/auth.store'
 
 const authStore = useAuthStore()
+const queryClient = useQueryClient()
 
 const dragCardRef = ref<ICard | null>(null)
 const sourceColumnRef = ref<IColumn | null>(null)
 
-const queryClient = useQueryClient()
-
 const {data, isLoading, isError, error} = useKanbanQuery()
+
+const invalidateBoard = () => {
+  queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
+  queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
+}
 
 const handleDragStart = (card: ICard, column: IColumn) => {
   dragCardRef.value = card
@@ -25,29 +30,20 @@ const handleDragEnd = () => {
   sourceColumnRef.value = null
 }
 
-const handleCardMoved = () => {
-  queryClient.invalidateQueries({queryKey: ['deals']})
-  queryClient.invalidateQueries({queryKey: ['deals-stats']})
-}
-
-const store = useDealSlideStore();
-
-const retry = () => {
-  queryClient.invalidateQueries({queryKey: ['deals']})
-}
+const handleCardMoved = () => invalidateBoard()
 </script>
 
 <template>
   <div class="kanban-page">
     <header class="kanban-header">
       <div class="kanban-header__left">
-        <h1 class="kanban-title">Сделки</h1>
+        <h1 class="kanban-title">Моя доска</h1>
         <div v-if="authStore.isGuest" class="kanban-demo-badge">
           <span class="demo-dot"></span>
           Демо-режим
         </div>
       </div>
-      <p class="kanban-subtitle">Канban-доска управления сделками</p>
+      <p class="kanban-subtitle">Идеи, задачи и желания — всё в одном kanban</p>
     </header>
 
     <KanbanStats />
@@ -64,7 +60,7 @@ const retry = () => {
         <Icon name="heroicons:exclamation-triangle" size="28"/>
       </div>
       <p class="kanban-state__text">Ошибка загрузки: {{ (error as Error).message }}</p>
-      <button class="retry-button" @click="retry">
+      <button class="retry-button" @click="invalidateBoard">
         <Icon name="heroicons:arrow-path" size="14"/>
         Повторить
       </button>
@@ -90,7 +86,7 @@ const retry = () => {
         <Icon name="heroicons:rectangle-stack" size="32"/>
       </div>
       <p class="kanban-state__text">Нет данных для отображения</p>
-      <p class="kanban-state__hint">Создайте свою первую сделку, чтобы начать</p>
+      <p class="kanban-state__hint">Добавьте первую карточку, чтобы начать</p>
     </div>
   </div>
 

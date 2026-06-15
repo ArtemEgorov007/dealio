@@ -1,20 +1,19 @@
 import {useQuery} from '@tanstack/vue-query'
-import {COLLECTION_DEALS, DB_ID} from '~~/app.constants'
-import {MOCK_DEALS} from '~/components/kanban/kanban.mock'
+import {COLLECTION_CARDS, DB_ID} from '~~/app.constants'
+import {MOCK_CARDS} from '~/components/kanban/kanban.mock'
 import {isGuestSession} from '~~/store/auth.store'
 
 export function useComments() {
-    const store = useDealSlideStore()
+    const store = useCardSlideStore()
     const cardId = store.card?.id || ''
 
     return useQuery({
-        queryKey: ['deal', cardId],
+        queryKey: ['card', cardId],
         queryFn: () => {
             if (import.meta.client && isGuestSession()) {
-                const mockDeal = MOCK_DEALS.find(d => d.$id === cardId) ?? null
-                return Promise.resolve(mockDeal as any)
+                return MOCK_CARDS.find(record => record.$id === cardId) ?? null
             }
-            return DB.getDocument(DB_ID, COLLECTION_DEALS, cardId)
+            return DB.getDocument(DB_ID, COLLECTION_CARDS, cardId)
         },
     })
 }

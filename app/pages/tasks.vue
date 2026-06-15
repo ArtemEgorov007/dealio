@@ -1,12 +1,12 @@
 <script setup lang="ts">
-useSeoMeta({ title: 'Клиент | CRM' })
+useSeoMeta({ title: 'Задачи | Dealio' })
 </script>
 
 <template>
   <div class="page-wrapper">
     <UiUnderDevelopment
-      title="Раздел в разработке"
-      description="Редактирование данных клиента появится здесь в ближайшее время"
+      title="Список задач"
+      description="Классический todo-список с дедлайнами — в разработке. Kanban-доска уже доступна"
     />
   </div>
 </template>

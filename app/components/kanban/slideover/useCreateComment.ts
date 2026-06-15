@@ -4,11 +4,11 @@ import {COLLECTION_COMMENTS, DB_ID} from '~~/app.constants'
 import {isGuestSession} from '~~/store/auth.store'
 
 export function useCreateComment({refetch}: { refetch: () => void }) {
-    const store = useDealSlideStore()
-    const commentRef = ref<string>()
+    const store = useCardSlideStore()
+    const commentRef = ref<string>('')
 
     const {mutate} = useMutation({
-        mutationKey: ['add comments', commentRef.value],
+        mutationKey: ['add-comment'],
         mutationFn: () => {
             if (import.meta.client && isGuestSession()) {
                 return Promise.resolve(null)
@@ -29,7 +29,7 @@ export function useCreateComment({refetch}: { refetch: () => void }) {
     })
 
     const writeComment = () => {
-        if (!commentRef.value) return
+        if (!commentRef.value?.trim()) return
         mutate()
     }
 

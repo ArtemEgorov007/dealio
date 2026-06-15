@@ -1,12 +1,7 @@
 <script setup lang="ts">
-// This is the main Kanban board page
-import KanbanBoard from '~/components/kanban/KanbanBoard.vue'
+useSeoMeta({ title: 'Доска | Dealio' })
 </script>
 
 <template>
   <KanbanBoard />
 </template>
-
-<style scoped lang="sass">
-// Styles if needed
-</style>

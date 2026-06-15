@@ -1,12 +1,12 @@
 <script setup lang="ts">
-useSeoMeta({ title: 'Дашборд | CRM' })
+useSeoMeta({ title: 'Обзор | Dealio' })
 </script>
 
 <template>
   <div class="page-wrapper">
     <UiUnderDevelopment
-      title="Раздел в разработке"
-      description="Дашборд с аналитикой и ключевыми метриками появится здесь в ближайшее время"
+      title="Обзор скоро появится"
+      description="Здесь будет сводка по идеям, задачам и прогрессу — пока работайте с доской"
     />
   </div>
 </template>

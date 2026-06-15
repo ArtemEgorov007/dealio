@@ -1,9 +1,11 @@
+/** Appwrite collection `deals` — имена полей совпадают со схемой бэкенда */
+
 export interface IBaseField {
     $createdAt: string
     $id: string
 }
 
-export interface ICustomer extends IBaseField {
+export interface ICategoryField extends IBaseField {
     name: string
     email: string
     avatar_url: string
@@ -22,11 +24,12 @@ export enum EnumStatus {
     'done' = 'done',
 }
 
-export interface IDeal extends IBaseField {
+export interface ICardRecord extends IBaseField {
     comments: IComment[]
-    customer: ICustomer
+    /** категория карточки в Appwrite хранится в поле customer */
+    customer: ICategoryField
     name: string
+    /** приоритет 1–5 */
     price: number
     status: EnumStatus
-
 }
