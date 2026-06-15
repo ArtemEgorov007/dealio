@@ -9,19 +9,19 @@ const toggle = () => {
 </script>
 
 <template>
-  <button 
-    class="theme-toggle" 
+  <button
+    class="theme-toggle"
     @click="toggle"
-    :aria-label="theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+    :aria-label="theme === 'light' ? 'Переключить тёмную тему' : 'Переключить светлую тему'"
   >
-    <Icon 
-      v-if="theme === 'light'" 
-      name="heroicons:moon" 
+    <Icon
+      v-if="theme === 'light'"
+      name="heroicons:moon"
       class="theme-icon"
     />
-    <Icon 
-      v-else 
-      name="heroicons:sun" 
+    <Icon
+      v-else
+      name="heroicons:sun"
       class="theme-icon"
     />
   </button>
@@ -32,24 +32,26 @@ const toggle = () => {
   display: flex
   align-items: center
   justify-content: center
-  width: 40px
-  height: 40px
-  border-radius: var(--radius-full)
+  width: 34px
+  height: 34px
+  border-radius: var(--radius-md)
   background-color: var(--color-button-secondary-bg)
   border: var(--border-width) solid var(--color-border)
-  color: var(--color-text)
+  color: var(--color-text-secondary)
   cursor: pointer
   transition: all var(--transition-normal) ease
-  outline: none
+  flex-shrink: 0
 
   &:hover
     background-color: var(--color-button-secondary-bg-hover)
     border-color: var(--color-border-hover)
+    color: var(--color-text)
 
-  &:focus
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5)
+  &:focus-visible
+    outline: 2px solid var(--color-primary)
+    outline-offset: 2px
 
 .theme-icon
-  width: 20px
-  height: 20px
+  width: 16px
+  height: 16px
 </style>

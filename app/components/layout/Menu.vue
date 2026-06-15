@@ -20,7 +20,9 @@ const props = withDefaults(defineProps<Props>(), {
         :to="item.url"
         active-class="menu-item--active"
     >
-      <Icon :name="item.icon" class="menu-item__icon"/>
+      <span class="menu-item__icon-wrap">
+        <Icon :name="item.icon" class="menu-item__icon"/>
+      </span>
       <span v-if="!isCollapsed" class="menu-item__text">{{ item.name }}</span>
     </NuxtLink>
   </div>
@@ -29,44 +31,75 @@ const props = withDefaults(defineProps<Props>(), {
 <style scoped lang="sass">
 .menu
   width: 100%
+  padding: 0 var(--spacing-3)
+  display: flex
+  flex-direction: column
+  gap: 2px
 
 .menu-item
   display: flex
   align-items: center
-  padding: var(--spacing-3) var(--spacing-5)
-  color: var(--color-text-secondary)
+  gap: var(--spacing-3)
+  padding: var(--spacing-2) var(--spacing-3)
+  color: var(--color-text-tertiary)
   text-decoration: none
-  transition: all var(--transition-normal) ease-in-out
-  margin-bottom: var(--spacing-2)
-  font-weight: var(--font-weight-medium)
+  border-radius: var(--radius-md)
+  transition: all var(--transition-normal) var(--transition-ease)
+  font-weight: 500
+  font-size: var(--font-size-sm)
   white-space: nowrap
   overflow: hidden
+  position: relative
+
+  &::before
+    content: ''
+    position: absolute
+    left: 0
+    top: 50%
+    transform: translateY(-50%)
+    width: 2.5px
+    height: 0
+    background-color: var(--color-primary)
+    border-radius: 0 2px 2px 0
+    transition: height var(--transition-normal) var(--transition-ease)
 
   &:hover
-    background-color: var(--color-bg-tertiary)
+    background-color: var(--color-bg-secondary)
     color: var(--color-text)
-    box-shadow: var(--shadow-sm)
-
 
   &--active
-    background-color: var(--color-bg-tertiary)
+    background-color: var(--color-primary-light)
     color: var(--color-primary)
-    font-weight: var(--font-weight-semibold)
+    font-weight: 600
 
+    &::before
+      height: 60%
+
+    .menu-item__icon-wrap
+      color: var(--color-primary)
 
   &--collapsed
     justify-content: center
-    padding: var(--spacing-3)
+    padding: var(--spacing-2)
 
+    &::before
+      display: none
 
-  &__icon
-    min-width: 20px
+    &.menu-item--active
+      .menu-item__icon-wrap
+        background-color: var(--color-primary-muted)
+        border-radius: var(--radius-sm)
+
+  &__icon-wrap
+    display: flex
+    align-items: center
+    justify-content: center
     width: 20px
     height: 20px
-
+    flex-shrink: 0
+    transition: color var(--transition-normal) ease
 
   &__text
-    margin-left: var(--spacing-3)
     white-space: nowrap
     overflow: hidden
     text-overflow: ellipsis

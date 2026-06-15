@@ -51,15 +51,15 @@ const {mutate, isPending, isError, error} = useMutation({
     if (!data.name.trim()) {
       throw new Error('Название сделки обязательно');
     }
-    
+
     if (data.price <= 0) {
       throw new Error('Сумма должна быть больше нуля');
     }
-    
+
     if (!data.customer.name.trim()) {
       throw new Error('Имя компании обязательно');
     }
-    
+
     if (!data.customer.email.trim()) {
       throw new Error('Email клиента обязателен');
     }
@@ -77,7 +77,6 @@ const {mutate, isPending, isError, error} = useMutation({
     }
 
     if (import.meta.client && isGuestSession()) {
-      // In guest mode: optimistically add to vue-query cache without hitting Appwrite
       const newDeal: IDeal = {
         $id: dealData.$id!,
         $createdAt: dealData.$createdAt!,
@@ -100,7 +99,6 @@ const {mutate, isPending, isError, error} = useMutation({
   },
   onSuccess: (result) => {
     if (import.meta.client && isGuestSession() && result) {
-      // Optimistically add the new deal to both query caches
       const newDeal = result as IDeal
       queryClient.setQueryData(['deals-stats'], (old: IDeal[] | undefined) => {
         return old ? [...old, newDeal] : [newDeal]
@@ -128,42 +126,47 @@ const onSubmit = handleSubmit(values => mutate(values))
 </script>
 
 <template>
-  <div class="create-deal-container">
-    <Icon
+  <div class="create-deal">
+    <button
         v-if="!isOpenForm"
-        name="line-md:plus-square"
-        width="48"
-        height="48"
-        class="icon-btn icon-large-open"
+        class="add-deal-btn"
         @click="toggleForm"
-    />
+        aria-label="Добавить сделку"
+    >
+      <Icon name="heroicons:plus" size="14"/>
+      <span>Добавить</span>
+    </button>
 
-    <transition name="fade-slide">
+    <Transition name="form-expand">
       <form
           v-if="isOpenForm"
           class="deal-form"
           @submit.prevent="onSubmit"
+          novalidate
       >
-        <div class="form-header">
-          <Icon
-              name="line-md:remove"
-              width="32"
-              height="32"
-              class="icon-btn icon-large-close"
+        <div class="deal-form__header">
+          <span class="deal-form__title">Новая сделка</span>
+          <button
+              type="button"
+              class="deal-form__close"
               @click="toggleForm"
-          />
+              aria-label="Закрыть форму"
+          >
+            <Icon name="heroicons:x-mark" size="16"/>
+          </button>
         </div>
 
-        <div v-if="isError" class="error-message">
-          Ошибка: {{ (error as Error).message }}
+        <div v-if="isError" class="deal-form__error">
+          <Icon name="heroicons:exclamation-circle" size="14"/>
+          {{ (error as Error).message }}
         </div>
 
         <UiInput
             id="deal-name"
             v-model="name"
             v-bind="nameAttrs"
-            label="Наименование сделки"
-            placeholder="Введите название сделки"
+            label="Название"
+            placeholder="Название сделки"
             type="text"
             :error="errors.name"
             required
@@ -174,9 +177,20 @@ const onSubmit = handleSubmit(values => mutate(values))
             v-model.number="price"
             v-bind="priceAttrs"
             label="Сумма (₽)"
-            placeholder="Введите сумму"
+            placeholder="0"
             type="number"
             :error="errors.price"
+            required
+        />
+
+        <UiInput
+            id="customer-name"
+            v-model="customerName"
+            v-bind="customerNameAttrs"
+            label="Компания"
+            placeholder="Название компании"
+            type="text"
+            :error="errors.customer?.name"
             required
         />
 
@@ -185,20 +199,9 @@ const onSubmit = handleSubmit(values => mutate(values))
             v-model="customerEmail"
             v-bind="customerEmailAttrs"
             label="Email клиента"
-            placeholder="Введите email клиента"
+            placeholder="email@company.com"
             type="email"
             :error="errors.customer?.email"
-            required
-        />
-
-        <UiInput
-            id="customer-name"
-            v-model="customerName"
-            v-bind="customerNameAttrs"
-            label="Имя компании"
-            placeholder="Введите имя компании"
-            type="text"
-            :error="errors.customer?.name"
             required
         />
 
@@ -210,59 +213,107 @@ const onSubmit = handleSubmit(values => mutate(values))
             :loading="isPending"
             :disabled="isPending"
         >
-          {{ isPending ? 'Создание...' : 'Добавить сделку' }}
+          {{ isPending ? 'Сохранение...' : 'Добавить сделку' }}
         </UiButton>
       </form>
-    </transition>
+    </Transition>
   </div>
 </template>
 
 <style scoped lang="sass">
-.create-deal-container
+.create-deal
   margin-bottom: var(--spacing-3)
 
-.icon-btn
+.add-deal-btn
+  display: flex
+  align-items: center
+  justify-content: center
+  gap: var(--spacing-2)
+  width: 100%
+  padding: 7px var(--spacing-3)
+  background: none
+  border: 1.5px dashed var(--color-border)
+  border-radius: var(--radius-md)
+  color: var(--color-text-muted)
+  font-size: var(--font-size-xs)
+  font-weight: 600
   cursor: pointer
-  transition: transform 0.2s ease
-  color: var(--color-primary)
+  transition: all var(--transition-normal) ease
 
   &:hover
-    transform: scale(1.1)
+    border-color: var(--color-primary)
+    color: var(--color-primary)
+    background-color: var(--color-primary-light)
 
-.icon-large-open
-  width: 100%
-  display: flex
-  justify-content: center
-  padding: var(--spacing-2)
+  &:focus-visible
+    outline: 2px solid var(--color-primary)
+    outline-offset: 2px
 
 .deal-form
+  background-color: var(--color-card-bg)
+  border: var(--border-width) solid var(--color-border)
+  border-radius: var(--radius-lg)
+  padding: var(--spacing-4)
   display: flex
   flex-direction: column
-  gap: var(--spacing-4)
-  padding: var(--spacing-4)
-  background-color: var(--color-bg)
-  border-radius: var(--radius-lg)
+  gap: var(--spacing-1)
   box-shadow: var(--shadow-md)
-  border: var(--border-width) solid var(--color-border)
 
-.form-header
+.deal-form__header
   display: flex
-  justify-content: flex-end
+  align-items: center
+  justify-content: space-between
+  margin-bottom: var(--spacing-3)
 
-.fade-slide-enter-active,
-.fade-slide-leave-active
-  transition: all 0.3s ease
+.deal-form__title
+  font-size: var(--font-size-sm)
+  font-weight: 700
+  color: var(--color-text)
 
-.fade-slide-enter-from,
-.fade-slide-leave-to
-  transform: translateY(-20px)
-  opacity: 0
+.deal-form__close
+  width: 26px
+  height: 26px
+  display: flex
+  align-items: center
+  justify-content: center
+  background: none
+  border: var(--border-width) solid var(--color-border)
+  border-radius: var(--radius-sm)
+  color: var(--color-text-muted)
+  cursor: pointer
+  transition: all var(--transition-fast) ease
 
-.error-message
-  padding: var(--spacing-3)
+  &:hover
+    background-color: var(--color-bg-secondary)
+    color: var(--color-text)
+
+.deal-form__error
+  display: flex
+  align-items: center
+  gap: var(--spacing-2)
+  padding: var(--spacing-2) var(--spacing-3)
   background-color: var(--color-error-bg)
   color: var(--color-error-text)
   border: 1px solid var(--color-error-border)
   border-radius: var(--radius-md)
-  font-size: var(--font-size-sm)
+  font-size: var(--font-size-xs)
+  font-weight: 500
+  margin-bottom: var(--spacing-2)
+
+.form-expand-enter-active,
+.form-expand-leave-active
+  transition: all var(--transition-slow) var(--transition-ease)
+  overflow: hidden
+
+.form-expand-enter-from,
+.form-expand-leave-to
+  opacity: 0
+  transform: translateY(-8px)
+  max-height: 0
+
+.form-expand-enter-to,
+.form-expand-leave-from
+  opacity: 1
+  transform: translateY(0)
+  max-height: 600px
 </style>

@@ -15,27 +15,22 @@
   background-color: var(--color-card-bg)
   overflow: hidden
   opacity: 0
-  animation: show 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards
-  transition: box-shadow var(--transition-normal) ease-in-out, transform var(--transition-normal) ease-in-out
+  animation: card-reveal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards
+  transition: box-shadow var(--transition-normal) ease, transform var(--transition-normal) ease, border-color var(--transition-normal) ease
 
   &:hover
-    box-shadow: var(--shadow-lg)
+    box-shadow: var(--shadow-card-hover)
     transform: translateY(-2px)
+    border-color: var(--color-border-hover)
 
   &[draggable="true"]:active
     cursor: grabbing
 
-  &[draggable="true"]::-webkit-draggable-region
-    border-radius: var(--radius-lg)
-
-@keyframes show
-  0%
+@keyframes card-reveal
+  from
     opacity: 0
-    transform: scale(0.8) translateY(20px)
-  70%
+    transform: translateY(12px)
+  to
     opacity: 1
-    transform: scale(1.02) translateY(-5px)
-  100%
-    opacity: 1
-    transform: scale(1) translateY(0)
+    transform: translateY(0)
 </style>

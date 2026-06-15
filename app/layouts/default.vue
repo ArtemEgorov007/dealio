@@ -43,7 +43,7 @@ onMounted(async () => {
   <div v-show="!isLoadingStore.isLoading" :class="{ layout: authStore.isAuth }">
     <LayoutSidebar v-if="authStore.isAuth" class="desktop-sidebar"/>
 
-    <main class="layout__main" :class="{ 'layout__main--mobile': authStore.isAuth }">
+    <main class="layout__main" :class="{ 'layout__main--auth': authStore.isAuth }">
       <slot/>
     </main>
 
@@ -57,15 +57,20 @@ onMounted(async () => {
   min-height: 100vh
   width: 100vw
   overflow-x: hidden
+  background-color: var(--color-bg)
 
 .layout__main
-  padding: var(--spacing-4)
-  width: 100%
+  flex: 1
   min-height: 100vh
-  transition: margin-left var(--transition-normal) ease
+  min-width: 0
+  overflow-x: hidden
+  background-color: var(--color-bg)
 
-  &--mobile
-    padding-bottom: 80px
+  &--auth
+    padding-bottom: 0
+
+    @media (max-width: 768px)
+      padding-bottom: 72px
 
 .desktop-sidebar
   @media (max-width: 768px)
@@ -95,9 +100,4 @@ onMounted(async () => {
 @media (max-width: 768px)
   .layout
     flex-direction: column
-
-  .layout__main
-    margin-left: 0
-    padding: var(--spacing-3)
-    padding-bottom: 80px
 </style>

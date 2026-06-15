@@ -29,16 +29,18 @@ defineProps({
   margin-bottom: var(--spacing-3)
 
   &__text
-    opacity: 0.75
-    margin-bottom: var(--spacing-1)
     display: block
     font-size: var(--font-size-xs)
-    color: var(--color-text-secondary)
-    font-weight: var(--font-weight-normal)
+    font-weight: 700
+    color: var(--color-text-muted)
+    text-transform: uppercase
+    letter-spacing: 0.4px
+    margin-bottom: 5px
 
   &__value
-    font-size: var(--font-size-base)
+    font-size: var(--font-size-sm)
     color: var(--color-text)
+    font-weight: 500
     line-height: var(--line-height-normal)
 
   &:last-child

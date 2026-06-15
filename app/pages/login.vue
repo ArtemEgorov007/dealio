@@ -4,7 +4,7 @@ import {account} from '@/utils/appwrite'
 import {useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
 import {useRouter} from 'vue-router'
 
-useSeoMeta({title: 'Вход в систему | CRM'})
+useSeoMeta({title: 'Вход | Dealio CRM'})
 
 const isLoginMode = ref(true)
 const email = ref('')
@@ -40,14 +40,14 @@ const validateForm = (): boolean => {
   if (!password.value) {
     errors.value.password = 'Пароль обязателен'
   } else if (!validatePassword(password.value)) {
-    errors.value.password = 'Пароль должен содержать минимум 6 символов'
+    errors.value.password = 'Минимум 6 символов'
   }
 
   if (!isLoginMode.value) {
     if (!name.value) {
       errors.value.name = 'Имя обязательно'
     } else if (name.value.length < 2) {
-      errors.value.name = 'Имя должно содержать минимум 2 символа'
+      errors.value.name = 'Минимум 2 символа'
     }
 
     if (!confirmPassword.value) {
@@ -115,7 +115,7 @@ const register = async () => {
     await login()
   } catch (error: any) {
     console.error('Ошибка регистрации:', error)
-    errors.value.general = error.message || 'Ошибка регистрации. Возможно, пользователь уже существует.'
+    errors.value.general = error.message || 'Ошибка регистрации. Пользователь уже существует?'
   } finally {
     isSubmitting.value = false
     isLoadingStore.set(false)
@@ -139,32 +139,41 @@ const loginAsGuest = () => {
 
 <template>
   <section class="login">
+    <div class="login__bg">
+      <div class="login__bg-mesh"></div>
+    </div>
+
     <div class="login__container">
+      <div class="login__logo">
+        <div class="login__logo-mark">D</div>
+        <span class="login__logo-text">Dealio</span>
+      </div>
+
       <header class="login__header">
         <h1 class="login__title">
-          {{ isLoginMode ? 'Вход в систему' : 'Создание аккаунта' }}
+          {{ isLoginMode ? 'Добро пожаловать' : 'Создать аккаунт' }}
         </h1>
         <p class="login__subtitle">
           {{
             isLoginMode
-                ? 'Введите свои учетные данные для доступа к CRM'
-                : 'Заполните форму для создания нового аккаунта'
+                ? 'Войдите в свою CRM-систему'
+                : 'Заполните форму для регистрации'
           }}
         </p>
       </header>
 
-      <div v-if="errors.general" class="login__error">
-        <Icon name="radix-icons:exclamation-triangle" size="16"/>
-        {{ errors.general }}
+      <div v-if="errors.general" class="login__error" role="alert">
+        <Icon name="heroicons:exclamation-circle" size="16"/>
+        <span>{{ errors.general }}</span>
       </div>
 
-      <form class="login__form" @submit.prevent="handleSubmit">
+      <form class="login__form" @submit.prevent="handleSubmit" novalidate>
         <div v-if="!isLoginMode" class="form-group">
           <UiInput
               v-model="name"
               id="register-name"
               label="Полное имя"
-              placeholder="Введите ваше имя"
+              placeholder="Ваше имя"
               type="text"
               :error="errors.name"
               @input="clearError('name')"
@@ -177,7 +186,7 @@ const loginAsGuest = () => {
               v-model="email"
               id="login-email"
               label="Email"
-              placeholder="Введите ваш email"
+              placeholder="name@company.com"
               type="email"
               :error="errors.email"
               @input="clearError('email')"
@@ -196,9 +205,6 @@ const loginAsGuest = () => {
               @input="clearError('password')"
               required
           />
-          <div v-if="!isLoginMode" class="password-hint">
-            Минимум 6 символов
-          </div>
         </div>
 
         <div v-if="!isLoginMode" class="form-group">
@@ -224,44 +230,35 @@ const loginAsGuest = () => {
         >
           {{
             isSubmitting
-                ? (isLoginMode ? 'Вход...' : 'Создание...')
+                ? (isLoginMode ? 'Входим...' : 'Создаём...')
                 : (isLoginMode ? 'Войти' : 'Создать аккаунт')
           }}
         </UiButton>
       </form>
 
       <div class="login__demo">
-        <div class="login__demo-divider">
-          <span>или</span>
+        <div class="login__divider">
+          <span class="login__divider-text">или</span>
         </div>
         <button class="login__demo-btn" @click="loginAsGuest">
-          <Icon name="radix-icons:eye-open" size="18"/>
-          Демо-режим — войти без регистрации
+          <span class="demo-btn__icon">
+            <Icon name="heroicons:eye" size="16"/>
+          </span>
+          <span class="demo-btn__text">
+            <span class="demo-btn__label">Демо-режим</span>
+            <span class="demo-btn__sub">Интерактивная доска без регистрации</span>
+          </span>
+          <Icon name="heroicons:arrow-right" size="14" class="demo-btn__arrow"/>
         </button>
-        <p class="login__demo-hint">Интерактивная доска с мок-данными, без сохранения</p>
       </div>
 
       <footer class="login__footer">
-        <div class="login__links">
-          <button
-              v-if="isLoginMode"
-              class="login__link"
-              @click="toggleMode"
-          >
-            Создать аккаунт
-          </button>
-          <button
-              v-else
-              class="login__link"
-              @click="toggleMode"
-          >
-            Уже есть аккаунт? Войти
-          </button>
-        </div>
-
-        <NuxtLink v-if="isLoginMode" to="/" class="login__link login__link--secondary">
-          Забыли пароль?
-        </NuxtLink>
+        <button v-if="isLoginMode" class="login__toggle-link" @click="toggleMode">
+          Нет аккаунта? <span>Зарегистрироваться</span>
+        </button>
+        <button v-else class="login__toggle-link" @click="toggleMode">
+          Уже есть аккаунт? <span>Войти</span>
+        </button>
       </footer>
     </div>
   </section>
@@ -274,153 +271,222 @@ const loginAsGuest = () => {
   justify-content: center
   min-height: 100vh
   padding: var(--spacing-6)
-  background: linear-gradient(135deg, var(--color-bg-alt) 0%, var(--color-primary-light) 100%)
+  position: relative
+  overflow: hidden
+  background-color: var(--color-bg)
+
+.login__bg
+  position: fixed
+  inset: 0
+  z-index: 0
+  pointer-events: none
+
+.login__bg-mesh
+  position: absolute
+  inset: 0
+  background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(13, 148, 136, 0.07) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 50% 50%, rgba(14, 165, 233, 0.04) 0%, transparent 60%)
+
+[data-theme="dark"] .login__bg-mesh
+  background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(20, 184, 166, 0.08) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 50% 50%, rgba(56, 189, 248, 0.04) 0%, transparent 60%)
 
 .login__container
+  position: relative
+  z-index: 1
   width: 100%
-  max-width: 480px
+  max-width: 400px
   background-color: var(--color-card-bg)
-  border-radius: var(--radius-xl)
+  border-radius: var(--radius-2xl)
   padding: var(--spacing-8)
   box-shadow: var(--shadow-xl)
   border: var(--border-width) solid var(--color-card-border)
   display: flex
   flex-direction: column
   gap: var(--spacing-6)
-  backdrop-filter: blur(10px)
+
+.login__logo
+  display: flex
+  align-items: center
+  gap: var(--spacing-3)
+
+.login__logo-mark
+  width: 36px
+  height: 36px
+  background: linear-gradient(135deg, var(--color-primary), #0f9b8e)
+  border-radius: var(--radius-md)
+  display: flex
+  align-items: center
+  justify-content: center
+  color: white
+  font-size: 18px
+  font-weight: 800
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.3)
+  line-height: 1
+
+.login__logo-text
+  font-size: var(--font-size-xl)
+  font-weight: 800
+  color: var(--color-text)
+  letter-spacing: -0.4px
 
 .login__header
-  text-align: center
+  padding-bottom: var(--spacing-2)
+  border-bottom: var(--border-width) solid var(--color-border)
 
 .login__title
-  font-size: var(--font-size-3xl)
-  font-weight: var(--font-weight-bold)
+  font-size: var(--font-size-2xl)
+  font-weight: 800
   color: var(--color-text)
-  margin-bottom: var(--spacing-2)
+  letter-spacing: -0.5px
+  margin-bottom: 4px
 
 .login__subtitle
-  font-size: var(--font-size-base)
-  color: var(--color-text-secondary)
-  line-height: var(--line-height-normal)
+  font-size: var(--font-size-sm)
+  color: var(--color-text-muted)
+  font-weight: 500
 
 .login__error
   display: flex
   align-items: center
   gap: var(--spacing-2)
-  padding: var(--spacing-3)
+  padding: var(--spacing-3) var(--spacing-4)
   background-color: var(--color-error-bg)
   color: var(--color-error-text)
   border: 1px solid var(--color-error-border)
   border-radius: var(--radius-md)
   font-size: var(--font-size-sm)
-  margin-bottom: var(--spacing-4)
+  font-weight: 500
 
 .login__form
   display: flex
   flex-direction: column
-  gap: var(--spacing-4)
+  gap: 0
 
 .form-group
   display: flex
   flex-direction: column
-  gap: var(--spacing-1)
-
-.password-hint
-  font-size: var(--font-size-xs)
-  color: var(--color-text-tertiary)
-  margin-top: var(--spacing-1)
 
 .login__demo
   display: flex
   flex-direction: column
   gap: var(--spacing-3)
-  align-items: center
 
-.login__demo-divider
-  width: 100%
-  display: flex
-  align-items: center
-  gap: var(--spacing-3)
-  color: var(--color-text-tertiary)
-  font-size: var(--font-size-sm)
+.login__divider
+  position: relative
+  text-align: center
 
-  &::before,
-  &::after
+  &::before
     content: ''
-    flex: 1
+    position: absolute
+    top: 50%
+    left: 0
+    right: 0
     height: 1px
     background-color: var(--color-border)
 
+.login__divider-text
+  position: relative
+  display: inline-block
+  background-color: var(--color-card-bg)
+  padding: 0 var(--spacing-3)
+  font-size: var(--font-size-xs)
+  color: var(--color-text-muted)
+  font-weight: 600
+  text-transform: uppercase
+  letter-spacing: 0.5px
+
 .login__demo-btn
-  width: 100%
   display: flex
   align-items: center
-  justify-content: center
-  gap: var(--spacing-2)
+  gap: var(--spacing-3)
+  width: 100%
   padding: var(--spacing-3) var(--spacing-4)
-  border: var(--border-width) dashed var(--color-border)
+  border: var(--border-width) solid var(--color-border)
   border-radius: var(--radius-lg)
-  background: transparent
-  color: var(--color-text-secondary)
-  font-size: var(--font-size-base)
-  font-weight: var(--font-weight-medium)
+  background: var(--color-bg-secondary)
   cursor: pointer
   transition: all var(--transition-normal) ease
+  text-align: left
 
   &:hover
     border-color: var(--color-primary)
-    color: var(--color-primary)
-    background-color: rgba(59, 130, 246, 0.05)
+    background-color: var(--color-primary-light)
 
-.login__demo-hint
-  font-size: var(--font-size-xs)
-  color: var(--color-text-tertiary)
-  text-align: center
-  margin: 0
+    .demo-btn__label
+      color: var(--color-primary)
 
-.login__footer
+    .demo-btn__arrow
+      color: var(--color-primary)
+      transform: translateX(2px)
+
+  &:focus-visible
+    outline: 2px solid var(--color-primary)
+    outline-offset: 2px
+
+.demo-btn__icon
+  width: 36px
+  height: 36px
+  background-color: var(--color-primary-muted)
+  border-radius: var(--radius-md)
+  display: flex
+  align-items: center
+  justify-content: center
+  color: var(--color-primary)
+  flex-shrink: 0
+
+.demo-btn__text
+  flex: 1
   display: flex
   flex-direction: column
-  gap: var(--spacing-4)
-  padding-top: var(--spacing-4)
+  gap: 2px
+
+.demo-btn__label
+  font-size: var(--font-size-sm)
+  font-weight: 700
+  color: var(--color-text)
+  transition: color var(--transition-fast) ease
+
+.demo-btn__sub
+  font-size: var(--font-size-xs)
+  color: var(--color-text-muted)
+  font-weight: 500
+
+.demo-btn__arrow
+  color: var(--color-text-muted)
+  transition: all var(--transition-normal) ease
+  flex-shrink: 0
+
+.login__footer
+  text-align: center
+  padding-top: var(--spacing-2)
   border-top: var(--border-width) solid var(--color-border)
 
-.login__links
-  display: flex
-  justify-content: center
-
-.login__link
+.login__toggle-link
   background: none
   border: none
-  color: var(--color-primary)
-  font-weight: var(--font-weight-medium)
   font-size: var(--font-size-sm)
+  color: var(--color-text-muted)
   cursor: pointer
-  transition: color var(--transition-normal) ease
-  text-decoration: none
+  font-family: inherit
+  font-weight: 500
+  transition: color var(--transition-fast) ease
 
   &:hover
-    color: var(--color-primary-hover)
-    text-decoration: underline
+    color: var(--color-text)
 
-  &--secondary
-    color: var(--color-text-secondary)
-    font-size: var(--font-size-xs)
+  span
+    color: var(--color-primary)
+    font-weight: 700
 
     &:hover
-      color: var(--color-text)
+      text-decoration: underline
 
-@media (max-width: 768px)
+@media (max-width: 480px)
   .login
     padding: var(--spacing-4)
+    align-items: flex-end
 
   .login__container
-    padding: var(--spacing-6)
     max-width: 100%
-
-  .login__title
-    font-size: var(--font-size-2xl)
-
-  .login__footer
-    gap: var(--spacing-3)
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0
+    padding: var(--spacing-6)
 </style>

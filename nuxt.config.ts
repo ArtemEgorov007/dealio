@@ -29,22 +29,19 @@ export default defineNuxtConfig({
             '@nuxtjs/google-fonts',
             {
                 families: {
-                    Roboto: true,
-                    Inter: [400, 700],
-                    NunitoSuns: true,
-                    Lato: [100, 300],
-                    Raleway: {
-                        wght: [100, 400],
-                        ital: [100]
-                    }
-                }
+                    Manrope: [400, 500, 600, 700, 800]
+                },
+                display: 'swap',
+                preload: true,
+                subsets: ['latin', 'cyrillic']
             }
         ]
     ],
 
     css: [
         '@/assets/css/normalize.css',
-        '@/assets/css/variables.css'
+        '@/assets/css/variables.css',
+        '@/assets/css/dark-theme.css'
     ],
 
     pinia: {

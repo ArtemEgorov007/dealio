@@ -97,120 +97,148 @@ const handleDragEnd = () => {
       @drop="handleDrop(column)"
   >
     <div class="column-header">
-      <h2 class="column-title">
-        {{ column.name }}
-      </h2>
-      <span class="column-count">({{ column.items.length }})</span>
+      <div class="column-header__left">
+        <span class="column-dot" :class="`column-dot--${column.id}`"></span>
+        <h2 class="column-title">{{ column.name }}</h2>
+      </div>
+      <span class="column-count">{{ column.items.length }}</span>
     </div>
 
     <CreateDeal :status="column.id" @deal-created="() => queryClient.invalidateQueries({queryKey: ['deals']})"/>
 
     <div class="column-content">
       <div v-if="isPending" class="loading-indicator">
-        <div class="spinner-small"></div>
-        Перемещение...
+        <div class="spinner-mini"></div>
+        <span>Перемещение...</span>
       </div>
-      
+
       <KanbanCard
-          v-for="card in column.items"
+          v-for="(card, index) in column.items"
           :key="card.id"
           :card="card"
           :column-id="column.id"
+          :style="{ animationDelay: `${index * 40}ms` }"
           @dragstart="handleDragStart(card, column)"
           @dragend="handleDragEnd"
       />
 
-      <p v-if="column.items.length === 0 && !isPending" class="empty-column">Нет сделок</p>
+      <div v-if="column.items.length === 0 && !isPending" class="empty-column">
+        <Icon name="heroicons:inbox" size="20" class="empty-icon"/>
+        <span>Нет сделок</span>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="sass">
 .kanban-column
-  flex: 1
-  min-width: 280px
+  width: 288px
+  flex-shrink: 0
   background-color: var(--color-bg-secondary)
-  border-radius: var(--radius-lg)
+  border-radius: var(--radius-xl)
   padding: var(--spacing-4)
   border: var(--border-width) solid var(--color-border)
   transition: all 0.2s ease
   display: flex
   flex-direction: column
-
-  &--todo
-    border-top: 3px solid var(--color-warning)
-
-  &--to-be-agreed
-    border-top: 3px solid #f97316
-
-  &--in-progress
-    border-top: 3px solid var(--color-primary)
-
-  &--produced
-    border-top: 3px solid #9333ea
-
-  &--done
-    border-top: 3px solid var(--color-success)
+  min-height: 400px
 
   &--over
-    background-color: rgba(59, 130, 246, 0.08)
-    box-shadow: 0 0 0 2px var(--color-primary)
-    transform: scale(1.02)
+    border-color: var(--color-primary)
+    background-color: var(--color-primary-light)
+    box-shadow: 0 0 0 2px var(--color-primary-muted)
 
 .column-header
   display: flex
   justify-content: space-between
   align-items: center
   margin-bottom: var(--spacing-3)
+  padding-bottom: var(--spacing-3)
+  border-bottom: var(--border-width) solid var(--color-border)
+
+.column-header__left
+  display: flex
+  align-items: center
+  gap: var(--spacing-2)
+
+.column-dot
+  width: 8px
+  height: 8px
+  border-radius: 50%
+  flex-shrink: 0
+
+  &--todo
+    background-color: var(--kanban-todo-color)
+
+  &--to-be-agreed
+    background-color: var(--kanban-agreed-color)
+
+  &--in-progress
+    background-color: var(--kanban-progress-color)
+
+  &--produced
+    background-color: var(--kanban-produced-color)
+
+  &--done
+    background-color: var(--kanban-done-color)
 
 .column-title
-  font-size: var(--font-size-lg)
-  font-weight: var(--font-weight-semibold)
+  font-size: var(--font-size-sm)
+  font-weight: 700
   color: var(--color-text)
+  letter-spacing: -0.1px
 
 .column-count
-  font-size: var(--font-size-sm)
-  color: var(--color-text-tertiary)
-  background-color: var(--color-bg)
-  padding: var(--spacing-1) var(--spacing-2)
+  font-size: var(--font-size-xs)
+  font-weight: 700
+  color: var(--color-text-muted)
+  background-color: var(--color-bg-tertiary)
+  padding: 2px 7px
   border-radius: var(--radius-full)
-  min-width: 24px
+  min-width: 22px
   text-align: center
+  font-variant-numeric: tabular-nums
 
 .column-content
   display: flex
   flex-direction: column
-  gap: var(--spacing-3)
+  gap: var(--spacing-2)
   flex: 1
 
 .empty-column
-  text-align: center
-  font-style: italic
-  color: var(--color-text-tertiary)
-  padding: var(--spacing-4)
-  border: 1px dashed var(--color-border)
-  border-radius: var(--radius-md)
-  flex: 1
   display: flex
+  flex-direction: column
   align-items: center
   justify-content: center
+  gap: var(--spacing-2)
+  flex: 1
+  min-height: 120px
+  border: 1.5px dashed var(--color-border)
+  border-radius: var(--radius-lg)
+  color: var(--color-text-muted)
+  font-size: var(--font-size-sm)
+  font-weight: 500
+
+  .empty-icon
+    opacity: 0.4
 
 .loading-indicator
   display: flex
   align-items: center
   justify-content: center
   gap: var(--spacing-2)
-  padding: var(--spacing-2)
+  padding: var(--spacing-3)
   color: var(--color-text-secondary)
-  font-size: var(--font-size-sm)
+  font-size: var(--font-size-xs)
+  font-weight: 500
 
-.spinner-small
-  width: 16px
-  height: 16px
+.spinner-mini
+  width: 14px
+  height: 14px
   border: 2px solid var(--color-border)
   border-top: 2px solid var(--color-primary)
   border-radius: 50%
-  animation: spin 1s linear infinite
+  animation: spin 0.8s linear infinite
 
 @keyframes spin
   to

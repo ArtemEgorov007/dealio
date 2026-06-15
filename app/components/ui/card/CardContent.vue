@@ -8,7 +8,7 @@
 
 <style lang="sass" scoped>
 .card-content
-  padding: var(--spacing-6)
+  padding: var(--spacing-4) var(--spacing-5)
   background-color: var(--color-card-bg)
   color: var(--color-text)
 </style>

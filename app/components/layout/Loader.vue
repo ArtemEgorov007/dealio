@@ -4,19 +4,19 @@ const baseURL = app.baseURL
 </script>
 
 <template>
-  <transition name="fade-loader">
-    <div class="loader-wrapper">
-      <div class="loader-container">
-        <img
-            :src="`${baseURL}loader.svg`"
-            alt="Загрузка..."
-            class="loader-image"
-            width="220"
-        />
-        <p class="loader-text">Загрузка данных...</p>
+  <div class="loader-wrapper">
+    <div class="loader-container">
+      <div class="loader-logo">
+        <div class="loader-logo-mark">D</div>
+        <span class="loader-logo-text">Dealio</span>
       </div>
+      <div class="loader-spinner">
+        <div class="spinner-track"></div>
+        <div class="spinner-thumb"></div>
+      </div>
+      <p class="loader-text">Загружаем данные...</p>
     </div>
-  </transition>
+  </div>
 </template>
 
 <style scoped lang="sass">
@@ -34,24 +34,58 @@ const baseURL = app.baseURL
   display: flex
   flex-direction: column
   align-items: center
-  justify-content: center
+  gap: var(--spacing-5)
 
-.loader-image
-  display: block
-  width: 220px
-  height: auto
-  margin-bottom: var(--spacing-4)
+.loader-logo
+  display: flex
+  align-items: center
+  gap: var(--spacing-3)
+
+.loader-logo-mark
+  width: 44px
+  height: 44px
+  background: linear-gradient(135deg, var(--color-primary), #0f9b8e)
+  border-radius: var(--radius-lg)
+  display: flex
+  align-items: center
+  justify-content: center
+  color: white
+  font-size: 22px
+  font-weight: 800
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.3)
+  line-height: 1
+
+.loader-logo-text
+  font-size: var(--font-size-3xl)
+  font-weight: 800
+  color: var(--color-text)
+  letter-spacing: -0.5px
+
+.loader-spinner
+  position: relative
+  width: 36px
+  height: 36px
+
+.spinner-track
+  position: absolute
+  inset: 0
+  border: 2.5px solid var(--color-border)
+  border-radius: 50%
+
+.spinner-thumb
+  position: absolute
+  inset: 0
+  border: 2.5px solid transparent
+  border-top-color: var(--color-primary)
+  border-radius: 50%
+  animation: spin 0.75s linear infinite
+
+@keyframes spin
+  to
+    transform: rotate(360deg)
 
 .loader-text
-  color: var(--color-text-secondary)
-  font-size: var(--font-size-base)
-  font-weight: var(--font-weight-medium)
-
-.fade-loader-enter-active,
-.fade-loader-leave-active
-  transition: opacity 0.3s ease
-
-.fade-loader-enter-from,
-.fade-loader-leave-to
-  opacity: 0
+  color: var(--color-text-muted)
+  font-size: var(--font-size-sm)
+  font-weight: 600
 </style>

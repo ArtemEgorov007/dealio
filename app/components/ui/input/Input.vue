@@ -53,7 +53,6 @@ const inputClasses = computed(() => ({
   'ui-input__field--disabled': props.disabled
 }))
 
-// Для file input нужно использовать событие change, а не v-model
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
@@ -103,14 +102,16 @@ const handleFileChange = (event: Event) => {
   display: flex
   flex-direction: column
   width: 100%
-  font-family: "Roboto", sans-serif
+  font-family: 'Manrope', sans-serif
   margin-bottom: var(--spacing-4)
 
   &__label
-    margin-bottom: var(--spacing-2)
-    font-weight: var(--font-weight-medium)
+    margin-bottom: 6px
+    font-weight: 600
     color: var(--color-text)
-    font-size: var(--font-size-sm)
+    font-size: var(--font-size-xs)
+    letter-spacing: 0.2px
+    text-transform: uppercase
 
     &--required::after
       content: " *"
@@ -118,13 +119,14 @@ const handleFileChange = (event: Event) => {
 
   &__field
     width: 100%
-    padding: var(--spacing-3) var(--spacing-4)
+    padding: 9px var(--spacing-4)
     border: var(--border-width) solid var(--color-input-border)
     border-radius: var(--radius-md)
     background-color: var(--color-input-bg)
     color: var(--color-input-text)
-    font-size: var(--font-size-base)
+    font-size: var(--font-size-sm)
     line-height: 1.5
+    height: 38px
     transition: border-color var(--transition-normal) ease, box-shadow var(--transition-normal) ease
 
     &::placeholder
@@ -133,7 +135,7 @@ const handleFileChange = (event: Event) => {
     &:focus-visible
       outline: none
       border-color: var(--color-input-border-focus)
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1)
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12)
 
     &:hover:not(:disabled):not(:focus)
       border-color: var(--color-input-border-hover)
@@ -148,7 +150,7 @@ const handleFileChange = (event: Event) => {
       border-color: var(--color-success)
 
       &:focus-visible
-        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1)
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1)
 
     &--disabled
       background-color: var(--color-input-disabled-bg)
@@ -159,15 +161,12 @@ const handleFileChange = (event: Event) => {
         color: var(--color-input-disabled-text)
 
   &__error
-    margin-top: var(--spacing-2)
+    margin-top: 5px
     color: var(--color-danger)
-    font-size: var(--font-size-sm)
-    font-weight: var(--font-weight-medium)
+    font-size: var(--font-size-xs)
+    font-weight: 500
 
 @media (max-width: 768px)
   .ui-input
     margin-bottom: var(--spacing-3)
-
-    &__field
-      padding: var(--spacing-2) var(--spacing-3)
 </style>

@@ -38,46 +38,59 @@ const retry = () => {
 </script>
 
 <template>
-  <div class="kanban-container">
+  <div class="kanban-page">
     <header class="kanban-header">
-      <div class="kanban-header__top">
-        <h1 class="kanban-title">CRM Dashboard</h1>
+      <div class="kanban-header__left">
+        <h1 class="kanban-title">Сделки</h1>
         <div v-if="authStore.isGuest" class="kanban-demo-badge">
-          <Icon name="radix-icons:eye-open" size="14"/>
+          <span class="demo-dot"></span>
           Демо-режим
         </div>
       </div>
-      <p class="kanban-subtitle">Управление сделками в режиме Kanban</p>
+      <p class="kanban-subtitle">Канban-доска управления сделками</p>
     </header>
 
     <KanbanStats />
 
     <div v-if="isLoading" class="kanban-state">
-      <div class="spinner"/>
-      <p>Загрузка данных...</p>
+      <div class="kanban-spinner">
+        <div class="spinner-ring"></div>
+      </div>
+      <p class="kanban-state__text">Загрузка данных...</p>
     </div>
 
-    <div v-else-if="isError" class="kanban-state">
-      <p class="error-message">Ошибка загрузки данных: {{ (error as Error).message }}</p>
-      <button class="retry-button" @click="retry">Повторить попытку</button>
+    <div v-else-if="isError" class="kanban-state kanban-state--error">
+      <div class="error-icon">
+        <Icon name="heroicons:exclamation-triangle" size="28"/>
+      </div>
+      <p class="kanban-state__text">Ошибка загрузки: {{ (error as Error).message }}</p>
+      <button class="retry-button" @click="retry">
+        <Icon name="heroicons:arrow-path" size="14"/>
+        Повторить
+      </button>
     </div>
 
-    <div v-else-if="data?.length" class="kanban-board">
-      <KanbanColumn
-          v-for="column in data"
-          :key="column.id"
-          :column="column"
-          :drag-card="dragCardRef"
-          :source-column="sourceColumnRef"
-          @dragstart="handleDragStart"
-          @dragend="handleDragEnd"
-          @card-moved="handleCardMoved"
-      />
+    <div v-else-if="data?.length" class="kanban-board-wrap">
+      <div class="kanban-board">
+        <KanbanColumn
+            v-for="column in data"
+            :key="column.id"
+            :column="column"
+            :drag-card="dragCardRef"
+            :source-column="sourceColumnRef"
+            @dragstart="handleDragStart"
+            @dragend="handleDragEnd"
+            @card-moved="handleCardMoved"
+        />
+      </div>
     </div>
 
-    <div v-else class="kanban-state">
-      <p>Нет данных для отображения</p>
-      <p class="empty-state-hint">Создайте свою первую сделку, чтобы начать работать</p>
+    <div v-else class="kanban-state kanban-state--empty">
+      <div class="empty-icon">
+        <Icon name="heroicons:rectangle-stack" size="32"/>
+      </div>
+      <p class="kanban-state__text">Нет данных для отображения</p>
+      <p class="kanban-state__hint">Создайте свою первую сделку, чтобы начать</p>
     </div>
   </div>
 
@@ -85,14 +98,16 @@ const retry = () => {
 </template>
 
 <style scoped lang="sass">
-.kanban-container
-  padding: var(--spacing-6)
-  overflow-x: auto
+.kanban-page
+  padding: var(--spacing-6) var(--spacing-6) var(--spacing-8)
+
+  @media (max-width: 768px)
+    padding: var(--spacing-4)
 
 .kanban-header
   margin-bottom: var(--spacing-6)
 
-.kanban-header__top
+.kanban-header__left
   display: flex
   align-items: center
   gap: var(--spacing-3)
@@ -101,73 +116,140 @@ const retry = () => {
 .kanban-demo-badge
   display: inline-flex
   align-items: center
-  gap: var(--spacing-1)
-  padding: 2px var(--spacing-2)
-  background-color: rgba(251, 191, 36, 0.15)
-  color: #d97706
-  border: 1px solid rgba(251, 191, 36, 0.4)
+  gap: 6px
+  padding: 3px 10px
+  background-color: rgba(245, 158, 11, 0.1)
+  color: #b45309
   border-radius: var(--radius-full)
   font-size: var(--font-size-xs)
-  font-weight: var(--font-weight-medium)
+  font-weight: 700
+  letter-spacing: 0.3px
+  border: 1px solid rgba(245, 158, 11, 0.2)
+
+[data-theme="dark"] .kanban-demo-badge
+  color: #fbbf24
+  background-color: rgba(251, 191, 36, 0.1)
+  border-color: rgba(251, 191, 36, 0.2)
+
+.demo-dot
+  width: 6px
+  height: 6px
+  border-radius: 50%
+  background-color: currentColor
+  animation: pulse-dot 2s ease-in-out infinite
+
+@keyframes pulse-dot
+  0%, 100%
+    opacity: 1
+  50%
+    opacity: 0.4
 
 .kanban-title
   font-size: var(--font-size-3xl)
-  font-weight: var(--font-weight-bold)
+  font-weight: 800
   color: var(--color-text)
+  letter-spacing: -0.5px
+  line-height: 1.1
 
 .kanban-subtitle
-  font-size: var(--font-size-base)
-  color: var(--color-text-secondary)
+  font-size: var(--font-size-sm)
+  color: var(--color-text-muted)
+  font-weight: 500
 
 .kanban-state
   display: flex
   flex-direction: column
   align-items: center
   justify-content: center
-  padding: var(--spacing-8)
+  padding: var(--spacing-12)
   color: var(--color-text-secondary)
-  min-height: 400px
+  min-height: 300px
+  gap: var(--spacing-3)
 
-.spinner
-  width: 32px
-  height: 32px
-  border: 4px solid var(--color-border)
-  border-top: 4px solid var(--color-primary)
+.kanban-state__text
+  font-size: var(--font-size-base)
+  font-weight: 500
+  color: var(--color-text-secondary)
+  text-align: center
+
+.kanban-state__hint
+  font-size: var(--font-size-sm)
+  color: var(--color-text-muted)
+  text-align: center
+
+.kanban-spinner
+  width: 40px
+  height: 40px
+  position: relative
+
+.spinner-ring
+  width: 100%
+  height: 100%
+  border: 3px solid var(--color-border)
+  border-top: 3px solid var(--color-primary)
   border-radius: 50%
-  animation: spin 1s linear infinite
-  margin-bottom: var(--spacing-4)
+  animation: spin 0.8s linear infinite
 
 @keyframes spin
   to
     transform: rotate(360deg)
 
+.kanban-state--error
+  .error-icon
+    width: 56px
+    height: 56px
+    border-radius: var(--radius-xl)
+    background-color: rgba(239, 68, 68, 0.08)
+    display: flex
+    align-items: center
+    justify-content: center
+    color: var(--color-danger)
+
+.kanban-state--empty
+  .empty-icon
+    width: 64px
+    height: 64px
+    border-radius: var(--radius-xl)
+    background-color: var(--color-bg-secondary)
+    display: flex
+    align-items: center
+    justify-content: center
+    color: var(--color-text-muted)
+
+.retry-button
+  display: inline-flex
+  align-items: center
+  gap: var(--spacing-2)
+  padding: 7px var(--spacing-4)
+  background-color: var(--color-button-primary-bg)
+  color: white
+  border: none
+  border-radius: var(--radius-md)
+  font-size: var(--font-size-sm)
+  font-weight: 600
+  cursor: pointer
+  transition: all var(--transition-normal) ease
+
+  &:hover
+    background-color: var(--color-button-primary-bg-hover)
+    transform: translateY(-1px)
+
+.kanban-board-wrap
+  overflow-x: auto
+  padding-bottom: var(--spacing-4)
+
+  &::-webkit-scrollbar
+    height: 6px
+
+  &::-webkit-scrollbar-track
+    background: transparent
+
+  &::-webkit-scrollbar-thumb
+    background: var(--color-border-hover)
+    border-radius: var(--radius-full)
+
 .kanban-board
   display: flex
   gap: var(--spacing-4)
-  min-width: 800px
-
-.error-message
-  color: var(--color-error-text)
-  margin-bottom: var(--spacing-4)
-  text-align: center
-
-.retry-button
-  background-color: var(--color-primary)
-  color: white
-  border: none
-  padding: var(--spacing-2) var(--spacing-4)
-  border-radius: var(--radius-md)
-  cursor: pointer
-  font-weight: var(--font-weight-medium)
-  transition: background-color var(--transition-normal) ease
-
-  &:hover
-    background-color: var(--color-primary-hover)
-
-.empty-state-hint
-  margin-top: var(--spacing-2)
-  font-size: var(--font-size-sm)
-  color: var(--color-text-tertiary)
-  text-align: center
-  max-width: 300px
+  min-width: max-content
 </style>

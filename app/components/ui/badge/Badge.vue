@@ -28,49 +28,44 @@ const props = withDefaults(defineProps<Props>(), {
   align-items: center
   justify-content: center
   border-radius: var(--radius-full)
-  font-weight: var(--font-weight-medium)
+  font-weight: 600
   white-space: nowrap
-  transition: all var(--transition-fast) ease
+  letter-spacing: 0.2px
+  font-size: var(--font-size-xs)
 
   &--sm
-    padding: var(--spacing-1) var(--spacing-2)
-    font-size: var(--font-size-xs)
+    padding: 2px var(--spacing-2)
+    font-size: 10px
 
   &--md
-    padding: var(--spacing-1) var(--spacing-2)
-    font-size: var(--font-size-sm)
+    padding: 3px 8px
+    font-size: var(--font-size-xs)
 
   &--lg
-    padding: var(--spacing-2) var(--spacing-3)
-    font-size: var(--font-size-base)
+    padding: var(--spacing-1) var(--spacing-3)
+    font-size: var(--font-size-sm)
 
   &--primary
-    background-color: rgba(59, 130, 246, 0.1)
+    background-color: var(--color-primary-light)
     color: var(--color-primary)
-    border: var(--border-width) solid var(--color-primary)
 
   &--secondary
-    background-color: rgba(100, 116, 139, 0.1)
+    background-color: rgba(100, 116, 139, 0.08)
     color: var(--color-secondary)
-    border: var(--border-width) solid var(--color-secondary)
 
   &--success
-    background-color: rgba(34, 197, 94, 0.1)
+    background-color: rgba(16, 185, 129, 0.1)
     color: var(--color-success)
-    border: var(--border-width) solid var(--color-success)
 
   &--warning
-    background-color: rgba(250, 204, 21, 0.1)
+    background-color: rgba(245, 158, 11, 0.1)
     color: var(--color-warning)
-    border: var(--border-width) solid var(--color-warning)
 
   &--danger
     background-color: rgba(239, 68, 68, 0.1)
     color: var(--color-danger)
-    border: var(--border-width) solid var(--color-danger)
 
   &--info
     background-color: rgba(14, 165, 233, 0.1)
     color: var(--color-info)
-    border: var(--border-width) solid var(--color-info)
 </style>
