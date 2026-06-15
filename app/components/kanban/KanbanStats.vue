@@ -4,15 +4,15 @@ import type { ICardRecord } from '~~/types/cards.types'
 import { EnumStatus } from '~~/types/cards.types'
 import { MOCK_CARDS } from '~/components/kanban/kanban.mock'
 import { CARDS_STATS_QUERY_KEY, getCardsQueryScope } from '~/components/kanban/kanban.types'
-import { isGuestSession, useAuthStore } from '~~/store/auth.store'
+import { useAuthStore } from '~~/store/auth.store'
 import { listCards } from '~/utils/appwrite-cards'
 
 const authStore = useAuthStore()
 
 const { data: cardsData, isLoading } = useQuery({
-  queryKey: [CARDS_STATS_QUERY_KEY, () => getCardsQueryScope(authStore.isGuest)],
+  queryKey: computed(() => [CARDS_STATS_QUERY_KEY, getCardsQueryScope(authStore.isGuest)]),
   queryFn: async () => {
-    if (import.meta.client && isGuestSession()) {
+    if (import.meta.client && authStore.isGuest) {
       return MOCK_CARDS
     }
     try {

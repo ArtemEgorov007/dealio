@@ -1,3 +1,4 @@
+import {computed} from 'vue'
 import {useQuery} from '@tanstack/vue-query'
 import {KANBAN_DATA} from '~/components/kanban/kanban.data'
 import {MOCK_CARDS} from '~/components/kanban/kanban.mock'
@@ -8,7 +9,7 @@ import {
     type ICard,
     type IColumn,
 } from '~/components/kanban/kanban.types'
-import {isGuestSession, useAuthStore} from '~~/store/auth.store'
+import {useAuthStore} from '~~/store/auth.store'
 import {listCards} from '~/utils/appwrite-cards'
 import {appwritePriceToPriority} from '~/utils/card-priority'
 
@@ -16,9 +17,9 @@ export function useKanbanQuery() {
     const authStore = useAuthStore()
 
     return useQuery({
-        queryKey: [CARDS_QUERY_KEY, () => getCardsQueryScope(authStore.isGuest)],
+        queryKey: computed(() => [CARDS_QUERY_KEY, getCardsQueryScope(authStore.isGuest)]),
         queryFn: async () => {
-            if (import.meta.client && isGuestSession()) {
+            if (import.meta.client && authStore.isGuest) {
                 return {documents: MOCK_CARDS, total: MOCK_CARDS.length}
             }
             try {

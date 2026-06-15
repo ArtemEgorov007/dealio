@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {v4 as uuid} from 'uuid'
 import {useQueryClient} from '@tanstack/vue-query'
+import {nextTick} from 'vue'
 import {account} from '@/utils/appwrite'
 import {mapAppwriteUser} from '@/utils/appwrite-user'
 import {clearGuestSession, useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
@@ -150,6 +151,7 @@ const loginAsGuest = async () => {
   authStore.setGuest()
   clearCardsCache(queryClient)
   isLoadingStore.set(false)
+  await nextTick()
   await router.replace('/')
 }
 </script>
