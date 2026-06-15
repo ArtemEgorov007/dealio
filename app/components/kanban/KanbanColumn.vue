@@ -188,6 +188,7 @@ const onCardCreated = () => {
     background-color: var(--kanban-done-color)
 
 .column-title
+  margin: 0
   font-size: var(--font-size-sm)
   font-weight: 700
   color: var(--color-text)
