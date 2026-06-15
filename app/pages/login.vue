@@ -2,6 +2,7 @@
 import {v4 as uuid} from 'uuid'
 import {account} from '@/utils/appwrite'
 import {useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
+import {useRouter} from 'vue-router'
 
 useSeoMeta({title: 'Вход в систему | CRM'})
 
@@ -128,6 +129,12 @@ const handleSubmit = () => {
     register()
   }
 }
+
+const loginAsGuest = () => {
+  authStore.setGuest()
+  isLoadingStore.set(false)
+  router.push('/')
+}
 </script>
 
 <template>
@@ -223,6 +230,17 @@ const handleSubmit = () => {
         </UiButton>
       </form>
 
+      <div class="login__demo">
+        <div class="login__demo-divider">
+          <span>или</span>
+        </div>
+        <button class="login__demo-btn" @click="loginAsGuest">
+          <Icon name="radix-icons:eye-open" size="18"/>
+          Демо-режим — войти без регистрации
+        </button>
+        <p class="login__demo-hint">Интерактивная доска с мок-данными, без сохранения</p>
+      </div>
+
       <footer class="login__footer">
         <div class="login__links">
           <button
@@ -311,6 +329,54 @@ const handleSubmit = () => {
   font-size: var(--font-size-xs)
   color: var(--color-text-tertiary)
   margin-top: var(--spacing-1)
+
+.login__demo
+  display: flex
+  flex-direction: column
+  gap: var(--spacing-3)
+  align-items: center
+
+.login__demo-divider
+  width: 100%
+  display: flex
+  align-items: center
+  gap: var(--spacing-3)
+  color: var(--color-text-tertiary)
+  font-size: var(--font-size-sm)
+
+  &::before,
+  &::after
+    content: ''
+    flex: 1
+    height: 1px
+    background-color: var(--color-border)
+
+.login__demo-btn
+  width: 100%
+  display: flex
+  align-items: center
+  justify-content: center
+  gap: var(--spacing-2)
+  padding: var(--spacing-3) var(--spacing-4)
+  border: var(--border-width) dashed var(--color-border)
+  border-radius: var(--radius-lg)
+  background: transparent
+  color: var(--color-text-secondary)
+  font-size: var(--font-size-base)
+  font-weight: var(--font-weight-medium)
+  cursor: pointer
+  transition: all var(--transition-normal) ease
+
+  &:hover
+    border-color: var(--color-primary)
+    color: var(--color-primary)
+    background-color: rgba(59, 130, 246, 0.05)
+
+.login__demo-hint
+  font-size: var(--font-size-xs)
+  color: var(--color-text-tertiary)
+  text-align: center
+  margin: 0
 
 .login__footer
   display: flex

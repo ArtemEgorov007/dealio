@@ -1,13 +1,18 @@
 import {useQuery} from "@tanstack/vue-query";
 import {COLLECTION_DEALS, DB_ID} from "~~/app.constants";
 import {KANBAN_DATA} from "~/components/kanban/kanban.data";
+import {MOCK_DEALS} from "~/components/kanban/kanban.mock";
 import type {IDeal} from "~~/types/deals.types";
 import type {ICard, IColumn} from "~/components/kanban/kanban.types";
+import {isGuestSession} from "~~/store/auth.store";
 
 export function useKanbanQuery() {
     return useQuery({
         queryKey: ['deals'],
         queryFn: async () => {
+            if (import.meta.client && isGuestSession()) {
+                return { documents: MOCK_DEALS, total: MOCK_DEALS.length }
+            }
             try {
                 const response = await DB.listDocuments(DB_ID, COLLECTION_DEALS);
                 return response;

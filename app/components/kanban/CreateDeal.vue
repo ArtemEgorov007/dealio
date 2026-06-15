@@ -6,6 +6,7 @@ import {useForm} from 'vee-validate'
 
 import {COLLECTION_DEALS, DB_ID} from '~~/app.constants'
 import type {IDeal} from '~~/types/deals.types'
+import {isGuestSession} from '~~/store/auth.store'
 
 interface IDealFormState {
   name: string
@@ -75,9 +76,44 @@ const {mutate, isPending, isError, error} = useMutation({
       $createdAt: new Date().toISOString()
     }
 
+    if (import.meta.client && isGuestSession()) {
+      // In guest mode: optimistically add to vue-query cache without hitting Appwrite
+      const newDeal: IDeal = {
+        $id: dealData.$id!,
+        $createdAt: dealData.$createdAt!,
+        name: dealData.name!,
+        price: dealData.price!,
+        status: dealData.status as any,
+        customer: {
+          $id: uuid(),
+          $createdAt: new Date().toISOString(),
+          name: data.customer.name.trim(),
+          email: data.customer.email.trim(),
+          avatar_url: '',
+        },
+        comments: []
+      }
+      return Promise.resolve(newDeal)
+    }
+
     return DB.createDocument(DB_ID, COLLECTION_DEALS, dealData.$id!, dealData)
   },
-  onSuccess: () => {
+  onSuccess: (result) => {
+    if (import.meta.client && isGuestSession() && result) {
+      // Optimistically add the new deal to both query caches
+      const newDeal = result as IDeal
+      queryClient.setQueryData(['deals-stats'], (old: IDeal[] | undefined) => {
+        return old ? [...old, newDeal] : [newDeal]
+      })
+      queryClient.setQueryData(['deals'], (old: { documents: IDeal[]; total: number } | undefined) => {
+        if (!old) return { documents: [newDeal], total: 1 }
+        return { ...old, documents: [...old.documents, newDeal], total: old.total + 1 }
+      })
+      handleReset()
+      isOpenForm.value = false
+      emit('deal-created')
+      return
+    }
     queryClient.invalidateQueries({queryKey: ['deals']})
     handleReset()
     isOpenForm.value = false

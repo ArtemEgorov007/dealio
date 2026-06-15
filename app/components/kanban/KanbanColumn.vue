@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type {IColumn, ICard} from '~/components/kanban/kanban.types'
-import type {EnumStatus} from '~~/types/deals.types'
+import type {EnumStatus, IDeal} from '~~/types/deals.types'
 
 import {ref} from 'vue'
 import {useMutation, useQueryClient} from '@tanstack/vue-query'
 
 import CreateDeal from '~/components/kanban/CreateDeal.vue'
 import {COLLECTION_DEALS, DB_ID} from '~~/app.constants'
+import {isGuestSession} from '~~/store/auth.store'
 
 const props = defineProps<{
   column: IColumn,
@@ -25,9 +26,28 @@ const queryClient = useQueryClient()
 
 const {mutate, isPending} = useMutation({
   mutationKey: ['move-card'],
-  mutationFn: ({docId, status}: { docId: string; status: EnumStatus }) =>
-      DB.updateDocument(DB_ID, COLLECTION_DEALS, docId, {status}),
-  onSuccess: () => {
+  mutationFn: ({docId, status}: { docId: string; status: EnumStatus }) => {
+    if (import.meta.client && isGuestSession()) {
+      return Promise.resolve({docId, status})
+    }
+    return DB.updateDocument(DB_ID, COLLECTION_DEALS, docId, {status})
+  },
+  onSuccess: (_, variables) => {
+    if (import.meta.client && isGuestSession()) {
+      queryClient.setQueryData(['deals'], (old: { documents: IDeal[]; total: number } | undefined) => {
+        if (!old) return old
+        const updated = old.documents.map(d =>
+          d.$id === variables.docId ? { ...d, status: variables.status } : d
+        )
+        return { ...old, documents: updated }
+      })
+      queryClient.setQueryData(['deals-stats'], (old: IDeal[] | undefined) => {
+        if (!old) return old
+        return old.map(d => d.$id === variables.docId ? { ...d, status: variables.status } : d)
+      })
+      emit('card-moved')
+      return
+    }
     queryClient.invalidateQueries({queryKey: ['deals']})
     emit('card-moved')
   },

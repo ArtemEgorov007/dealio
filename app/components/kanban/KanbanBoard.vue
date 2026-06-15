@@ -4,6 +4,9 @@ import {useQueryClient} from '@tanstack/vue-query'
 
 import {useKanbanQuery} from '~/components/kanban/useKanbanQuery'
 import type {ICard, IColumn} from '~/components/kanban/kanban.types'
+import {useAuthStore} from '~~/store/auth.store'
+
+const authStore = useAuthStore()
 
 const dragCardRef = ref<ICard | null>(null)
 const sourceColumnRef = ref<IColumn | null>(null)
@@ -37,7 +40,13 @@ const retry = () => {
 <template>
   <div class="kanban-container">
     <header class="kanban-header">
-      <h1 class="kanban-title">CRM Dashboard</h1>
+      <div class="kanban-header__top">
+        <h1 class="kanban-title">CRM Dashboard</h1>
+        <div v-if="authStore.isGuest" class="kanban-demo-badge">
+          <Icon name="radix-icons:eye-open" size="14"/>
+          Демо-режим
+        </div>
+      </div>
       <p class="kanban-subtitle">Управление сделками в режиме Kanban</p>
     </header>
 
@@ -82,6 +91,24 @@ const retry = () => {
 
 .kanban-header
   margin-bottom: var(--spacing-6)
+
+.kanban-header__top
+  display: flex
+  align-items: center
+  gap: var(--spacing-3)
+  margin-bottom: var(--spacing-1)
+
+.kanban-demo-badge
+  display: inline-flex
+  align-items: center
+  gap: var(--spacing-1)
+  padding: 2px var(--spacing-2)
+  background-color: rgba(251, 191, 36, 0.15)
+  color: #d97706
+  border: 1px solid rgba(251, 191, 36, 0.4)
+  border-radius: var(--radius-full)
+  font-size: var(--font-size-xs)
+  font-weight: var(--font-weight-medium)
 
 .kanban-title
   font-size: var(--font-size-3xl)

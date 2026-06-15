@@ -3,10 +3,15 @@ import { useQuery } from '@tanstack/vue-query'
 import { COLLECTION_DEALS, DB_ID } from '~~/app.constants'
 import type { IDeal } from '~~/types/deals.types'
 import { EnumStatus } from '~~/types/deals.types'
+import { MOCK_DEALS } from '~/components/kanban/kanban.mock'
+import { isGuestSession } from '~~/store/auth.store'
 
 const { data: dealsData, isLoading } = useQuery({
   queryKey: ['deals-stats'],
   queryFn: async () => {
+    if (import.meta.client && isGuestSession()) {
+      return MOCK_DEALS as IDeal[]
+    }
     try {
       const response = await DB.listDocuments(DB_ID, COLLECTION_DEALS)
       return response.documents as unknown as IDeal[]

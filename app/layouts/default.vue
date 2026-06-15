@@ -3,7 +3,7 @@ import {onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {account} from '~/utils/appwrite'
 
-import {useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
+import {useAuthStore, useIsLoadingStore, isGuestSession} from '~~/store/auth.store'
 import { useTheme } from '~/composables/useTheme'
 
 const router = useRouter()
@@ -14,7 +14,14 @@ const { initTheme } = useTheme()
 onMounted(async () => {
   // Initialize theme
   initTheme()
-  
+
+  // Guest/demo mode: skip Appwrite entirely
+  if (isGuestSession()) {
+    authStore.setGuest()
+    isLoadingStore.set(false)
+    return
+  }
+
   try {
     const user = await account.get()
     if (user) {

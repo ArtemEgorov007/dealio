@@ -1,9 +1,27 @@
 import {defineStore} from 'pinia'
 
+export const GUEST_STORAGE_KEY = 'dealio-guest'
+
+export function isGuestSession(): boolean {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem(GUEST_STORAGE_KEY) === '1'
+}
+
+export function setGuestSession(): void {
+    if (typeof window === 'undefined') return
+    localStorage.setItem(GUEST_STORAGE_KEY, '1')
+}
+
+export function clearGuestSession(): void {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem(GUEST_STORAGE_KEY)
+}
+
 interface IUser {
     email: string
     name: string
     status: boolean
+    isGuest?: boolean
 }
 
 interface IAuthState {
@@ -17,7 +35,8 @@ interface ILoadingState {
 const defaultUser: IUser = {
     email: '',
     name: '',
-    status: false
+    status: false,
+    isGuest: false
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -27,17 +46,29 @@ export const useAuthStore = defineStore('auth', {
 
     getters: {
         isAuth: (state) => state.user.status,
+        isGuest: (state) => state.user.isGuest === true,
         userEmail: (state) => state.user.email,
         userName: (state) => state.user.name
     },
 
     actions: {
         clear() {
+            clearGuestSession()
             this.user = {...defaultUser}
         },
 
         set(userData: IUser) {
             this.user = {...userData}
+        },
+
+        setGuest() {
+            setGuestSession()
+            this.user = {
+                email: 'guest@dealio.demo',
+                name: 'Гость',
+                status: true,
+                isGuest: true
+            }
         },
 
         updateAuthStatus(status: boolean) {
