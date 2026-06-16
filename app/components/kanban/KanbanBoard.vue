@@ -115,7 +115,7 @@ const handleCardMoved = () => invalidateBoard()
   flex-direction: column
   min-height: 0
   width: 100%
-  background-color: var(--color-bg-secondary)
+  background-color: var(--kanban-surface-bg)
   background-image: var(--kanban-grid-pattern)
   background-size: var(--kanban-grid-size)
   background-position: 0 0
