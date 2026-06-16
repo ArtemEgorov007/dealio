@@ -73,13 +73,15 @@ withDefaults(defineProps<{
 <style scoped lang="sass">
 .ud-wrapper
   position: relative
-  min-height: 480px
+  min-height: clamp(360px, 52vh, 560px)
   width: 100%
   display: flex
   align-items: center
   justify-content: center
   overflow: hidden
   border-radius: var(--radius-xl)
+  border: var(--border-width) solid var(--color-border)
+  background-color: var(--color-bg-secondary)
 
 // ── Blurred decorative backdrop ─────────────────────────────────────────────
 .ud-backdrop
@@ -238,7 +240,8 @@ withDefaults(defineProps<{
   box-shadow: var(--shadow-xl), 0 0 0 1px var(--color-border)
   text-align: center
   max-width: 420px
-  width: 100%
+  width: calc(100% - var(--spacing-8))
+  animation: ud-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both
 
 // Dark theme override for frosted card
 [data-theme="dark"] .ud-card
@@ -290,6 +293,14 @@ withDefaults(defineProps<{
   margin: 0
   line-height: var(--line-height-relaxed)
   max-width: 300px
+
+@keyframes ud-card-in
+  from
+    opacity: 0
+    transform: translateY(12px) scale(0.98)
+  to
+    opacity: 1
+    transform: translateY(0) scale(1)
 
 // Responsive
 @media (max-width: 576px)

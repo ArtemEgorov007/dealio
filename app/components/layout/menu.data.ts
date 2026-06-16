@@ -11,7 +11,7 @@ export const MENU_DATA: IMenuItem[] = [
         url: '/',
     },
     {
-        icon: 'heroicons:light-bulb',
+        icon: 'heroicons:chart-bar-square',
         name: 'Обзор',
         url: '/dashboard',
     },

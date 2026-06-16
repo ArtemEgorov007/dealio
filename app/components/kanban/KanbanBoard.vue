@@ -105,7 +105,7 @@ const handleCardMoved = () => invalidateBoard()
 
 .kanban-header__left
   display: flex
-  align-items: center
+  align-items: flex-start
   gap: var(--spacing-3)
   margin-bottom: var(--spacing-1)
 

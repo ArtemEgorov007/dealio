@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {useQueryClient} from '@tanstack/vue-query'
 import {useBoardStore} from '~~/store/board.store'
+import {useAuthStore} from '~~/store/auth.store'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 
 useSeoMeta({ title: 'Настройки | Dealio' })
@@ -8,9 +9,14 @@ useSeoMeta({ title: 'Настройки | Dealio' })
 const RETENTION_OPTIONS = [10, 20, 30]
 
 const boardStore = useBoardStore()
+const authStore = useAuthStore()
 const queryClient = useQueryClient()
 
 const retentionDays = computed(() => boardStore.retentionDays)
+const appMode = computed(() => {
+  if (authStore.isGuest) return 'Демо (localStorage)'
+  return 'Аккаунт (Appwrite)'
+})
 
 const saveRetention = (days: number) => {
   boardStore.setRetentionDays(days)
@@ -86,7 +92,7 @@ const saveRetention = (days: number) => {
           </div>
           <div class="info-row">
             <span class="info-label">Режим</span>
-            <span class="info-value">Демо (localStorage)</span>
+            <span class="info-value">{{ appMode }}</span>
           </div>
         </div>
       </section>

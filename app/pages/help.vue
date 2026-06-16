@@ -16,4 +16,7 @@ useSeoMeta({ title: 'Помощь | Dealio' })
   padding: var(--spacing-6)
   max-width: 1200px
   margin: 0 auto
+
+  @media (max-width: 768px)
+    padding: var(--spacing-4)
 </style>
