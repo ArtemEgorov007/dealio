@@ -279,6 +279,7 @@ const handleCardMoved = () => invalidateBoard()
   position: relative
   z-index: 1
   display: flex
+  align-items: flex-start
   gap: var(--spacing-4)
   min-width: max-content
   min-height: min-content

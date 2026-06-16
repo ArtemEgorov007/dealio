@@ -140,7 +140,6 @@ const onCardCreated = () => {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease
   display: flex
   flex-direction: column
-  min-height: 400px
 
   &--over
     border-color: var(--color-primary)
@@ -203,7 +202,6 @@ const onCardCreated = () => {
   display: flex
   flex-direction: column
   gap: var(--spacing-2)
-  flex: 1
 
 .empty-column
   display: flex
@@ -211,8 +209,8 @@ const onCardCreated = () => {
   align-items: center
   justify-content: center
   gap: var(--spacing-2)
-  flex: 1
-  min-height: 120px
+  padding: var(--spacing-6) var(--spacing-3)
+  min-height: 88px
   border: 1.5px dashed var(--color-border)
   border-radius: var(--radius-lg)
   color: var(--color-text-muted)
