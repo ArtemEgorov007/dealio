@@ -131,7 +131,7 @@ const formatPrice = (price: number) =>
   position: relative
   min-width: 0
   max-width: 100%
-  background-color: var(--color-card-bg)
+  background-color: var(--kanban-card-bg)
   border: var(--border-width) solid var(--color-card-border)
   border-radius: var(--radius-lg)
   box-shadow: var(--shadow-sm)

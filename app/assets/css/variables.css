@@ -197,6 +197,11 @@
     --color-error-border: rgba(239, 68, 68, 0.25);
 
     /* Kanban board dot grid */
-    --kanban-grid-pattern: radial-gradient(circle, rgba(148, 163, 184, 0.28) 1px, transparent 1px);
+    --kanban-grid-pattern: radial-gradient(circle, rgba(148, 163, 184, 0.22) 1px, transparent 1px);
     --kanban-grid-size: 18px 18px;
+    --kanban-surface-bg: #e8edf4;
+    --kanban-column-bg: #ffffff;
+    --kanban-column-border: #d5dde8;
+    --kanban-column-shadow: 0 4px 16px rgba(15, 23, 42, 0.09), 0 1px 3px rgba(15, 23, 42, 0.05);
+    --kanban-card-bg: #f6f8fb;
 }
