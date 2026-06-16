@@ -6,6 +6,8 @@ import {useForm} from 'vee-validate'
 
 import type {ICardRecord} from '~~/types/cards.types'
 import {isGuestSession} from '~~/store/auth.store'
+import {useBoardStore, type Priority} from '~~/store/board.store'
+import type {IBoardCard} from '~~/store/board.store'
 import {CATEGORY_OPTIONS} from '~/components/kanban/kanban.labels'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {createCard} from '~/utils/appwrite-cards'
@@ -18,7 +20,14 @@ interface ICardFormState {
     email: string
   }
   status: string
+  priority: Priority
 }
+
+const PRIORITY_OPTIONS: {value: Priority; label: string}[] = [
+  {value: 'high', label: 'Высокий'},
+  {value: 'medium', label: 'Средний'},
+  {value: 'low', label: 'Низкий'},
+]
 
 const props = defineProps({
   status: {type: String, default: 'ideas'}
@@ -32,19 +41,22 @@ const isOpenForm = ref(false)
 const toggleForm = () => (isOpenForm.value = !isOpenForm.value)
 
 const queryClient = useQueryClient()
+const boardStore = useBoardStore()
 
 const {handleSubmit, defineField, handleReset, errors} = useForm<ICardFormState>({
   initialValues: {
     status: props.status,
     name: '',
     price: 0,
-    customer: {name: 'Идея', email: ''}
+    customer: {name: 'Идея', email: ''},
+    priority: 'medium',
   }
 })
 
 const [name, nameAttrs] = defineField('name')
 const [price, priceAttrs] = defineField('price')
 const [category, categoryAttrs] = defineField('customer.name')
+const [priority, priorityAttrs] = defineField('priority')
 
 const {mutate, isPending, isError, error} = useMutation({
   mutationKey: ['create-card'],
@@ -52,11 +64,9 @@ const {mutate, isPending, isError, error} = useMutation({
     if (!data.name.trim()) {
       throw new Error('Название обязательно')
     }
-
     if (data.price < 0) {
       throw new Error('Стоимость не может быть отрицательной')
     }
-
     if (!data.customer.name.trim()) {
       throw new Error('Выберите тип')
     }
@@ -74,7 +84,7 @@ const {mutate, isPending, isError, error} = useMutation({
     }
 
     if (import.meta.client && isGuestSession()) {
-      const newCard: ICardRecord = {
+      const newCard: IBoardCard = {
         $id: documentId,
         $createdAt: new Date().toISOString(),
         name: payload.name,
@@ -87,7 +97,9 @@ const {mutate, isPending, isError, error} = useMutation({
           email: payload.customer.email,
           avatar_url: '',
         },
-        comments: []
+        comments: [],
+        priority: data.priority,
+        archived: false,
       }
       return newCard
     }
@@ -96,14 +108,10 @@ const {mutate, isPending, isError, error} = useMutation({
   },
   onSuccess: (result) => {
     if (import.meta.client && isGuestSession() && result) {
-      const newCard = result as ICardRecord
-      queryClient.setQueryData([CARDS_STATS_QUERY_KEY], (old: ICardRecord[] | undefined) =>
-          old ? [...old, newCard] : [newCard]
-      )
-      queryClient.setQueryData([CARDS_QUERY_KEY], (old: { documents: ICardRecord[]; total: number } | undefined) => {
-        if (!old) return {documents: [newCard], total: 1}
-        return {...old, documents: [...old.documents, newCard], total: old.total + 1}
-      })
+      const newCard = result as IBoardCard
+      boardStore.addCard(newCard)
+      queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
+      queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
     } else {
       queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
     }
@@ -164,18 +172,35 @@ const onSubmit = handleSubmit(values => mutate(values))
             required
         />
 
-        <div class="form-field">
-          <label class="form-field__label" for="card-category">Тип</label>
-          <select
-              id="card-category"
-              v-model="category"
-              v-bind="categoryAttrs"
-              class="form-field__select"
-          >
-            <option v-for="option in CATEGORY_OPTIONS" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-field__label" for="card-category">Тип</label>
+            <select
+                id="card-category"
+                v-model="category"
+                v-bind="categoryAttrs"
+                class="form-field__select"
+            >
+              <option v-for="option in CATEGORY_OPTIONS" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="card-priority">Приоритет</label>
+            <select
+                id="card-priority"
+                v-model="priority"
+                v-bind="priorityAttrs"
+                class="form-field__select"
+                :class="`priority-select--${priority}`"
+            >
+              <option v-for="opt in PRIORITY_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <div v-if="category === 'Wishlist'" class="form-field">
@@ -279,6 +304,11 @@ const onSubmit = handleSubmit(values => mutate(values))
   font-size: var(--font-size-xs)
   font-weight: 500
 
+.form-row
+  display: grid
+  grid-template-columns: 1fr 1fr
+  gap: var(--spacing-3)
+
 .form-field
   display: flex
   flex-direction: column
@@ -303,6 +333,15 @@ const onSubmit = handleSubmit(values => mutate(values))
   &:focus
     outline: none
     border-color: var(--color-input-border-focus)
+
+  &.priority-select--high
+    color: var(--color-danger)
+
+  &.priority-select--medium
+    color: var(--color-accent)
+
+  &.priority-select--low
+    color: var(--color-text-muted)
 
 .form-field__input
   width: 100%
@@ -338,5 +377,5 @@ const onSubmit = handleSubmit(values => mutate(values))
 .form-expand-leave-from
   opacity: 1
   transform: translateY(0)
-  max-height: 600px
+  max-height: 700px
 </style>

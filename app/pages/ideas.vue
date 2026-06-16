@@ -3,17 +3,9 @@ useSeoMeta({ title: 'Идеи | Dealio' })
 </script>
 
 <template>
-  <div class="page-wrapper">
-    <UiUnderDevelopment
-      title="Коллекция идей"
-      description="Отдельный список идей с фильтрами и тегами — скоро. Пока добавляйте их прямо на доску"
-    />
-  </div>
+  <KanbanFilteredBoard
+    category-filter="Идея"
+    title="Идеи"
+    subtitle="Все идеи из трекера"
+  />
 </template>
-
-<style scoped lang="sass">
-.page-wrapper
-  padding: var(--spacing-6)
-  max-width: 1200px
-  margin: 0 auto
-</style>

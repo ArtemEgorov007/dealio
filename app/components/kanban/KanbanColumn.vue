@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type {IColumn, ICard} from '~/components/kanban/kanban.types'
-import type {EnumStatus, ICardRecord} from '~~/types/cards.types'
+import type {EnumStatus} from '~~/types/cards.types'
 
 import {ref} from 'vue'
 import {useMutation, useQueryClient} from '@tanstack/vue-query'
@@ -8,6 +8,7 @@ import {useMutation, useQueryClient} from '@tanstack/vue-query'
 import CreateCard from '~/components/kanban/CreateCard.vue'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {isGuestSession} from '~~/store/auth.store'
+import {useBoardStore} from '~~/store/board.store'
 import {updateCardStatus} from '~/utils/appwrite-cards'
 
 const props = defineProps<{
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 
 const isDragOver = ref(false)
 const queryClient = useQueryClient()
+const boardStore = useBoardStore()
 
 const {mutate, isPending} = useMutation({
   mutationKey: ['move-card'],
@@ -35,19 +37,9 @@ const {mutate, isPending} = useMutation({
   },
   onSuccess: (_, variables) => {
     if (import.meta.client && isGuestSession()) {
-      queryClient.setQueryData([CARDS_QUERY_KEY], (old: { documents: ICardRecord[]; total: number } | undefined) => {
-        if (!old) return old
-        const updated = old.documents.map(record =>
-            record.$id === variables.docId ? {...record, status: variables.status} : record
-        )
-        return {...old, documents: updated}
-      })
-      queryClient.setQueryData([CARDS_STATS_QUERY_KEY], (old: ICardRecord[] | undefined) => {
-        if (!old) return old
-        return old.map(record =>
-            record.$id === variables.docId ? {...record, status: variables.status} : record
-        )
-      })
+      boardStore.updateCardStatus(variables.docId, variables.status)
+      queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
+      queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
       emit('card-moved')
       return
     }

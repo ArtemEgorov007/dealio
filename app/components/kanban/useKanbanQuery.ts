@@ -1,7 +1,6 @@
 import {computed} from 'vue'
 import {useQuery} from '@tanstack/vue-query'
 import {KANBAN_DATA} from '~/components/kanban/kanban.data'
-import {MOCK_CARDS} from '~/components/kanban/kanban.mock'
 import type {ICardRecord} from '~~/types/cards.types'
 import {
     CARDS_QUERY_KEY,
@@ -11,16 +10,18 @@ import {
 } from '~/components/kanban/kanban.types'
 import {useAuthStore} from '~~/store/auth.store'
 import {listCards} from '~/utils/appwrite-cards'
-import {appwritePriceToPriority} from '~/utils/card-priority'
+import {useBoardStore} from '~~/store/board.store'
 
 export function useKanbanQuery() {
     const authStore = useAuthStore()
+    const boardStore = useBoardStore()
 
     return useQuery({
         queryKey: computed(() => [CARDS_QUERY_KEY, getCardsQueryScope(authStore.isGuest, authStore.userId)]),
         queryFn: async () => {
             if (import.meta.client && authStore.isGuest) {
-                return {documents: MOCK_CARDS, total: MOCK_CARDS.length}
+                boardStore.init()
+                return boardStore.activeDocuments
             }
             try {
                 return await listCards()
@@ -30,7 +31,7 @@ export function useKanbanQuery() {
         },
         select(data) {
             const newBoard: IColumn[] = JSON.parse(JSON.stringify(KANBAN_DATA))
-            const records = data.documents as unknown as ICardRecord[]
+            const records = data.documents as unknown as (ICardRecord & { priority?: string })[]
 
             for (const record of records) {
                 const column = newBoard.find(col => col.id === record.status)
@@ -40,17 +41,21 @@ export function useKanbanQuery() {
                     $createdAt: record.$createdAt,
                     id: record.$id,
                     name: record.name,
-                    price: appwritePriceToPriority(record.price),
+                    price: record.price,
                     category: record.customer?.name || 'Без категории',
                     status: column.id,
+                    priority: (record.priority as ICard['priority']) ?? 'medium',
                 }
                 column.items.push(card)
             }
 
             newBoard.forEach(column => {
-                column.items.sort((a, b) =>
-                    new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime()
-                )
+                column.items.sort((a, b) => {
+                    const pOrder = {high: 0, medium: 1, low: 2}
+                    const pDiff = pOrder[a.priority] - pOrder[b.priority]
+                    if (pDiff !== 0) return pDiff
+                    return new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime()
+                })
             })
 
             return newBoard

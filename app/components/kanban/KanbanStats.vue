@@ -2,18 +2,20 @@
 import { useQuery } from '@tanstack/vue-query'
 import type { ICardRecord } from '~~/types/cards.types'
 import { EnumStatus } from '~~/types/cards.types'
-import { MOCK_CARDS } from '~/components/kanban/kanban.mock'
 import { CARDS_STATS_QUERY_KEY, getCardsQueryScope } from '~/components/kanban/kanban.types'
 import { useAuthStore } from '~~/store/auth.store'
+import { useBoardStore } from '~~/store/board.store'
 import { listCards } from '~/utils/appwrite-cards'
 
 const authStore = useAuthStore()
+const boardStore = useBoardStore()
 
 const { data: cardsData, isLoading } = useQuery({
   queryKey: computed(() => [CARDS_STATS_QUERY_KEY, getCardsQueryScope(authStore.isGuest, authStore.userId)]),
   queryFn: async () => {
     if (import.meta.client && authStore.isGuest) {
-      return MOCK_CARDS
+      boardStore.init()
+      return boardStore.activeCards
     }
     try {
       const response = await listCards()

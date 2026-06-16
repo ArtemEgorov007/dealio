@@ -1,4 +1,5 @@
 import type {EnumStatus} from '~~/types/cards.types'
+import type {Priority} from '~~/store/board.store'
 
 export interface ICard {
     id: string
@@ -7,6 +8,7 @@ export interface ICard {
     $createdAt: string
     category: string
     status: string
+    priority: Priority
 }
 
 export interface IColumn {

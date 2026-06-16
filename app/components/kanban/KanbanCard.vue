@@ -3,6 +3,10 @@ import type {ICard} from '~/components/kanban/kanban.types'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import {useCardSlideStore} from '~~/store/card-slide.store'
+import {useAuthStore} from '~~/store/auth.store'
+import {useBoardStore} from '~~/store/board.store'
+import {useQueryClient} from '@tanstack/vue-query'
+import {CARDS_QUERY_KEY} from '~/components/kanban/kanban.types'
 
 dayjs.locale('ru')
 
@@ -17,6 +21,9 @@ const emit = defineEmits<{
 }>()
 
 const cardSlideStore = useCardSlideStore()
+const authStore = useAuthStore()
+const boardStore = useBoardStore()
+const queryClient = useQueryClient()
 
 const handleDragStart = (event: DragEvent) => {
   event.dataTransfer?.setData('text/plain', props.card.id)
@@ -32,31 +39,34 @@ const handleOpenSlideover = () => {
   cardSlideStore.set(props.card)
 }
 
-const formatDate = (dateString: string) => {
-  const date = dayjs(dateString);
-  const now = dayjs();
-  const diffInDays = now.diff(date, 'day');
-
-  if (diffInDays === 0) {
-    return 'Сегодня';
-  } else if (diffInDays === 1) {
-    return 'Вчера';
-  } else if (diffInDays < 7) {
-    return `${diffInDays}д назад`;
-  } else {
-    return date.format('D MMM');
+const handleArchive = (event: MouseEvent) => {
+  event.stopPropagation()
+  if (import.meta.client && authStore.isGuest) {
+    boardStore.archiveCard(props.card.id)
+    queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
   }
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  'Идея': '💡',
-  'Задача': '✅',
-  'Wishlist': '🎁',
+const formatDate = (dateString: string) => {
+  const date = dayjs(dateString)
+  const now = dayjs()
+  const diffInDays = now.diff(date, 'day')
+
+  if (diffInDays === 0) return 'Сегодня'
+  if (diffInDays === 1) return 'Вчера'
+  if (diffInDays < 7) return `${diffInDays}д назад`
+  return date.format('D MMM')
 }
 
-const categoryIcon = computed(() => CATEGORY_ICONS[props.card.category] ?? '')
+const CATEGORY_COLORS: Record<string, string> = {
+  'Идея': 'category--idea',
+  'Задача': 'category--task',
+  'Wishlist': 'category--wish',
+}
 
+const categoryClass = computed(() => CATEGORY_COLORS[props.card.category] ?? '')
 const isWishlistItem = computed(() => props.card.price > 0)
+const isGuest = computed(() => authStore.isGuest)
 
 const formatPrice = (price: number) =>
     price.toLocaleString('ru-RU', {style: 'currency', currency: 'RUB', maximumFractionDigits: 0})
@@ -65,7 +75,7 @@ const formatPrice = (price: number) =>
 <template>
   <div
       class="kanban-card"
-      :class="`kanban-card--${columnId}`"
+      :class="[`kanban-card--${columnId}`, `kanban-card--priority-${card.priority}`]"
       draggable="true"
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
@@ -75,12 +85,25 @@ const formatPrice = (price: number) =>
       tabindex="0"
       @keydown.enter="handleOpenSlideover"
   >
-    <div class="card-accent" :class="`card-accent--${columnId}`"></div>
+    <div class="card-priority-bar" :class="`priority-bar--${card.priority}`"></div>
 
     <div class="card-body">
-      <div class="card-badge">
-        <span class="card-badge__icon">{{ categoryIcon }}</span>
-        <span class="card-badge__text">{{ card.category }}</span>
+      <div class="card-top-row">
+        <span class="card-badge" :class="categoryClass">{{ card.category }}</span>
+        <div class="card-actions">
+          <span class="priority-pill" :class="`priority-pill--${card.priority}`">
+            <span class="priority-dot"></span>
+          </span>
+          <button
+              v-if="isGuest"
+              class="card-archive-btn"
+              @click.stop="handleArchive"
+              aria-label="В архив"
+              title="В архив"
+          >
+            <Icon name="heroicons:archive-box-arrow-down" size="13"/>
+          </button>
+        </div>
       </div>
 
       <div class="card-name">{{ card.name }}</div>
@@ -123,6 +146,9 @@ const formatPrice = (price: number) =>
     .drag-hint
       opacity: 1
 
+    .card-archive-btn
+      opacity: 1
+
   &:active,
   &[draggable="true"]:active
     cursor: grabbing
@@ -141,47 +167,107 @@ const formatPrice = (price: number) =>
     opacity: 1
     transform: translateY(0)
 
-.card-accent
+.card-priority-bar
   position: absolute
   top: 0
   left: 0
   width: 3px
   height: 100%
 
-  &--ideas
-    background-color: var(--kanban-ideas-color)
+  &--high
+    background-color: var(--color-danger)
 
-  &--tasks
-    background-color: var(--kanban-tasks-color)
+  &--medium
+    background-color: var(--color-accent)
 
-  &--doing
-    background-color: var(--kanban-doing-color)
-
-  &--done
-    background-color: var(--kanban-done-tracker-color)
-
-  &--wishlist
-    background-color: var(--kanban-wishlist-color)
+  &--low
+    background-color: var(--color-text-muted)
 
 .card-body
   padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) calc(var(--spacing-4) + 3px)
 
+.card-top-row
+  display: flex
+  align-items: center
+  justify-content: space-between
+  margin-bottom: 6px
+  gap: var(--spacing-2)
+
+.card-actions
+  display: flex
+  align-items: center
+  gap: var(--spacing-1)
+  flex-shrink: 0
+
 .card-badge
   display: inline-flex
   align-items: center
-  gap: 4px
-  margin-bottom: 4px
-
-.card-badge__icon
-  font-size: 11px
-  line-height: 1
-
-.card-badge__text
-  font-size: var(--font-size-xs)
+  padding: 2px 7px
+  border-radius: var(--radius-full)
+  font-size: 10px
   font-weight: 700
-  color: var(--color-primary)
   text-transform: uppercase
-  letter-spacing: 0.5px
+  letter-spacing: 0.4px
+
+  &.category--idea
+    background-color: rgba(14, 165, 233, 0.1)
+    color: var(--kanban-ideas-color)
+
+  &.category--task
+    background-color: rgba(245, 158, 11, 0.1)
+    color: var(--kanban-tasks-color)
+
+  &.category--wish
+    background-color: rgba(236, 72, 153, 0.1)
+    color: var(--kanban-wishlist-color)
+
+.priority-pill
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  width: 16px
+  height: 16px
+  border-radius: var(--radius-full)
+
+  &--high
+    background-color: rgba(239, 68, 68, 0.12)
+    .priority-dot
+      background-color: var(--color-danger)
+
+  &--medium
+    background-color: rgba(245, 158, 11, 0.12)
+    .priority-dot
+      background-color: var(--color-accent)
+
+  &--low
+    background-color: rgba(100, 116, 139, 0.12)
+    .priority-dot
+      background-color: var(--color-text-muted)
+
+.priority-dot
+  width: 6px
+  height: 6px
+  border-radius: 50%
+  flex-shrink: 0
+
+.card-archive-btn
+  width: 22px
+  height: 22px
+  display: flex
+  align-items: center
+  justify-content: center
+  background: none
+  border: none
+  border-radius: var(--radius-sm)
+  color: var(--color-text-muted)
+  cursor: pointer
+  opacity: 0
+  transition: all var(--transition-fast) ease
+  padding: 0
+
+  &:hover
+    background-color: var(--color-bg-secondary)
+    color: var(--color-danger)
 
 .card-name
   font-size: var(--font-size-sm)

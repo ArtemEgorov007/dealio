@@ -2,12 +2,19 @@
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import {useCardSlideStore} from '~~/store/card-slide.store'
+import {useAuthStore} from '~~/store/auth.store'
+import {useBoardStore, type Priority} from '~~/store/board.store'
+import {useQueryClient} from '@tanstack/vue-query'
 import {COLUMN_LABELS} from '~/components/kanban/kanban.labels'
 import {EnumStatus} from '~~/types/cards.types'
+import {CARDS_QUERY_KEY} from '~/components/kanban/kanban.types'
 
 dayjs.locale('ru')
 
 const store = useCardSlideStore()
+const authStore = useAuthStore()
+const boardStore = useBoardStore()
+const queryClient = useQueryClient()
 
 const formatDate = (date?: string): string =>
     date ? dayjs(date).format('D MMMM YYYY') : '—'
@@ -22,18 +29,50 @@ const statusVariants: Record<string, string> = {
   'wishlist': 'secondary',
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  'Идея': '💡',
-  'Задача': '✅',
-  'Wishlist': '🎁',
-}
-
-const categoryIcon = computed(() => CATEGORY_ICONS[store.card?.category ?? ''] ?? '')
-
 const isWishlistItem = computed(() => (store.card?.price ?? 0) > 0)
 
 const formatPrice = (price: number) =>
     price.toLocaleString('ru-RU', {style: 'currency', currency: 'RUB', maximumFractionDigits: 0})
+
+const isGuest = computed(() => authStore.isGuest)
+
+const PRIORITY_OPTIONS: {value: Priority; label: string}[] = [
+  {value: 'high', label: 'Высокий'},
+  {value: 'medium', label: 'Средний'},
+  {value: 'low', label: 'Низкий'},
+]
+
+const currentPriority = computed(() => store.card?.priority ?? 'medium')
+
+const PRIORITY_CLASS: Record<Priority, string> = {
+  high: 'priority-badge--high',
+  medium: 'priority-badge--medium',
+  low: 'priority-badge--low',
+}
+
+const PRIORITY_LABELS: Record<Priority, string> = {
+  high: 'Высокий',
+  medium: 'Средний',
+  low: 'Низкий',
+}
+
+const handlePriorityChange = (event: Event) => {
+  const val = (event.target as HTMLSelectElement).value as Priority
+  if (!store.card?.id) return
+  if (import.meta.client && isGuest.value) {
+    boardStore.updateCardPriority(store.card.id, val)
+    store.card.priority = val
+    queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
+  }
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'Идея': 'category-badge--idea',
+  'Задача': 'category-badge--task',
+  'Wishlist': 'category-badge--wish',
+}
+
+const categoryClass = computed(() => CATEGORY_COLORS[store.card?.category ?? ''] ?? '')
 </script>
 
 <template>
@@ -51,8 +90,8 @@ const formatPrice = (price: number) =>
     <div class="card-info__grid">
       <div class="card-info__field">
         <span class="field-label">Тип</span>
-        <span class="field-value field-value--category">
-          {{ categoryIcon }} {{ store.card?.category || '—' }}
+        <span class="field-value category-badge" :class="categoryClass">
+          {{ store.card?.category || '—' }}
         </span>
       </div>
 
@@ -61,6 +100,27 @@ const formatPrice = (price: number) =>
         <UiBadge :variant="(statusVariants[store.card?.status || ''] as any) || 'secondary'">
           {{ statusLabels[store.card?.status as EnumStatus] || store.card?.status || '—' }}
         </UiBadge>
+      </div>
+
+      <div class="card-info__field">
+        <span class="field-label">Приоритет</span>
+        <div class="priority-field">
+          <span class="priority-badge" :class="PRIORITY_CLASS[currentPriority]">
+            <span class="priority-dot"></span>
+            {{ PRIORITY_LABELS[currentPriority] }}
+          </span>
+          <select
+              v-if="isGuest"
+              class="priority-select"
+              :value="currentPriority"
+              @change="handlePriorityChange"
+              aria-label="Изменить приоритет"
+          >
+            <option v-for="opt in PRIORITY_OPTIONS" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
       </div>
 
       <div class="card-info__field">
@@ -93,7 +153,7 @@ const formatPrice = (price: number) =>
 .card-info__price
   font-size: var(--font-size-2xl)
   font-weight: 800
-  color: #ec4899
+  color: var(--kanban-wishlist-color)
   letter-spacing: -0.5px
   font-variant-numeric: tabular-nums
   font-feature-settings: "tnum"
@@ -133,6 +193,77 @@ const formatPrice = (price: number) =>
   color: var(--color-text)
   text-align: right
 
-  &--category
-    color: var(--color-primary)
+.category-badge
+  display: inline-flex
+  align-items: center
+  padding: 2px 8px
+  border-radius: var(--radius-full)
+  font-size: 11px
+  font-weight: 700
+  text-transform: uppercase
+  letter-spacing: 0.4px
+
+  &--idea
+    background-color: rgba(14, 165, 233, 0.1)
+    color: var(--kanban-ideas-color)
+
+  &--task
+    background-color: rgba(245, 158, 11, 0.1)
+    color: var(--kanban-tasks-color)
+
+  &--wish
+    background-color: rgba(236, 72, 153, 0.1)
+    color: var(--kanban-wishlist-color)
+
+.priority-field
+  display: flex
+  align-items: center
+  gap: var(--spacing-2)
+
+.priority-badge
+  display: inline-flex
+  align-items: center
+  gap: 5px
+  padding: 3px 8px
+  border-radius: var(--radius-full)
+  font-size: 11px
+  font-weight: 700
+
+  &--high
+    background-color: rgba(239, 68, 68, 0.1)
+    color: var(--color-danger)
+    .priority-dot
+      background-color: var(--color-danger)
+
+  &--medium
+    background-color: rgba(245, 158, 11, 0.1)
+    color: var(--color-accent)
+    .priority-dot
+      background-color: var(--color-accent)
+
+  &--low
+    background-color: rgba(100, 116, 139, 0.1)
+    color: var(--color-text-muted)
+    .priority-dot
+      background-color: var(--color-text-muted)
+
+.priority-dot
+  width: 6px
+  height: 6px
+  border-radius: 50%
+  flex-shrink: 0
+
+.priority-select
+  background: none
+  border: var(--border-width) solid var(--color-border)
+  border-radius: var(--radius-sm)
+  color: var(--color-text-secondary)
+  font-size: 11px
+  font-family: inherit
+  cursor: pointer
+  padding: 2px 4px
+
+  &:focus
+    outline: none
+    border-color: var(--color-primary)
 </style>

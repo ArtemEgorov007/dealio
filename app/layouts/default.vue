@@ -1,17 +1,26 @@
 <script setup lang="ts">
-import {onMounted} from 'vue'
+import {onMounted, onBeforeUnmount} from 'vue'
 import {useRouter} from 'vue-router'
+import {useQueryClient} from '@tanstack/vue-query'
 import {account} from '~/utils/appwrite'
 import {mapAppwriteUser} from '~/utils/appwrite-user'
 
 import {useAuthStore, useIsLoadingStore, isGuestSession} from '~~/store/auth.store'
+import {useBoardStore} from '~~/store/board.store'
+import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import { useTheme } from '~/composables/useTheme'
+
+const PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000 // 6 часов
 
 const router = useRouter()
 const route = useRoute()
 const isLoadingStore = useIsLoadingStore()
 const authStore = useAuthStore()
+const boardStore = useBoardStore()
+const queryClient = useQueryClient()
 const { initTheme } = useTheme()
+
+let pruneTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
   initTheme()
@@ -23,7 +32,22 @@ onMounted(async () => {
 
   if (isGuestSession()) {
     authStore.setGuest()
+    boardStore.init()
     isLoadingStore.set(false)
+
+    // Периодическая очистка истёкших архивных карточек (только client, один интервал на сессию)
+    if (import.meta.client && !pruneTimer) {
+      pruneTimer = setInterval(() => {
+        const before = boardStore.cards.length
+        boardStore.pruneExpired()
+        const after = boardStore.cards.length
+        if (before !== after) {
+          queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
+          queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
+        }
+      }, PRUNE_INTERVAL_MS)
+    }
+
     return
   }
 
@@ -34,6 +58,13 @@ onMounted(async () => {
     await router.replace('/login')
   } finally {
     isLoadingStore.set(false)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (pruneTimer !== null) {
+    clearInterval(pruneTimer)
+    pruneTimer = null
   }
 })
 </script>
