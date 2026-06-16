@@ -1,22 +1,10 @@
 <script setup lang="ts">
-useSeoMeta({ title: 'Желания | Dealio' })
+useSeoMeta({ title: 'Wishlist | Dealio' })
 </script>
 
 <template>
-  <div class="page-wrapper">
-    <UiUnderDevelopment
-      title="Желания скоро появятся"
-      description="Здесь будет wishlist с ценами и суммой — пока работайте с доской"
-    />
-  </div>
+  <UiUnderDevelopment
+      title="Wishlist скоро появится"
+      description="Здесь будет отдельный список желаний с ценами — пока работайте с доской"
+  />
 </template>
-
-<style scoped lang="sass">
-.page-wrapper
-  padding: var(--spacing-6)
-  max-width: 1200px
-  margin: 0 auto
-
-  @media (max-width: 768px)
-    padding: var(--spacing-4)
-</style>

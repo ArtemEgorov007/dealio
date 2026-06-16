@@ -9,18 +9,15 @@ withDefaults(defineProps<{
 
 <template>
   <div class="ud-wrapper">
-    <!-- Blur background: decorative mock UI -->
     <div class="ud-backdrop" aria-hidden="true">
-      <!-- Mock header bar -->
       <div class="mock-header">
         <div class="mock-bar mock-bar--wide"></div>
         <div class="mock-bar mock-bar--short"></div>
         <div class="mock-bar mock-bar--short"></div>
       </div>
 
-      <!-- Mock stats row -->
       <div class="mock-stats">
-        <div class="mock-stat-card" v-for="n in 3" :key="n">
+        <div v-for="n in 4" :key="n" class="mock-stat-card">
           <div class="mock-bar mock-bar--icon"></div>
           <div class="mock-stat-lines">
             <div class="mock-bar mock-bar--medium"></div>
@@ -29,37 +26,36 @@ withDefaults(defineProps<{
         </div>
       </div>
 
-      <!-- Mock table / list -->
-      <div class="mock-table">
-        <div class="mock-table-header">
-          <div class="mock-bar mock-bar--th" v-for="n in 5" :key="n"></div>
+      <div class="mock-body">
+        <div class="mock-table">
+          <div class="mock-table-header">
+            <div v-for="n in 5" :key="n" class="mock-bar mock-bar--th"></div>
+          </div>
+          <div v-for="row in 10" :key="row" class="mock-row">
+            <div class="mock-bar mock-bar--avatar"></div>
+            <div class="mock-bar mock-bar--cell-wide"></div>
+            <div class="mock-bar mock-bar--cell"></div>
+            <div class="mock-bar mock-bar--cell-short"></div>
+            <div class="mock-bar mock-bar--cell-short"></div>
+          </div>
         </div>
-        <div class="mock-row" v-for="row in 6" :key="row">
-          <div class="mock-bar mock-bar--avatar"></div>
-          <div class="mock-bar mock-bar--cell-wide"></div>
-          <div class="mock-bar mock-bar--cell"></div>
-          <div class="mock-bar mock-bar--cell-short"></div>
-          <div class="mock-bar mock-bar--cell-short"></div>
-        </div>
-      </div>
 
-      <!-- Mock chart area -->
-      <div class="mock-chart">
-        <div class="mock-chart-bars">
-          <div
-            v-for="(h, i) in [55, 80, 45, 90, 65, 75, 40, 85, 60, 70]"
-            :key="i"
-            class="mock-chart-bar"
-            :style="{ height: h + '%' }"
-          ></div>
+        <div class="mock-chart">
+          <div class="mock-chart-bars">
+            <div
+                v-for="(h, i) in [55, 80, 45, 90, 65, 75, 40, 85, 60, 70, 50, 88]"
+                :key="i"
+                class="mock-chart-bar"
+                :style="{ height: h + '%' }"
+            ></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Frosted glass overlay card -->
     <div class="ud-card">
       <div class="ud-icon-wrap">
-        <Icon name="heroicons:wrench-screwdriver" class="ud-icon" />
+        <Icon name="heroicons:wrench-screwdriver" class="ud-icon"/>
       </div>
 
       <span class="ud-badge">Скоро</span>
@@ -73,30 +69,28 @@ withDefaults(defineProps<{
 <style scoped lang="sass">
 .ud-wrapper
   position: relative
-  min-height: clamp(360px, 52vh, 560px)
-  width: 100%
+  flex: 1
   display: flex
   align-items: center
   justify-content: center
+  min-height: 0
+  width: 100%
   overflow: hidden
-  border-radius: var(--radius-xl)
-  border: var(--border-width) solid var(--color-border)
   background-color: var(--color-bg-secondary)
+  border-top: var(--border-width) solid var(--color-border)
 
-// ── Blurred decorative backdrop ─────────────────────────────────────────────
 .ud-backdrop
   position: absolute
   inset: 0
-  padding: var(--spacing-6)
+  padding: var(--spacing-6) var(--spacing-8)
   display: flex
   flex-direction: column
-  gap: var(--spacing-4)
-  filter: blur(7px)
+  gap: var(--spacing-5)
+  filter: blur(8px)
   pointer-events: none
   user-select: none
-  transform: scale(1.04)
+  opacity: 0.9
 
-// Shared mock bar base
 .mock-bar
   background-color: var(--color-border)
   border-radius: var(--radius-sm)
@@ -104,23 +98,23 @@ withDefaults(defineProps<{
   flex-shrink: 0
 
   &--wide
-    width: 200px
+    width: min(280px, 40vw)
 
   &--medium
-    width: 120px
+    width: min(160px, 28vw)
 
   &--short
-    width: 72px
+    width: min(96px, 18vw)
     height: 10px
 
   &--num
-    width: 60px
-    height: 20px
+    width: 72px
+    height: 22px
     border-radius: var(--radius-xs)
 
   &--icon
-    width: 36px
-    height: 36px
+    width: 40px
+    height: 40px
     border-radius: var(--radius-md)
     background-color: var(--color-primary-muted)
 
@@ -144,22 +138,22 @@ withDefaults(defineProps<{
     height: 10px
 
   &--cell-short
-    flex: 0 0 72px
+    flex: 0 0 88px
     height: 10px
 
-// Header mock
 .mock-header
   display: flex
   align-items: center
   gap: var(--spacing-4)
   padding-bottom: var(--spacing-4)
   border-bottom: 1px solid var(--color-border)
+  flex-shrink: 0
 
-// Stats row
 .mock-stats
   display: grid
-  grid-template-columns: repeat(3, 1fr)
+  grid-template-columns: repeat(4, minmax(0, 1fr))
   gap: var(--spacing-4)
+  flex-shrink: 0
 
 .mock-stat-card
   display: flex
@@ -174,14 +168,23 @@ withDefaults(defineProps<{
   display: flex
   flex-direction: column
   gap: var(--spacing-2)
+  min-width: 0
 
-// Table mock
+.mock-body
+  flex: 1
+  min-height: 0
+  display: grid
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr)
+  gap: var(--spacing-5)
+
 .mock-table
   background-color: var(--color-card-bg)
   border: 1px solid var(--color-card-border)
   border-radius: var(--radius-lg)
   overflow: hidden
-  flex: 1
+  min-height: 0
+  display: flex
+  flex-direction: column
 
 .mock-table-header
   display: flex
@@ -189,6 +192,7 @@ withDefaults(defineProps<{
   padding: var(--spacing-3) var(--spacing-4)
   background-color: var(--color-bg-secondary)
   border-bottom: 1px solid var(--color-border)
+  flex-shrink: 0
 
 .mock-row
   display: flex
@@ -200,22 +204,22 @@ withDefaults(defineProps<{
   &:last-child
     border-bottom: none
 
-// Chart mock
 .mock-chart
   background-color: var(--color-card-bg)
   border: 1px solid var(--color-card-border)
   border-radius: var(--radius-lg)
-  padding: var(--spacing-4)
-  height: 80px
+  padding: var(--spacing-5)
+  min-height: 100%
   display: flex
   align-items: flex-end
 
 .mock-chart-bars
   display: flex
   align-items: flex-end
-  gap: 6px
+  gap: 8px
   width: 100%
   height: 100%
+  min-height: 160px
 
 .mock-chart-bar
   flex: 1
@@ -223,7 +227,6 @@ withDefaults(defineProps<{
   border-radius: var(--radius-xs) var(--radius-xs) 0 0
   min-width: 0
 
-// ── Frosted glass overlay card ───────────────────────────────────────────────
 .ud-card
   position: relative
   z-index: 2
@@ -231,21 +234,21 @@ withDefaults(defineProps<{
   flex-direction: column
   align-items: center
   gap: var(--spacing-4)
-  padding: var(--spacing-10) var(--spacing-12)
+  padding: var(--spacing-8) var(--spacing-10)
   border-radius: var(--radius-2xl)
-  background-color: rgba(255, 255, 255, 0.72)
+  background-color: rgba(255, 255, 255, 0.78)
   backdrop-filter: blur(20px) saturate(1.4)
   -webkit-backdrop-filter: blur(20px) saturate(1.4)
-  border: 1px solid rgba(255, 255, 255, 0.6)
+  border: 1px solid rgba(255, 255, 255, 0.65)
   box-shadow: var(--shadow-xl), 0 0 0 1px var(--color-border)
   text-align: center
-  max-width: 420px
-  width: calc(100% - var(--spacing-8))
+  max-width: min(480px, calc(100% - var(--spacing-8)))
+  width: 100%
+  margin: var(--spacing-6)
   animation: ud-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both
 
-// Dark theme override for frosted card
 [data-theme="dark"] .ud-card
-  background-color: rgba(22, 27, 34, 0.82)
+  background-color: rgba(22, 27, 34, 0.85)
   border-color: rgba(255, 255, 255, 0.08)
   box-shadow: var(--shadow-xl), 0 0 0 1px rgba(255, 255, 255, 0.06)
 
@@ -258,7 +261,6 @@ withDefaults(defineProps<{
   border-radius: var(--radius-xl)
   background-color: var(--color-primary-muted)
   color: var(--color-primary)
-  margin-bottom: var(--spacing-2)
 
 .ud-icon
   width: 32px
@@ -269,7 +271,6 @@ withDefaults(defineProps<{
   align-items: center
   padding: var(--spacing-1) var(--spacing-4)
   border-radius: var(--radius-full)
-  font-family: var(--font-family-base)
   font-size: var(--font-size-xs)
   font-weight: var(--font-weight-semibold)
   letter-spacing: 0.04em
@@ -279,7 +280,6 @@ withDefaults(defineProps<{
   border: 1px solid var(--color-primary-muted)
 
 .ud-title
-  font-family: var(--font-family-base)
   font-size: var(--font-size-2xl)
   font-weight: var(--font-weight-bold)
   color: var(--color-text)
@@ -287,12 +287,11 @@ withDefaults(defineProps<{
   line-height: var(--line-height-tight)
 
 .ud-description
-  font-family: var(--font-family-base)
   font-size: var(--font-size-base)
   color: var(--color-text-secondary)
   margin: 0
   line-height: var(--line-height-relaxed)
-  max-width: 300px
+  max-width: 36ch
 
 @keyframes ud-card-in
   from
@@ -302,18 +301,24 @@ withDefaults(defineProps<{
     opacity: 1
     transform: translateY(0) scale(1)
 
-// Responsive
-@media (max-width: 576px)
-  .ud-wrapper
-    min-height: 360px
-
-  .ud-card
-    padding: var(--spacing-8) var(--spacing-6)
-    max-width: calc(100% - var(--spacing-8))
+@media (max-width: 992px)
+  .mock-body
+    grid-template-columns: 1fr
 
   .mock-stats
-    grid-template-columns: repeat(2, 1fr)
+    grid-template-columns: repeat(2, minmax(0, 1fr))
 
-    .mock-stat-card:last-child
-      display: none
+@media (max-width: 576px)
+  .ud-backdrop
+    padding: var(--spacing-4)
+
+  .ud-card
+    padding: var(--spacing-6)
+    margin: var(--spacing-4)
+
+  .mock-stats
+    grid-template-columns: 1fr 1fr
+
+  .mock-stat-card:nth-child(n+3)
+    display: none
 </style>
