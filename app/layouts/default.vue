@@ -103,6 +103,8 @@ onBeforeUnmount(() => {
   background-color: var(--color-bg)
 
   &--auth
+    display: flex
+    flex-direction: column
     padding-bottom: 0
 
     @media (max-width: 768px)

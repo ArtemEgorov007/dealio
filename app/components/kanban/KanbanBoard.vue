@@ -35,19 +35,22 @@ const handleCardMoved = () => invalidateBoard()
 
 <template>
   <div class="kanban-page">
-    <header class="kanban-header">
-      <div class="kanban-header__left">
-        <h1 class="kanban-title">Мой трекер</h1>
-        <div v-if="authStore.isGuest" class="kanban-demo-badge">
-          <span class="demo-dot"></span>
-          Демо-режим
+    <div class="kanban-page__head">
+      <header class="kanban-header">
+        <div class="kanban-header__left">
+          <h1 class="kanban-title">Мой трекер</h1>
+          <div v-if="authStore.isGuest" class="kanban-demo-badge">
+            <span class="demo-dot"></span>
+            Демо-режим
+          </div>
         </div>
-      </div>
-      <p class="kanban-subtitle">Идеи, задачи и желания — всё в одном kanban</p>
-    </header>
+        <p class="kanban-subtitle">Идеи, задачи и желания — всё в одном kanban</p>
+      </header>
 
-    <KanbanStats />
+      <KanbanStats />
+    </div>
 
+    <div class="kanban-surface">
     <div v-if="isLoading" class="kanban-state">
       <div class="kanban-spinner">
         <div class="spinner-ring"></div>
@@ -66,7 +69,7 @@ const handleCardMoved = () => invalidateBoard()
       </button>
     </div>
 
-    <div v-else-if="data?.length" class="kanban-board-wrap kanban-board-wrap--grid">
+    <div v-else-if="data?.length" class="kanban-board-wrap">
       <div class="kanban-board">
         <KanbanColumn
             v-for="column in data"
@@ -88,15 +91,35 @@ const handleCardMoved = () => invalidateBoard()
       <p class="kanban-state__text">Нет данных для отображения</p>
       <p class="kanban-state__hint">Добавьте первую карточку, чтобы начать</p>
     </div>
+    </div>
   </div>
 </template>
 
 <style scoped lang="sass">
 .kanban-page
-  padding: var(--spacing-6) var(--spacing-6) var(--spacing-8)
+  display: flex
+  flex-direction: column
+  flex: 1
+  min-height: 100%
+
+.kanban-page__head
+  flex-shrink: 0
+  padding: var(--spacing-6) var(--spacing-6) var(--spacing-4)
 
   @media (max-width: 768px)
-    padding: var(--spacing-4)
+    padding: var(--spacing-4) var(--spacing-4) var(--spacing-3)
+
+.kanban-surface
+  flex: 1
+  display: flex
+  flex-direction: column
+  min-height: 0
+  width: 100%
+  background-color: var(--color-bg-secondary)
+  background-image: var(--kanban-grid-pattern)
+  background-size: var(--kanban-grid-size)
+  background-position: 0 0
+  border-top: var(--border-width) solid var(--color-border)
 
 .kanban-header
   margin-bottom: var(--spacing-6)
@@ -157,6 +180,7 @@ const handleCardMoved = () => invalidateBoard()
   justify-content: center
   padding: var(--spacing-12)
   color: var(--color-text-secondary)
+  flex: 1
   min-height: 300px
   gap: var(--spacing-3)
 
@@ -230,16 +254,10 @@ const handleCardMoved = () => invalidateBoard()
 
 .kanban-board-wrap
   position: relative
-  overflow-x: auto
-  padding-bottom: var(--spacing-4)
-  border-radius: var(--radius-xl)
-
-  &--grid
-    background-color: var(--color-bg-secondary)
-    border: var(--border-width) solid var(--color-border)
-    background-image: var(--kanban-grid-pattern)
-    background-size: var(--kanban-grid-size)
-    background-position: center
+  flex: 1
+  min-height: 0
+  overflow: auto
+  padding: var(--spacing-4)
 
   &::-webkit-scrollbar
     height: 6px
@@ -257,5 +275,5 @@ const handleCardMoved = () => invalidateBoard()
   display: flex
   gap: var(--spacing-4)
   min-width: max-content
-  padding: var(--spacing-4)
+  min-height: min-content
 </style>
