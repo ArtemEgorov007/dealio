@@ -3,10 +3,7 @@ import type {ICard} from '~/components/kanban/kanban.types'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import {useCardSlideStore} from '~~/store/card-slide.store'
-import {useAuthStore} from '~~/store/auth.store'
-import {useBoardStore} from '~~/store/board.store'
-import {useQueryClient} from '@tanstack/vue-query'
-import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
+import {useArchiveCard} from '~/components/kanban/useArchiveCard'
 
 dayjs.locale('ru')
 
@@ -22,9 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const cardSlideStore = useCardSlideStore()
-const authStore = useAuthStore()
-const boardStore = useBoardStore()
-const queryClient = useQueryClient()
+const {mutate: archiveCard, isPending: isArchiving} = useArchiveCard()
 
 const skipClick = ref(false)
 const isEntered = ref(false)
@@ -58,11 +53,8 @@ const handleOpenSlideover = () => {
 
 const handleArchive = (event: MouseEvent) => {
   event.stopPropagation()
-  if (import.meta.client && authStore.isGuest) {
-    boardStore.archiveCard(props.card.id)
-    queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
-    queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
-  }
+  if (isArchiving.value) return
+  archiveCard(props.card)
 }
 
 const formatDate = (dateString: string) => {
@@ -84,7 +76,6 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const categoryClass = computed(() => CATEGORY_COLORS[props.card.category] ?? '')
 const isWishlistItem = computed(() => props.card.category === 'Wishlist' && props.card.price > 0)
-const isGuest = computed(() => authStore.isGuest)
 
 const formatPrice = (price: number) =>
     price.toLocaleString('ru-RU', {style: 'currency', currency: 'RUB', maximumFractionDigits: 0})
@@ -118,8 +109,8 @@ const formatPrice = (price: number) =>
             <span class="priority-dot"></span>
           </span>
           <button
-              v-if="isGuest"
               class="card-archive-btn"
+              :disabled="isArchiving"
               @click.stop="handleArchive"
               aria-label="В архив"
               title="В архив"

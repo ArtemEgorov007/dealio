@@ -1,16 +1,30 @@
 <script setup lang="ts">
-import {useQueryClient} from '@tanstack/vue-query'
+import {useMutation, useQueryClient} from '@tanstack/vue-query'
+
+import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
+import {createCard} from '~/utils/appwrite-cards'
+import {mapAppwriteError} from '~/utils/card-priority'
 import {useBoardStore} from '~~/store/board.store'
 import {useAuthStore} from '~~/store/auth.store'
-import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
+import {buildRestorePayload, useAuthArchiveStore} from '~~/store/auth-archive.store'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
 useSeoMeta({ title: 'Архив | Dealio' })
 dayjs.locale('ru')
 
+interface ArchiveListItem {
+  id: string
+  name: string
+  price: number
+  priority: string
+  archivedAt?: string
+  category: string
+}
+
 const authStore = useAuthStore()
 const boardStore = useBoardStore()
+const authArchiveStore = useAuthArchiveStore()
 const queryClient = useQueryClient()
 
 const isGuest = computed(() => authStore.isGuest)
@@ -19,12 +33,37 @@ onMounted(() => {
   if (import.meta.client && authStore.isGuest) {
     boardStore.init()
     boardStore.pruneExpired()
+    return
+  }
+
+  if (import.meta.client && authStore.userId) {
+    authArchiveStore.init(authStore.userId)
   }
 })
 
 const retentionDays = computed(() => boardStore.retentionDays)
 
-const archivedCards = computed(() => boardStore.archivedCards)
+const archivedCards = computed((): ArchiveListItem[] => {
+  if (isGuest.value) {
+    return boardStore.archivedCards.map(card => ({
+      id: card.$id,
+      name: card.name,
+      price: card.price,
+      priority: card.priority,
+      archivedAt: card.archivedAt,
+      category: card.customer?.name ?? '—',
+    }))
+  }
+
+  return authArchiveStore.archivedCards.map(card => ({
+    id: card.id,
+    name: card.name,
+    price: card.category === 'Wishlist' ? card.price : 0,
+    priority: card.priority,
+    archivedAt: card.archivedAt,
+    category: card.category,
+  }))
+})
 
 const daysLeft = (archivedAt?: string): number => {
   if (!archivedAt) return retentionDays.value
@@ -55,16 +94,54 @@ const PRIORITY_LABELS: Record<string, string> = {
   low: 'Низкий',
 }
 
-const handleRestore = (id: string) => {
-  boardStore.restoreCard(id)
+const invalidateBoard = () => {
   queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
   queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
 }
 
+const {mutate: restoreCard, isPending: isRestoring} = useMutation({
+  mutationKey: ['restore-archive-card'],
+  mutationFn: async (id: string) => {
+    if (isGuest.value) {
+      boardStore.restoreCard(id)
+      return
+    }
+
+    const card = authArchiveStore.takeForRestore(id)
+    if (!card) throw new Error('Карточка не найдена в архиве')
+
+    const {documentId, payload} = buildRestorePayload(card)
+
+    try {
+      await createCard(documentId, payload)
+    } catch (error) {
+      authArchiveStore.archiveFromCard({
+        id: card.id,
+        name: card.name,
+        price: card.price,
+        category: card.category,
+        status: card.status,
+        priority: card.priority,
+        $createdAt: card.$createdAt,
+      })
+      throw new Error(mapAppwriteError(error, 'Не удалось восстановить карточку'))
+    }
+  },
+  onSuccess: () => invalidateBoard(),
+})
+
+const handleRestore = (id: string) => {
+  if (isRestoring.value) return
+  restoreCard(id)
+}
+
 const handleDeletePermanently = (id: string) => {
-  boardStore.deleteCardPermanently(id)
-  queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
-  queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
+  if (isGuest.value) {
+    boardStore.deleteCardPermanently(id)
+  } else {
+    authArchiveStore.remove(id)
+  }
+  invalidateBoard()
 }
 
 const formatPrice = (price: number) =>
@@ -76,30 +153,27 @@ const formatPrice = (price: number) =>
     <header class="archive-header">
       <div class="archive-header__left">
         <h1 class="archive-title">Архив</h1>
-        <span v-if="isGuest && archivedCards.length" class="archive-count">{{ archivedCards.length }}</span>
+        <span v-if="archivedCards.length" class="archive-count">{{ archivedCards.length }}</span>
       </div>
-      <p class="archive-subtitle">Удалённые карточки хранятся {{ retentionDays }} дней, затем удаляются автоматически</p>
+      <p class="archive-subtitle">
+        Удалённые карточки хранятся {{ retentionDays }} дней, затем удаляются автоматически
+      </p>
     </header>
 
-    <div v-if="!isGuest" class="archive-unavailable">
-      <div class="unavailable-icon">
-        <Icon name="heroicons:lock-closed" size="28"/>
-      </div>
-      <p class="unavailable-text">Архив доступен в демо-режиме</p>
-    </div>
-
-    <div v-else-if="archivedCards.length === 0" class="archive-empty">
+    <div v-if="archivedCards.length === 0" class="archive-empty">
       <div class="empty-icon-wrap">
         <Icon name="heroicons:archive-box" size="36"/>
       </div>
       <p class="empty-title">Архив пуст</p>
-      <p class="empty-hint">Удалённые карточки появятся здесь. Их можно восстановить или удалить навсегда.</p>
+      <p class="empty-hint">
+        Наведите на карточку на доске и нажмите иконку архива — элемент переместится сюда.
+      </p>
     </div>
 
     <div v-else class="archive-list">
       <div
           v-for="card in archivedCards"
-          :key="card.$id"
+          :key="card.id"
           class="archive-card"
           :class="`archive-card--priority-${card.priority}`"
       >
@@ -108,16 +182,16 @@ const formatPrice = (price: number) =>
         <div class="archive-card__body">
           <div class="archive-card__top">
             <div class="archive-card__badges">
-              <span class="category-badge" :class="categoryClass(card.customer?.name ?? '')">
-                {{ card.customer?.name || '—' }}
+              <span class="category-badge" :class="categoryClass(card.category)">
+                {{ card.category }}
               </span>
-              <span class="priority-badge" :class="PRIORITY_CLASS[card.priority ?? 'medium']">
+              <span class="priority-badge" :class="PRIORITY_CLASS[card.priority]">
                 <span class="priority-dot"></span>
-                {{ PRIORITY_LABELS[card.priority ?? 'medium'] }}
+                {{ PRIORITY_LABELS[card.priority] }}
               </span>
             </div>
             <div class="archive-card__countdown" :class="{ 'countdown--urgent': daysLeft(card.archivedAt) <= 3 }">
-              <Icon name="heroicons:clock" size="12"/>
+              <Icon name="heroicons:clock" size="11"/>
               <span v-if="daysLeft(card.archivedAt) === 0">Удаляется сегодня</span>
               <span v-else>{{ daysLeft(card.archivedAt) }} дн.</span>
             </div>
@@ -137,11 +211,15 @@ const formatPrice = (price: number) =>
           </div>
 
           <div class="archive-card__actions">
-            <button class="action-btn action-btn--restore" @click="handleRestore(card.$id)">
+            <button
+                class="action-btn action-btn--restore"
+                :disabled="isRestoring"
+                @click="handleRestore(card.id)"
+            >
               <Icon name="heroicons:arrow-uturn-left" size="14"/>
               Восстановить
             </button>
-            <button class="action-btn action-btn--delete" @click="handleDeletePermanently(card.$id)">
+            <button class="action-btn action-btn--delete" @click="handleDeletePermanently(card.id)">
               <Icon name="heroicons:trash" size="14"/>
               Удалить
             </button>
@@ -192,7 +270,6 @@ const formatPrice = (price: number) =>
   color: var(--color-text-muted)
   font-weight: 500
 
-.archive-unavailable,
 .archive-empty
   display: flex
   flex-direction: column
@@ -203,7 +280,6 @@ const formatPrice = (price: number) =>
   text-align: center
   min-height: 300px
 
-.unavailable-icon,
 .empty-icon-wrap
   width: 64px
   height: 64px
@@ -213,11 +289,8 @@ const formatPrice = (price: number) =>
   display: flex
   align-items: center
   justify-content: center
+  opacity: 0.6
 
-  .empty-icon-wrap
-    opacity: 0.6
-
-.unavailable-text,
 .empty-title
   font-size: var(--font-size-base)
   font-weight: 600
@@ -226,7 +299,7 @@ const formatPrice = (price: number) =>
 .empty-hint
   font-size: var(--font-size-sm)
   color: var(--color-text-muted)
-  max-width: 320px
+  max-width: 360px
   line-height: 1.5
 
 .archive-list
@@ -399,12 +472,16 @@ const formatPrice = (price: number) =>
   border: var(--border-width) solid transparent
   transition: all var(--transition-fast) ease
 
+  &:disabled
+    opacity: 0.6
+    cursor: not-allowed
+
   &--restore
     background-color: var(--color-primary-light)
     color: var(--color-primary)
     border-color: var(--color-primary-muted)
 
-    &:hover
+    &:hover:not(:disabled)
       background-color: var(--color-primary)
       color: white
 

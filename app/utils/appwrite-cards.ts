@@ -49,12 +49,6 @@ export async function createCard(
     return DB.createDocument(DB_ID, COLLECTION_CARDS, documentId, payload, buildUserPermissions(userId))
 }
 
-export async function updateCardStatus(documentId: string, status: EnumStatus) {
-    return DB.updateDocument(DB_ID, COLLECTION_CARDS, documentId, {
-        status: toAppwriteStatus(status),
-    })
-}
-
 export async function updateCard(
     documentId: string,
     data: {
@@ -90,4 +84,14 @@ export async function updateCard(
     if (data.status !== undefined) patch.status = toAppwriteStatus(data.status)
 
     return DB.updateDocument(DB_ID, COLLECTION_CARDS, documentId, patch)
+}
+
+export async function updateCardStatus(documentId: string, status: EnumStatus) {
+    return DB.updateDocument(DB_ID, COLLECTION_CARDS, documentId, {
+        status: toAppwriteStatus(status),
+    })
+}
+
+export async function deleteCard(documentId: string) {
+    return DB.deleteDocument(DB_ID, COLLECTION_CARDS, documentId)
 }
