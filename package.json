@@ -1,6 +1,6 @@
 {
   "name": "dealio",
-  "description": "Dealio — трекер идей, задач и желаний с kanban-доской на Nuxt 3",
+  "description": "Dealio — трекер идей, задач и желаний с kanban-доской на Nuxt 4",
   "type": "module",
   "private": true,
   "scripts": {

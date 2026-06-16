@@ -7,6 +7,7 @@ import {mapAppwriteUser} from '~/utils/appwrite-user'
 
 import {useAuthStore, useIsLoadingStore, isGuestSession} from '~~/store/auth.store'
 import {useBoardStore} from '~~/store/board.store'
+import {useAuthArchiveStore} from '~~/store/auth-archive.store'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import { useTheme } from '~/composables/useTheme'
 
@@ -17,6 +18,7 @@ const route = useRoute()
 const isLoadingStore = useIsLoadingStore()
 const authStore = useAuthStore()
 const boardStore = useBoardStore()
+const authArchiveStore = useAuthArchiveStore()
 const queryClient = useQueryClient()
 const { initTheme } = useTheme()
 
@@ -54,6 +56,10 @@ onMounted(async () => {
   try {
     const user = await account.get()
     authStore.set(mapAppwriteUser(user))
+    if (import.meta.client && authStore.userId) {
+      authArchiveStore.init(authStore.userId)
+      authArchiveStore.pruneExpired()
+    }
   } catch {
     await router.replace('/login')
   } finally {

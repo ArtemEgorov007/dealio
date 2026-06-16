@@ -5,6 +5,7 @@ import 'dayjs/locale/ru'
 import {APPWRITE_PRICE_MIN, APPWRITE_PRICE_MAX, validateWishlistPrice} from '~/utils/card-priority'
 import {CATEGORY_OPTIONS, COLUMN_LABELS} from '~/components/kanban/kanban.labels'
 import {useUpdateCard} from '~/components/kanban/slideover/useUpdateCard'
+import {useArchiveCard} from '~/components/kanban/useArchiveCard'
 import {useCardSlideStore} from '~~/store/card-slide.store'
 import {useAuthStore} from '~~/store/auth.store'
 import type {Priority} from '~~/store/board.store'
@@ -15,6 +16,7 @@ dayjs.locale('ru')
 const store = useCardSlideStore()
 const authStore = useAuthStore()
 const {mutate, isPending, isError, error} = useUpdateCard()
+const {mutate: archiveCard, isPending: isArchiving} = useArchiveCard()
 
 const editName = ref('')
 const editCategory = ref('')
@@ -132,6 +134,14 @@ const savePrice = () => {
 
   saveField({price})
 }
+
+const handleArchive = () => {
+  if (!store.card || isArchiving.value || isPending.value) return
+
+  archiveCard(store.card, {
+    onSuccess: () => store.clear(),
+  })
+}
 </script>
 
 <template>
@@ -213,6 +223,16 @@ const savePrice = () => {
     </div>
 
     <p v-if="isPending" class="card-info__saving">Сохранение...</p>
+
+    <button
+        type="button"
+        class="card-info__archive"
+        :disabled="isPending || isArchiving"
+        @click="handleArchive"
+    >
+      <Icon name="heroicons:archive-box-arrow-down" size="16"/>
+      {{ isArchiving ? 'В архив...' : 'В архив' }}
+    </button>
   </div>
 </template>
 
@@ -274,4 +294,29 @@ const savePrice = () => {
   font-size: var(--font-size-xs)
   font-weight: 600
   color: var(--color-text-muted)
+
+.card-info__archive
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  gap: var(--spacing-2)
+  margin-top: var(--spacing-2)
+  padding: var(--spacing-2) var(--spacing-4)
+  border-radius: var(--radius-md)
+  border: var(--border-width) solid var(--color-border)
+  background-color: var(--color-bg-secondary)
+  color: var(--color-text-secondary)
+  font-size: var(--font-size-sm)
+  font-weight: 600
+  cursor: pointer
+  transition: background-color var(--transition-fast) ease, color var(--transition-fast) ease, border-color var(--transition-fast) ease
+
+  &:hover:not(:disabled)
+    background-color: var(--color-danger-light)
+    border-color: rgba(239, 68, 68, 0.25)
+    color: var(--color-danger)
+
+  &:disabled
+    opacity: 0.6
+    cursor: not-allowed
 </style>

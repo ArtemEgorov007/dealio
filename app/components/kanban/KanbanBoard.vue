@@ -128,7 +128,7 @@ const handleCardMoved = () => invalidateBoard()
   border-top: var(--border-width) solid var(--color-border)
 
 .kanban-header
-  margin-bottom: var(--spacing-6)
+  margin-bottom: var(--spacing-4)
 
 .kanban-header__left
   display: flex
