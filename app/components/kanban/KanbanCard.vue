@@ -13,6 +13,7 @@ dayjs.locale('ru')
 const props = defineProps<{
   card: ICard
   columnId: string
+  isDragging?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -25,17 +26,26 @@ const authStore = useAuthStore()
 const boardStore = useBoardStore()
 const queryClient = useQueryClient()
 
+const skipClick = ref(false)
+
 const handleDragStart = (event: DragEvent) => {
   event.dataTransfer?.setData('text/plain', props.card.id)
   event.dataTransfer!.effectAllowed = 'move'
+  skipClick.value = true
   emit('dragstart')
 }
 
 const handleDragEnd = () => {
   emit('dragend')
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      skipClick.value = false
+    }, 50)
+  })
 }
 
 const handleOpenSlideover = () => {
+  if (skipClick.value) return
   cardSlideStore.set(props.card)
 }
 
@@ -76,7 +86,11 @@ const formatPrice = (price: number) =>
 <template>
   <div
       class="kanban-card"
-      :class="[`kanban-card--${columnId}`, `kanban-card--priority-${card.priority}`]"
+      :class="[
+        `kanban-card--${columnId}`,
+        `kanban-card--priority-${card.priority}`,
+        { 'kanban-card--dragging': isDragging },
+      ]"
       draggable="true"
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
@@ -118,7 +132,7 @@ const formatPrice = (price: number) =>
           <Icon name="heroicons:clock" size="11" class="meta-icon"/>
           {{ formatDate(card.$createdAt) }}
         </span>
-        <span class="drag-hint">
+        <span class="drag-hint" aria-hidden="true">
           <Icon name="heroicons:arrows-up-down" size="12"/>
         </span>
       </div>
@@ -135,7 +149,7 @@ const formatPrice = (price: number) =>
   border: var(--border-width) solid var(--color-card-border)
   border-radius: var(--radius-lg)
   box-shadow: var(--shadow-sm)
-  cursor: grab
+  cursor: pointer
   transition: box-shadow var(--transition-normal) var(--transition-ease), transform var(--transition-normal) var(--transition-ease), border-color var(--transition-normal) ease
   user-select: none
   overflow: hidden
@@ -153,11 +167,11 @@ const formatPrice = (price: number) =>
     .card-archive-btn
       opacity: 1
 
-  &:active,
-  &[draggable="true"]:active
+  &--dragging
     cursor: grabbing
     transform: translateY(-1px) scale(0.99)
     box-shadow: var(--shadow-lg)
+    opacity: 0.85
 
   &:focus-visible
     outline: 2px solid var(--color-primary)
@@ -322,4 +336,5 @@ const formatPrice = (price: number) =>
   transition: opacity var(--transition-fast) ease
   display: flex
   align-items: center
+  cursor: grab
 </style>

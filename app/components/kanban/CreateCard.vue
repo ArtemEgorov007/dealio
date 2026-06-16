@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import {ref} from 'vue'
+import {ref, watch} from 'vue'
 import {useMutation, useQueryClient} from '@tanstack/vue-query'
 import {v4 as uuid} from 'uuid'
 import {useForm} from 'vee-validate'
 
 import type {ICardRecord} from '~~/types/cards.types'
+import {EnumStatus} from '~~/types/cards.types'
 import {isGuestSession} from '~~/store/auth.store'
 import {useBoardStore, type Priority} from '~~/store/board.store'
 import type {IBoardCard} from '~~/store/board.store'
@@ -23,6 +24,12 @@ interface ICardFormState {
   priority: Priority
 }
 
+const CATEGORY_BY_STATUS: Partial<Record<EnumStatus, string>> = {
+  [EnumStatus.ideas]: 'Идея',
+  [EnumStatus.tasks]: 'Задача',
+  [EnumStatus.wishlist]: 'Wishlist',
+}
+
 const PRIORITY_OPTIONS: {value: Priority; label: string}[] = [
   {value: 'high', label: 'Высокий'},
   {value: 'medium', label: 'Средний'},
@@ -39,8 +46,6 @@ const priorityOptions = PRIORITY_OPTIONS.map(option => ({
   label: option.label,
 }))
 
-const priorityTone = computed(() => priority.value as 'high' | 'medium' | 'low')
-
 const props = defineProps({
   status: {type: String, default: 'ideas'}
 })
@@ -50,25 +55,43 @@ const emit = defineEmits<{
 }>()
 
 const isOpenForm = ref(false)
-const toggleForm = () => (isOpenForm.value = !isOpenForm.value)
+
+const defaultCategory = () =>
+    CATEGORY_BY_STATUS[props.status as EnumStatus] ?? 'Идея'
+
+const toggleForm = () => {
+  isOpenForm.value = !isOpenForm.value
+  if (isOpenForm.value) {
+    category.value = defaultCategory()
+  }
+}
 
 const queryClient = useQueryClient()
 const boardStore = useBoardStore()
 
-const {handleSubmit, defineField, handleReset, errors} = useForm<ICardFormState>({
+const {handleSubmit, defineField, handleReset, errors, setFieldValue} = useForm<ICardFormState>({
   initialValues: {
     status: props.status,
     name: '',
     price: 0,
-    customer: {name: 'Идея', email: ''},
+    customer: {name: defaultCategory(), email: ''},
     priority: 'medium',
   }
 })
 
 const [name, nameAttrs] = defineField('name')
 const [price, priceAttrs] = defineField('price')
-const [category, categoryAttrs] = defineField('customer.name')
-const [priority, priorityAttrs] = defineField('priority')
+const [category] = defineField('customer.name')
+const [priority] = defineField('priority')
+
+const priorityTone = computed(() => priority.value as 'high' | 'medium' | 'low')
+
+watch(() => props.status, (status) => {
+  setFieldValue('status', status)
+  if (!isOpenForm.value) {
+    setFieldValue('customer.name', CATEGORY_BY_STATUS[status as EnumStatus] ?? 'Идея')
+  }
+})
 
 const {mutate, isPending, isError, error} = useMutation({
   mutationKey: ['create-card'],
@@ -181,27 +204,26 @@ const onSubmit = handleSubmit(values => mutate(values))
             placeholder="Что хотите добавить?"
             type="text"
             :error="errors.name"
+            flush
             required
         />
 
-        <div class="form-row">
-          <UiSelect
-              id="card-category"
-              v-model="category"
-              label="Тип"
-              :options="categoryOptions"
-              flush
-          />
+        <UiSelect
+            id="card-category"
+            v-model="category"
+            label="Тип"
+            :options="categoryOptions"
+            flush
+        />
 
-          <UiSelect
-              id="card-priority"
-              v-model="priority"
-              label="Приоритет"
-              :options="priorityOptions"
-              :tone="priorityTone"
-              flush
-          />
-        </div>
+        <UiSelect
+            id="card-priority"
+            v-model="priority"
+            label="Приоритет"
+            :options="priorityOptions"
+            :tone="priorityTone"
+            flush
+        />
 
         <UiInput
             v-if="category === 'Wishlist'"
@@ -262,7 +284,7 @@ const onSubmit = handleSubmit(values => mutate(values))
   padding: var(--spacing-4)
   display: flex
   flex-direction: column
-  gap: var(--spacing-3)
+  gap: var(--spacing-2)
   box-shadow: var(--shadow-md)
 
 .create-card__header
@@ -302,11 +324,6 @@ const onSubmit = handleSubmit(values => mutate(values))
   border-radius: var(--radius-md)
   font-size: var(--font-size-xs)
   font-weight: 500
-
-.form-row
-  display: grid
-  grid-template-columns: 1fr 1fr
-  gap: var(--spacing-3)
 
 .form-expand-enter-active,
 .form-expand-leave-active

@@ -114,6 +114,7 @@ const onCardCreated = () => {
           :key="card.id"
           :card="card"
           :column-id="column.id"
+          :is-dragging="dragCard?.id === card.id"
           :style="{ animationDelay: `${index * 40}ms` }"
           @dragstart="handleDragStart(card, column)"
           @dragend="handleDragEnd"

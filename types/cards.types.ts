@@ -29,7 +29,7 @@ export interface ICardRecord extends IBaseField {
     /** категория карточки в Appwrite хранится в поле customer */
     customer: ICategoryField
     name: string
-    /** приоритет 1–5 */
+    /** стоимость в рублях (Wishlist) */
     price: number
     status: EnumStatus
 }

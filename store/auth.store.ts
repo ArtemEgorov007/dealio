@@ -73,10 +73,6 @@ export const useAuthStore = defineStore('auth', {
                 isGuest: true
             }
         },
-
-        updateAuthStatus(status: boolean) {
-            this.user.status = status
-        }
     }
 })
 

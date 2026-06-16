@@ -23,11 +23,17 @@ const invalidateBoard = () => {
 const handleDragStart = (card: ICard, column: IColumn) => {
   dragCardRef.value = card
   sourceColumnRef.value = column
+  if (import.meta.client) {
+    document.body.classList.add('dealio-kanban-dragging')
+  }
 }
 
 const handleDragEnd = () => {
   dragCardRef.value = null
   sourceColumnRef.value = null
+  if (import.meta.client) {
+    document.body.classList.remove('dealio-kanban-dragging')
+  }
 }
 
 const handleCardMoved = () => invalidateBoard()

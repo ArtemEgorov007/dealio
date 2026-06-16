@@ -127,20 +127,30 @@ export const useBoardStore = defineStore('board', {
             this._persist()
         },
 
-        updateCardStatus(id: string, status: EnumStatus) {
+        updateCard(
+            id: string,
+            fields: {
+                name?: string
+                category?: string
+                price?: number
+                status?: EnumStatus
+                priority?: Priority
+            },
+        ) {
             const card = this.cards.find(c => c.$id === id)
-            if (card) {
-                card.status = status
-                this._persist()
-            }
+            if (!card) return
+
+            if (fields.name !== undefined) card.name = fields.name.trim()
+            if (fields.category !== undefined) card.customer.name = fields.category
+            if (fields.price !== undefined) card.price = fields.price
+            if (fields.status !== undefined) card.status = fields.status
+            if (fields.priority !== undefined) card.priority = fields.priority
+
+            this._persist()
         },
 
-        updateCardPriority(id: string, priority: Priority) {
-            const card = this.cards.find(c => c.$id === id)
-            if (card) {
-                card.priority = priority
-                this._persist()
-            }
+        updateCardStatus(id: string, status: EnumStatus) {
+            this.updateCard(id, {status})
         },
 
         addComment(cardId: string, comment: { $id: string; $createdAt: string; text: string }) {

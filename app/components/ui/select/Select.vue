@@ -224,6 +224,11 @@ useClickOutside(rootRef, closeDropdown)
 
     .ui-select__menu
       font-size: var(--font-size-xs)
+      padding: var(--spacing-1) var(--spacing-2)
+      gap: 2px
+
+    .ui-select__option
+      padding: 6px var(--spacing-2)
 
   &--disabled
     opacity: 0.6
@@ -322,12 +327,15 @@ useClickOutside(rootRef, closeDropdown)
 
   &__menu
     position: absolute
-    top: calc(100% + 4px)
+    top: calc(100% + var(--spacing-2))
     left: 0
     right: 0
     margin: 0
-    padding: var(--spacing-1)
+    padding: var(--spacing-2)
     list-style: none
+    display: flex
+    flex-direction: column
+    gap: var(--spacing-1)
     background-color: var(--color-card-bg)
     border: var(--border-width) solid var(--color-border)
     border-radius: var(--radius-md)
@@ -337,7 +345,7 @@ useClickOutside(rootRef, closeDropdown)
     z-index: var(--z-index-dropdown)
 
   &__option
-    padding: 8px var(--spacing-3)
+    padding: var(--spacing-2) var(--spacing-3)
     border-radius: var(--radius-sm)
     font-size: var(--font-size-sm)
     font-weight: 500

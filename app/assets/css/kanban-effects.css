@@ -15,3 +15,11 @@
 .dealio-slideover-open .kanban-card .drag-hint {
     opacity: 0 !important;
 }
+
+.dealio-kanban-dragging .kanban-card:not(.kanban-card--dragging) {
+    cursor: pointer;
+}
+
+.dealio-kanban-dragging .kanban-card--dragging {
+    cursor: grabbing;
+}

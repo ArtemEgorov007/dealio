@@ -48,3 +48,29 @@ export async function createCard(
 export async function updateCardStatus(documentId: string, status: ICardRecord['status']) {
     return DB.updateDocument(DB_ID, COLLECTION_CARDS, documentId, {status})
 }
+
+export async function updateCard(
+    documentId: string,
+    data: {
+        name?: string
+        price?: number
+        status?: ICardRecord['status']
+        customerName?: string
+    },
+) {
+    const patch: Record<string, unknown> = {}
+
+    if (data.name !== undefined) patch.name = data.name
+    if (data.price !== undefined) patch.price = priorityToAppwritePrice(data.price)
+    if (data.status !== undefined) patch.status = data.status
+
+    if (data.customerName !== undefined) {
+        const existing = await DB.getDocument<ICardRecord>(DB_ID, COLLECTION_CARDS, documentId)
+        patch.customer = {
+            ...existing.customer,
+            name: data.customerName,
+        }
+    }
+
+    return DB.updateDocument(DB_ID, COLLECTION_CARDS, documentId, patch)
+}

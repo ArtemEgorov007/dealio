@@ -20,8 +20,5 @@ export const useCardSlideStore = defineStore('card-slide', {
         set(card: ICard) {
             this.$patch({card, isOpen: true})
         },
-        toggle() {
-            this.isOpen = !this.isOpen
-        },
     },
 })

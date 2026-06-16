@@ -47,10 +47,10 @@ onBeforeUnmount(() => {
           class="slideover-panel"
           role="dialog"
           aria-modal="true"
-          aria-label="Детали элемента"
+          aria-label="Редактирование элемента"
       >
         <header class="slideover-header">
-          <span class="slideover-header__label">Детали элемента</span>
+          <span class="slideover-header__label">Редактирование</span>
           <button
               type="button"
               class="slideover-close"
