@@ -131,11 +131,12 @@ const onCardCreated = () => {
 .kanban-column
   width: 288px
   flex-shrink: 0
-  background-color: var(--color-bg-secondary)
+  background-color: var(--color-bg-tertiary)
   border-radius: var(--radius-xl)
   padding: var(--spacing-4)
-  border: var(--border-width) solid var(--color-border)
-  transition: all 0.2s ease
+  border: var(--border-width) solid var(--color-card-border)
+  box-shadow: var(--shadow-sm)
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease
   display: flex
   flex-direction: column
   min-height: 400px
@@ -143,7 +144,7 @@ const onCardCreated = () => {
   &--over
     border-color: var(--color-primary)
     background-color: var(--color-primary-light)
-    box-shadow: 0 0 0 2px var(--color-primary-muted)
+    box-shadow: var(--shadow-md), 0 0 0 2px var(--color-primary-muted)
 
 .column-header
   display: flex

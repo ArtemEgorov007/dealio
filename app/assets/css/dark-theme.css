@@ -41,8 +41,8 @@
     --color-border-focus: #14b8a6;
 
     /* Карточки */
-    --color-card-bg: #161b22;
-    --color-card-border: #21293a;
+    --color-card-bg: #21262d;
+    --color-card-border: #30363d;
     --color-card-shadow: rgba(0, 0, 0, 0.35);
 
     /* Кнопки */
@@ -98,6 +98,6 @@
     --color-error-text: #f87171;
     --color-error-border: rgba(248, 113, 113, 0.25);
 
-    --kanban-grid-pattern: radial-gradient(circle, rgba(100, 116, 139, 0.35) 1px, transparent 1px);
+    --kanban-grid-pattern: radial-gradient(circle, rgba(100, 116, 139, 0.22) 1px, transparent 1px);
     --kanban-grid-size: 18px 18px;
 }

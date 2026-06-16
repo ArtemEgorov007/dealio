@@ -134,6 +134,7 @@ const formatPrice = (price: number) =>
   background-color: var(--color-card-bg)
   border: var(--border-width) solid var(--color-card-border)
   border-radius: var(--radius-lg)
+  box-shadow: var(--shadow-sm)
   cursor: grab
   transition: box-shadow var(--transition-normal) var(--transition-ease), transform var(--transition-normal) var(--transition-ease), border-color var(--transition-normal) ease
   user-select: none
