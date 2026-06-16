@@ -265,7 +265,7 @@ const loginAsGuest = async () => {
           </span>
           <span class="demo-btn__text">
             <span class="demo-btn__label">Демо-режим</span>
-            <span class="demo-btn__sub">Kanban-доска без регистрации</span>
+            <span class="demo-btn__sub">Трекер идей и задач без регистрации</span>
           </span>
           <Icon name="heroicons:arrow-right" size="14" class="demo-btn__arrow"/>
         </button>

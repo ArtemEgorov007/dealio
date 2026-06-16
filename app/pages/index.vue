@@ -1,5 +1,5 @@
 <script setup lang="ts">
-useSeoMeta({ title: 'Доска | Dealio' })
+useSeoMeta({ title: 'Dealio — трекер идей, задач и wishlist' })
 </script>
 
 <template>

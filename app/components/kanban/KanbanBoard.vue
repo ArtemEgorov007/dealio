@@ -37,7 +37,7 @@ const handleCardMoved = () => invalidateBoard()
   <div class="kanban-page">
     <header class="kanban-header">
       <div class="kanban-header__left">
-        <h1 class="kanban-title">Моя доска</h1>
+        <h1 class="kanban-title">Мой трекер</h1>
         <div v-if="authStore.isGuest" class="kanban-demo-badge">
           <span class="demo-dot"></span>
           Демо-режим

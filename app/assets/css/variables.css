@@ -168,7 +168,7 @@
     --sidebar-width-expanded: 232px;
     --sidebar-width-collapsed: 64px;
 
-    /* Kanban column colors */
+    /* Kanban column colors (ideas / tasks / doing / done / wishlist) */
     --kanban-todo-color: #64748b;
     --kanban-todo-bg: rgba(100, 116, 139, 0.08);
     --kanban-agreed-color: #0ea5e9;
@@ -179,6 +179,17 @@
     --kanban-produced-bg: rgba(139, 92, 246, 0.08);
     --kanban-done-color: #10b981;
     --kanban-done-bg: rgba(16, 185, 129, 0.08);
+    /* tracker statuses */
+    --kanban-ideas-color: #0ea5e9;
+    --kanban-ideas-bg: rgba(14, 165, 233, 0.08);
+    --kanban-tasks-color: #f59e0b;
+    --kanban-tasks-bg: rgba(245, 158, 11, 0.08);
+    --kanban-doing-color: #8b5cf6;
+    --kanban-doing-bg: rgba(139, 92, 246, 0.08);
+    --kanban-done-tracker-color: #10b981;
+    --kanban-done-tracker-bg: rgba(16, 185, 129, 0.08);
+    --kanban-wishlist-color: #ec4899;
+    --kanban-wishlist-bg: rgba(236, 72, 153, 0.08);
 
     /* Error colors */
     --color-error-bg: rgba(239, 68, 68, 0.06);

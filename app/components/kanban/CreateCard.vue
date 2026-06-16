@@ -21,7 +21,7 @@ interface ICardFormState {
 }
 
 const props = defineProps({
-  status: {type: String, default: 'todo'}
+  status: {type: String, default: 'ideas'}
 })
 
 const emit = defineEmits<{
@@ -37,8 +37,8 @@ const {handleSubmit, defineField, handleReset, errors} = useForm<ICardFormState>
   initialValues: {
     status: props.status,
     name: '',
-    price: 3,
-    customer: {name: 'Идеи', email: ''}
+    price: 0,
+    customer: {name: 'Идея', email: ''}
   }
 })
 
@@ -53,12 +53,12 @@ const {mutate, isPending, isError, error} = useMutation({
       throw new Error('Название обязательно')
     }
 
-    if (data.price < 1 || data.price > 5) {
-      throw new Error('Приоритет от 1 до 5')
+    if (data.price < 0) {
+      throw new Error('Стоимость не может быть отрицательной')
     }
 
     if (!data.customer.name.trim()) {
-      throw new Error('Выберите категорию')
+      throw new Error('Выберите тип')
     }
 
     const documentId = uuid()
@@ -137,7 +137,7 @@ const onSubmit = handleSubmit(values => mutate(values))
           novalidate
       >
         <div class="create-card__header">
-          <span class="create-card__title">Новая карточка</span>
+          <span class="create-card__title">Новый элемент</span>
           <button
               type="button"
               class="create-card__close"
@@ -157,15 +157,15 @@ const onSubmit = handleSubmit(values => mutate(values))
             id="card-name"
             v-model="name"
             v-bind="nameAttrs"
-            label="Название"
-            placeholder="Идея, задача или желание"
+            label="Заголовок"
+            placeholder="Что хотите добавить?"
             type="text"
             :error="errors.name"
             required
         />
 
         <div class="form-field">
-          <label class="form-field__label" for="card-category">Категория</label>
+          <label class="form-field__label" for="card-category">Тип</label>
           <select
               id="card-category"
               v-model="category"
@@ -178,20 +178,17 @@ const onSubmit = handleSubmit(values => mutate(values))
           </select>
         </div>
 
-        <div class="form-field">
-          <label class="form-field__label" for="card-priority">Приоритет</label>
-          <div class="priority-picker">
-            <button
-                v-for="n in 5"
-                :key="n"
-                type="button"
-                class="priority-picker__dot"
-                :class="{ 'priority-picker__dot--active': price >= n }"
-                :aria-label="`Приоритет ${n}`"
-                @click="price = n"
-            />
-          </div>
-          <input id="card-priority" v-model.number="price" v-bind="priceAttrs" type="hidden"/>
+        <div v-if="category === 'Wishlist'" class="form-field">
+          <label class="form-field__label" for="card-price">Стоимость, ₽</label>
+          <input
+              id="card-price"
+              v-model.number="price"
+              v-bind="priceAttrs"
+              type="number"
+              min="0"
+              placeholder="0"
+              class="form-field__input"
+          />
         </div>
 
         <UiButton
@@ -202,7 +199,7 @@ const onSubmit = handleSubmit(values => mutate(values))
             :loading="isPending"
             :disabled="isPending"
         >
-          {{ isPending ? 'Сохранение...' : 'Добавить на доску' }}
+          {{ isPending ? 'Сохранение...' : 'Добавить' }}
         </UiButton>
       </form>
     </Transition>
@@ -307,25 +304,24 @@ const onSubmit = handleSubmit(values => mutate(values))
     outline: none
     border-color: var(--color-input-border-focus)
 
-.priority-picker
-  display: flex
-  gap: 6px
+.form-field__input
+  width: 100%
+  padding: var(--spacing-2) var(--spacing-3)
+  border: var(--border-width) solid var(--color-input-border)
+  border-radius: var(--radius-md)
+  background-color: var(--color-input-bg)
+  color: var(--color-input-text)
+  font-size: var(--font-size-sm)
+  font-family: inherit
+  font-variant-numeric: tabular-nums
+  box-sizing: border-box
 
-.priority-picker__dot
-  width: 12px
-  height: 12px
-  border-radius: 50%
-  border: none
-  background-color: var(--color-border)
-  cursor: pointer
-  padding: 0
-  transition: background-color var(--transition-fast) ease, transform var(--transition-fast) ease
+  &:focus
+    outline: none
+    border-color: var(--color-input-border-focus)
 
-  &--active
-    background-color: var(--color-accent)
-
-  &:hover
-    transform: scale(1.15)
+  &::placeholder
+    color: var(--color-input-placeholder)
 
 .form-expand-enter-active,
 .form-expand-leave-active

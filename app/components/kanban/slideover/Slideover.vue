@@ -29,13 +29,13 @@ const isLocalOpen = computed({
           class="slideover-panel"
           role="dialog"
           aria-modal="true"
-          aria-label="Детали карточки"
+          aria-label="Детали элемента"
           @click.stop
       >
         <div class="slideover-inner">
           <div class="slideover-header">
             <div class="slideover-header__title">
-              <span class="slideover-header__label">Детали карточки</span>
+              <span class="slideover-header__label">Детали элемента</span>
             </div>
             <button
               class="slideover-close"

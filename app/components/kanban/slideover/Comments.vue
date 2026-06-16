@@ -14,21 +14,21 @@ const card = data as unknown as ICardRecord
   <div class="comments">
     <div class="comments__header">
       <Icon name="heroicons:chat-bubble-left-ellipsis" size="16"/>
-      <span class="comments__title">Комментарии</span>
+      <span class="comments__title">Заметки</span>
     </div>
 
     <div class="comments__input-wrap">
       <input
           v-model="commentRef"
           class="comments__field"
-          placeholder="Написать комментарий..."
+          placeholder="Добавить заметку..."
           @keyup.enter="writeComment"
       />
       <button
           class="comments__submit"
           :disabled="!commentRef"
           @click="writeComment"
-          aria-label="Отправить комментарий"
+          aria-label="Сохранить заметку"
       >
         <Icon name="heroicons:paper-airplane" size="15"/>
       </button>
@@ -56,7 +56,7 @@ const card = data as unknown as ICardRecord
 
     <div v-else class="comments__empty">
       <Icon name="heroicons:chat-bubble-oval-left" size="24" class="comments__empty-icon"/>
-      <span>Комментариев пока нет</span>
+      <span>Заметок пока нет</span>
     </div>
   </div>
 </template>

@@ -4,28 +4,28 @@ import {COLUMN_LABELS} from "~/components/kanban/kanban.labels";
 
 export const KANBAN_DATA: IColumn[] = [
     {
-        id: EnumStatus.todo,
-        name: COLUMN_LABELS[EnumStatus.todo],
+        id: EnumStatus.ideas,
+        name: COLUMN_LABELS[EnumStatus.ideas],
         items: [],
     },
     {
-        id: EnumStatus['to-be-agreed'],
-        name: COLUMN_LABELS[EnumStatus['to-be-agreed']],
+        id: EnumStatus.tasks,
+        name: COLUMN_LABELS[EnumStatus.tasks],
         items: [],
     },
     {
-        id: EnumStatus['in-progress'],
-        name: COLUMN_LABELS[EnumStatus['in-progress']],
-        items: [],
-    },
-    {
-        id: EnumStatus.produced,
-        name: COLUMN_LABELS[EnumStatus.produced],
+        id: EnumStatus.doing,
+        name: COLUMN_LABELS[EnumStatus.doing],
         items: [],
     },
     {
         id: EnumStatus.done,
         name: COLUMN_LABELS[EnumStatus.done],
+        items: [],
+    },
+    {
+        id: EnumStatus.wishlist,
+        name: COLUMN_LABELS[EnumStatus.wishlist],
         items: [],
     },
 ]

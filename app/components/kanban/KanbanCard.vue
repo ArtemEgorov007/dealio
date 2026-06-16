@@ -3,7 +3,6 @@ import type {ICard} from '~/components/kanban/kanban.types'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import {useCardSlideStore} from '~~/store/card-slide.store'
-import {PRIORITY_LABELS} from '~/components/kanban/kanban.labels'
 
 dayjs.locale('ru')
 
@@ -49,15 +48,18 @@ const formatDate = (dateString: string) => {
   }
 }
 
-const priorityLevel = computed(() => {
-  const value = props.card.price
-  if (!value || value < 1 || value > 5) return 0
-  return value
-})
+const CATEGORY_ICONS: Record<string, string> = {
+  'Идея': '💡',
+  'Задача': '✅',
+  'Wishlist': '🎁',
+}
 
-const priorityLabel = computed(() =>
-    priorityLevel.value ? PRIORITY_LABELS[priorityLevel.value] : null
-)
+const categoryIcon = computed(() => CATEGORY_ICONS[props.card.category] ?? '')
+
+const isWishlistItem = computed(() => props.card.price > 0)
+
+const formatPrice = (price: number) =>
+    price.toLocaleString('ru-RU', {style: 'currency', currency: 'RUB', maximumFractionDigits: 0})
 </script>
 
 <template>
@@ -76,19 +78,15 @@ const priorityLabel = computed(() =>
     <div class="card-accent" :class="`card-accent--${columnId}`"></div>
 
     <div class="card-body">
-      <div class="card-category">{{ card.category }}</div>
+      <div class="card-badge">
+        <span class="card-badge__icon">{{ categoryIcon }}</span>
+        <span class="card-badge__text">{{ card.category }}</span>
+      </div>
+
       <div class="card-name">{{ card.name }}</div>
 
-      <div v-if="priorityLevel" class="card-priority-row">
-        <div class="priority-dots" :aria-label="`Приоритет: ${priorityLabel}`">
-          <span
-              v-for="n in 5"
-              :key="n"
-              class="priority-dot"
-              :class="{ 'priority-dot--active': n <= priorityLevel }"
-          />
-        </div>
-        <span class="priority-label">{{ priorityLabel }}</span>
+      <div v-if="isWishlistItem" class="card-price tabular-nums">
+        {{ formatPrice(card.price) }}
       </div>
 
       <div class="card-meta">
@@ -150,31 +148,40 @@ const priorityLabel = computed(() =>
   width: 3px
   height: 100%
 
-  &--todo
-    background-color: var(--kanban-todo-color)
+  &--ideas
+    background-color: var(--kanban-ideas-color)
 
-  &--to-be-agreed
-    background-color: var(--kanban-agreed-color)
+  &--tasks
+    background-color: var(--kanban-tasks-color)
 
-  &--in-progress
-    background-color: var(--kanban-progress-color)
-
-  &--produced
-    background-color: var(--kanban-produced-color)
+  &--doing
+    background-color: var(--kanban-doing-color)
 
   &--done
-    background-color: var(--kanban-done-color)
+    background-color: var(--kanban-done-tracker-color)
+
+  &--wishlist
+    background-color: var(--kanban-wishlist-color)
 
 .card-body
   padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) calc(var(--spacing-4) + 3px)
 
-.card-category
+.card-badge
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  margin-bottom: 4px
+
+.card-badge__icon
+  font-size: 11px
+  line-height: 1
+
+.card-badge__text
   font-size: var(--font-size-xs)
   font-weight: 700
   color: var(--color-primary)
   text-transform: uppercase
   letter-spacing: 0.5px
-  margin-bottom: 3px
 
 .card-name
   font-size: var(--font-size-sm)
@@ -183,30 +190,14 @@ const priorityLabel = computed(() =>
   line-height: 1.35
   margin-bottom: var(--spacing-3)
 
-.card-priority-row
-  display: flex
-  align-items: center
-  gap: var(--spacing-2)
-  margin-bottom: var(--spacing-3)
-
-.priority-dots
-  display: flex
-  gap: 3px
-
-.priority-dot
-  width: 6px
-  height: 6px
-  border-radius: 50%
-  background-color: var(--color-border)
-  transition: background-color var(--transition-fast) ease
-
-  &--active
-    background-color: var(--color-accent)
-
-.priority-label
-  font-size: 11px
-  font-weight: 600
-  color: var(--color-text-muted)
+.card-price
+  font-size: var(--font-size-sm)
+  font-weight: 800
+  color: var(--kanban-wishlist-color)
+  margin-bottom: var(--spacing-2)
+  letter-spacing: -0.3px
+  font-variant-numeric: tabular-nums
+  font-feature-settings: "tnum"
 
 .card-meta
   display: flex

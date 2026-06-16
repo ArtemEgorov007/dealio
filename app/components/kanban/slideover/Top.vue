@@ -2,7 +2,7 @@
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import {useCardSlideStore} from '~~/store/card-slide.store'
-import {COLUMN_LABELS, PRIORITY_LABELS} from '~/components/kanban/kanban.labels'
+import {COLUMN_LABELS} from '~/components/kanban/kanban.labels'
 import {EnumStatus} from '~~/types/cards.types'
 
 dayjs.locale('ru')
@@ -12,21 +12,28 @@ const store = useCardSlideStore()
 const formatDate = (date?: string): string =>
     date ? dayjs(date).format('D MMMM YYYY') : '—'
 
-const priorityLevel = computed(() => {
-  const value = store.card?.price
-  if (!value || value < 1 || value > 5) return 0
-  return value
-})
-
 const statusLabels = COLUMN_LABELS
 
 const statusVariants: Record<string, string> = {
-  'todo': 'secondary',
-  'to-be-agreed': 'info',
-  'in-progress': 'warning',
-  'produced': 'primary',
-  'done': 'success'
+  'ideas': 'info',
+  'tasks': 'warning',
+  'doing': 'primary',
+  'done': 'success',
+  'wishlist': 'secondary',
 }
+
+const CATEGORY_ICONS: Record<string, string> = {
+  'Идея': '💡',
+  'Задача': '✅',
+  'Wishlist': '🎁',
+}
+
+const categoryIcon = computed(() => CATEGORY_ICONS[store.card?.category ?? ''] ?? '')
+
+const isWishlistItem = computed(() => (store.card?.price ?? 0) > 0)
+
+const formatPrice = (price: number) =>
+    price.toLocaleString('ru-RU', {style: 'currency', currency: 'RUB', maximumFractionDigits: 0})
 </script>
 
 <template>
@@ -35,35 +42,29 @@ const statusVariants: Record<string, string> = {
       <h2 class="card-info__name">{{ store.card?.name || '—' }}</h2>
     </div>
 
-    <div v-if="priorityLevel" class="card-info__priority">
-      <div class="priority-dots">
-        <span
-            v-for="n in 5"
-            :key="n"
-            class="priority-dot"
-            :class="{ 'priority-dot--active': n <= priorityLevel }"
-        />
-      </div>
-      <span class="priority-text">{{ PRIORITY_LABELS[priorityLevel] }}</span>
+    <div v-if="isWishlistItem" class="card-info__price tabular-nums">
+      {{ formatPrice(store.card!.price) }}
     </div>
 
     <div class="card-info__divider"></div>
 
     <div class="card-info__grid">
       <div class="card-info__field">
-        <span class="field-label">Категория</span>
-        <span class="field-value field-value--category">{{ store.card?.category || '—' }}</span>
+        <span class="field-label">Тип</span>
+        <span class="field-value field-value--category">
+          {{ categoryIcon }} {{ store.card?.category || '—' }}
+        </span>
       </div>
 
       <div class="card-info__field">
-        <span class="field-label">Статус</span>
+        <span class="field-label">Колонка</span>
         <UiBadge :variant="(statusVariants[store.card?.status || ''] as any) || 'secondary'">
           {{ statusLabels[store.card?.status as EnumStatus] || store.card?.status || '—' }}
         </UiBadge>
       </div>
 
       <div class="card-info__field">
-        <span class="field-label">Дата создания</span>
+        <span class="field-label">Дата добавления</span>
         <span class="field-value">{{ formatDate(store.card?.$createdAt) }}</span>
       </div>
     </div>
@@ -89,28 +90,13 @@ const statusVariants: Record<string, string> = {
   letter-spacing: -0.3px
   line-height: 1.25
 
-.card-info__priority
-  display: flex
-  align-items: center
-  gap: var(--spacing-3)
-
-.priority-dots
-  display: flex
-  gap: 4px
-
-.priority-dot
-  width: 8px
-  height: 8px
-  border-radius: 50%
-  background-color: var(--color-border)
-
-  &--active
-    background-color: var(--color-accent)
-
-.priority-text
-  font-size: var(--font-size-sm)
-  font-weight: 600
-  color: var(--color-text-secondary)
+.card-info__price
+  font-size: var(--font-size-2xl)
+  font-weight: 800
+  color: #ec4899
+  letter-spacing: -0.5px
+  font-variant-numeric: tabular-nums
+  font-feature-settings: "tnum"
 
 .card-info__divider
   height: 1px

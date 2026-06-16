@@ -28,38 +28,18 @@ const stats = computed(() => {
   if (!cardsData.value) return null
 
   const cards = cardsData.value
-  const totalCards = cards.length
+  const total = cards.length
+  const doing = cards.filter(c => c.status === EnumStatus.doing).length
+  const done = cards.filter(c => c.status === EnumStatus.done).length
+  const wishlistSum = cards
+    .filter(c => c.status === EnumStatus.wishlist && c.price > 0)
+    .reduce((acc, c) => acc + c.price, 0)
 
-  const statusCounts = {
-    [EnumStatus.todo]: 0,
-    [EnumStatus['to-be-agreed']]: 0,
-    [EnumStatus['in-progress']]: 0,
-    [EnumStatus.produced]: 0,
-    [EnumStatus.done]: 0
-  }
-
-  cards.forEach(card => {
-    if (card.status in statusCounts) {
-      statusCounts[card.status as EnumStatus]++
-    }
-  })
-
-  const inProgress = statusCounts[EnumStatus['in-progress']] + statusCounts[EnumStatus.produced]
-  const completed = statusCounts[EnumStatus.done]
-  const activeIdeas = statusCounts[EnumStatus.todo]
-
-  const completionRate = totalCards > 0
-    ? Math.round((completed / totalCards) * 100)
-    : 0
-
-  return {
-    totalCards,
-    inProgress,
-    completed,
-    activeIdeas,
-    completionRate
-  }
+  return { total, doing, done, wishlistSum }
 })
+
+const formatSum = (sum: number) =>
+  sum.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 })
 </script>
 
 <template>
@@ -74,41 +54,38 @@ const stats = computed(() => {
           <Icon name="heroicons:rectangle-stack" size="18"/>
         </div>
         <div class="stat-body">
-          <div class="stat-value tabular-nums">{{ stats.totalCards }}</div>
-          <div class="stat-label">Всего карточек</div>
+          <div class="stat-value tabular-nums">{{ stats.total }}</div>
+          <div class="stat-label">Всего</div>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon stat-icon--amber">
-          <Icon name="heroicons:light-bulb" size="18"/>
-        </div>
-        <div class="stat-body">
-          <div class="stat-value tabular-nums">{{ stats.activeIdeas }}</div>
-          <div class="stat-label">Новые идеи</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon stat-icon--teal">
+        <div class="stat-icon stat-icon--violet">
           <Icon name="heroicons:bolt" size="18"/>
         </div>
         <div class="stat-body">
-          <div class="stat-value tabular-nums">{{ stats.inProgress }}</div>
-          <div class="stat-label">В процессе</div>
+          <div class="stat-value tabular-nums">{{ stats.doing }}</div>
+          <div class="stat-label">В работе</div>
         </div>
       </div>
 
-      <div class="stat-card stat-card--accent">
+      <div class="stat-card">
         <div class="stat-icon stat-icon--emerald">
           <Icon name="heroicons:check-badge" size="18"/>
         </div>
         <div class="stat-body">
-          <div class="stat-value tabular-nums">
-            {{ stats.completed }}
-            <span class="stat-sub">· {{ stats.completionRate }}%</span>
-          </div>
-          <div class="stat-label">Завершено</div>
+          <div class="stat-value tabular-nums">{{ stats.done }}</div>
+          <div class="stat-label">Готово</div>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card--accent">
+        <div class="stat-icon stat-icon--pink">
+          <Icon name="heroicons:gift" size="18"/>
+        </div>
+        <div class="stat-body">
+          <div class="stat-value tabular-nums stat-value--price">{{ formatSum(stats.wishlistSum) }}</div>
+          <div class="stat-label">Wishlist ₽</div>
         </div>
       </div>
     </template>
@@ -170,20 +147,22 @@ const stats = computed(() => {
     background-color: rgba(100, 116, 139, 0.1)
     color: #64748b
 
-  &--amber
-    background-color: rgba(245, 158, 11, 0.1)
-    color: var(--color-accent)
-
-  &--teal
-    background-color: var(--color-primary-light)
-    color: var(--color-primary)
+  &--violet
+    background-color: rgba(139, 92, 246, 0.1)
+    color: #8b5cf6
 
   &--emerald
     background-color: rgba(16, 185, 129, 0.1)
     color: var(--color-success)
 
+  &--pink
+    background-color: rgba(236, 72, 153, 0.1)
+    color: #ec4899
+
 .stat-body
   min-width: 0
+  flex: 1
+  overflow: hidden
 
 .stat-value
   font-size: var(--font-size-2xl)
@@ -197,10 +176,8 @@ const stats = computed(() => {
   overflow: hidden
   text-overflow: ellipsis
 
-.stat-sub
-  font-size: var(--font-size-base)
-  font-weight: 500
-  color: var(--color-text-muted)
+  &--price
+    font-size: var(--font-size-xl)
 
 .stat-label
   font-size: var(--font-size-xs)

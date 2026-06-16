@@ -17,11 +17,11 @@ export interface IComment extends IBaseField {
 }
 
 export enum EnumStatus {
-    'todo' = 'todo',
-    'to-be-agreed' = 'to-be-agreed',
-    'in-progress' = 'in-progress',
-    'produced' = 'produced',
+    'ideas' = 'ideas',
+    'tasks' = 'tasks',
+    'doing' = 'doing',
     'done' = 'done',
+    'wishlist' = 'wishlist',
 }
 
 export interface ICardRecord extends IBaseField {

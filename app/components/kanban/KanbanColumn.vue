@@ -172,20 +172,20 @@ const onCardCreated = () => {
   border-radius: 50%
   flex-shrink: 0
 
-  &--todo
-    background-color: var(--kanban-todo-color)
+  &--ideas
+    background-color: var(--kanban-ideas-color)
 
-  &--to-be-agreed
-    background-color: var(--kanban-agreed-color)
+  &--tasks
+    background-color: var(--kanban-tasks-color)
 
-  &--in-progress
-    background-color: var(--kanban-progress-color)
-
-  &--produced
-    background-color: var(--kanban-produced-color)
+  &--doing
+    background-color: var(--kanban-doing-color)
 
   &--done
-    background-color: var(--kanban-done-color)
+    background-color: var(--kanban-done-tracker-color)
+
+  &--wishlist
+    background-color: var(--kanban-wishlist-color)
 
 .column-title
   margin: 0

@@ -13,7 +13,7 @@ export function useCreateComment({refetch}: { refetch: () => void }) {
                 return Promise.resolve(null)
             }
             if (!store.card?.id) {
-                throw new Error('Карточка не выбрана')
+                throw new Error('Элемент не выбран')
             }
             return createComment(commentRef.value.trim(), store.card.id)
         },
