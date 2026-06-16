@@ -11,6 +11,7 @@ import {
 import {useAuthStore} from '~~/store/auth.store'
 import {listCards} from '~/utils/appwrite-cards'
 import {fromAppwritePrice} from '~/utils/card-priority'
+import {fromAppwriteStatus} from '~/utils/appwrite-status'
 import {useBoardStore} from '~~/store/board.store'
 
 export function useKanbanQuery() {
@@ -35,7 +36,8 @@ export function useKanbanQuery() {
             const records = data.documents as unknown as (ICardRecord & { priority?: string })[]
 
             for (const record of records) {
-                const column = newBoard.find(col => col.id === record.status)
+                const uiStatus = fromAppwriteStatus(String(record.status))
+                const column = newBoard.find(col => col.id === uiStatus)
                 if (!column) continue
 
                 const category = record.customer?.name || 'Без категории'
@@ -45,7 +47,7 @@ export function useKanbanQuery() {
                     name: record.name,
                     price: fromAppwritePrice(record.price, category),
                     category,
-                    status: column.id,
+                    status: uiStatus,
                     priority: (record.priority as ICard['priority']) ?? 'medium',
                 }
                 column.items.push(card)

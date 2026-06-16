@@ -40,6 +40,10 @@ export function mapAppwriteError(error: unknown, fallback: string): string {
 
     const message = String((error as { message?: string }).message ?? '')
 
+    if (/attribute "status"/i.test(message)) {
+        return 'Не удалось сохранить колонку. Обновите страницу и попробуйте снова.'
+    }
+
     if (/attribute "price"|invalid format.*price|10,000 and 1,000,000|10000.*1000000/i.test(message)) {
         return `Стоимость должна быть от ${APPWRITE_PRICE_MIN.toLocaleString('ru-RU')} до ${APPWRITE_PRICE_MAX.toLocaleString('ru-RU')} ₽`
     }

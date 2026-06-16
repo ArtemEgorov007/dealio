@@ -2,9 +2,11 @@ import type {Models} from 'appwrite'
 
 import {COLLECTION_CARDS, DB_ID} from '~~/app.constants'
 import type {ICardRecord} from '~~/types/cards.types'
+import {EnumStatus} from '~~/types/cards.types'
 import {account, DB} from '~/utils/appwrite'
 import {buildUserPermissions} from '~/utils/appwrite-user'
 import {isWishlistCategory, toAppwritePrice} from '~/utils/card-priority'
+import {toAppwriteStatus} from '~/utils/appwrite-status'
 
 async function getSessionUserId(): Promise<string> {
     const user = await account.get()
@@ -42,12 +44,15 @@ export async function createCard(
     const payload = {
         ...data,
         price: toAppwritePrice(data.price ?? 0, category),
+        status: toAppwriteStatus(data.status ?? EnumStatus.ideas),
     }
     return DB.createDocument(DB_ID, COLLECTION_CARDS, documentId, payload, buildUserPermissions(userId))
 }
 
-export async function updateCardStatus(documentId: string, status: ICardRecord['status']) {
-    return DB.updateDocument(DB_ID, COLLECTION_CARDS, documentId, {status})
+export async function updateCardStatus(documentId: string, status: EnumStatus) {
+    return DB.updateDocument(DB_ID, COLLECTION_CARDS, documentId, {
+        status: toAppwriteStatus(status),
+    })
 }
 
 export async function updateCard(
@@ -55,7 +60,7 @@ export async function updateCard(
     data: {
         name?: string
         price?: number
-        status?: ICardRecord['status']
+        status?: EnumStatus
         customerName?: string
     },
 ) {
@@ -82,7 +87,7 @@ export async function updateCard(
     }
 
     if (data.name !== undefined) patch.name = data.name
-    if (data.status !== undefined) patch.status = data.status
+    if (data.status !== undefined) patch.status = toAppwriteStatus(data.status)
 
     return DB.updateDocument(DB_ID, COLLECTION_CARDS, documentId, patch)
 }
