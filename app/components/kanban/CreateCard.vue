@@ -166,13 +166,11 @@ const {mutate, isPending, isError, error} = useMutation({
   },
   onSuccess: (result) => {
     if (import.meta.client && isGuestSession() && result) {
-      const newCard = result as IBoardCard
-      boardStore.addCard(newCard)
-      queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
-      queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
-    } else {
-      queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
+      boardStore.addCard(result as IBoardCard)
     }
+
+    queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
+    queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
 
     handleReset()
     isOpenForm.value = false

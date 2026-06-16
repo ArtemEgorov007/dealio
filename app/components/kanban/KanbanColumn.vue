@@ -79,6 +79,7 @@ const handleDragEnd = () => {
 const onCardCreated = () => {
   if (import.meta.client && isGuestSession()) return
   queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
+  queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
 }
 </script>
 
