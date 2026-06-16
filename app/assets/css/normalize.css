@@ -16,6 +16,10 @@ body {
     color: var(--color-text);
 }
 
+html {
+    scrollbar-gutter: stable;
+}
+
 img,
 picture,
 video,

@@ -27,6 +27,13 @@ const boardStore = useBoardStore()
 const queryClient = useQueryClient()
 
 const skipClick = ref(false)
+const isEntered = ref(false)
+
+const handleEnterAnimationEnd = (event: AnimationEvent) => {
+  if (event.animationName.includes('card-in')) {
+    isEntered.value = true
+  }
+}
 
 const handleDragStart = (event: DragEvent) => {
   event.dataTransfer?.setData('text/plain', props.card.id)
@@ -89,11 +96,12 @@ const formatPrice = (price: number) =>
       :class="[
         `kanban-card--${columnId}`,
         `kanban-card--priority-${card.priority}`,
-        { 'kanban-card--dragging': isDragging },
+        { 'kanban-card--dragging': isDragging, 'kanban-card--enter': !isEntered },
       ]"
       draggable="true"
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
+      @animationend="handleEnterAnimationEnd"
       @click="handleOpenSlideover"
       role="button"
       :aria-label="`Карточка: ${card.name}`"
@@ -153,12 +161,14 @@ const formatPrice = (price: number) =>
   transition: box-shadow var(--transition-normal) var(--transition-ease), transform var(--transition-normal) var(--transition-ease), border-color var(--transition-normal) ease
   user-select: none
   overflow: hidden
-  opacity: 0
-  animation: card-in 0.3s ease forwards
+  opacity: 1
+
+  &--enter
+    opacity: 0
+    animation: card-in 0.3s ease forwards
 
   &:hover
     box-shadow: var(--shadow-card-hover)
-    transform: translateY(-3px)
     border-color: var(--color-border-hover)
 
     .drag-hint

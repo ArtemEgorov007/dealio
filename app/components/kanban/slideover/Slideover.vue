@@ -19,6 +19,9 @@ watch(isOpen, (open) => {
   if (!import.meta.client) return
   document.body.classList.toggle('dealio-slideover-open', open)
   document.body.style.overflow = open ? 'hidden' : ''
+  if (!open) {
+    (document.activeElement as HTMLElement | null)?.blur()
+  }
 }, {immediate: true})
 
 onMounted(() => {

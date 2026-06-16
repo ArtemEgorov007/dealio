@@ -1,14 +1,7 @@
-/* Performance helpers when card slideover is open */
-.dealio-slideover-open .kanban-card {
-    transition: none !important;
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-}
-
+/* Slideover open: отключаем hover-эффекты карточки под курсором */
 .dealio-slideover-open .kanban-card:hover {
-    transform: none !important;
-    box-shadow: none !important;
+    box-shadow: var(--shadow-sm) !important;
+    border-color: var(--color-card-border) !important;
 }
 
 .dealio-slideover-open .kanban-card .card-archive-btn,
