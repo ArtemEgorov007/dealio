@@ -2,6 +2,7 @@
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
+import {APPWRITE_PRICE_MIN, APPWRITE_PRICE_MAX, validateWishlistPrice} from '~/utils/card-priority'
 import {CATEGORY_OPTIONS, COLUMN_LABELS} from '~/components/kanban/kanban.labels'
 import {useUpdateCard} from '~/components/kanban/slideover/useUpdateCard'
 import {useCardSlideStore} from '~~/store/card-slide.store'
@@ -49,7 +50,10 @@ const priorityOptions = PRIORITY_OPTIONS.map(option => ({
 
 const priorityTone = computed(() => editPriority.value)
 
-const isWishlistCategory = computed(() => editCategory.value === 'Wishlist')
+const showWishlistPrice = computed(() => editCategory.value === 'Wishlist')
+
+const priceMin = computed(() => authStore.isGuest ? 0 : APPWRITE_PRICE_MIN)
+const priceMax = computed(() => authStore.isGuest ? undefined : APPWRITE_PRICE_MAX)
 
 const syncFromStore = () => {
   const card = store.card
@@ -94,6 +98,9 @@ const saveCategory = (value: string | number) => {
   if (category !== 'Wishlist') {
     editPrice.value = 0
     patch.price = 0
+  } else if (!isGuest.value && editPrice.value < APPWRITE_PRICE_MIN) {
+    editPrice.value = APPWRITE_PRICE_MIN
+    patch.price = APPWRITE_PRICE_MIN
   }
 
   saveField(patch)
@@ -117,6 +124,12 @@ const savePriority = (value: string | number) => {
 const savePrice = () => {
   const price = Number(editPrice.value) || 0
   if (price === store.card?.price) return
+
+  if (!isGuest.value && showWishlistPrice.value) {
+    const priceError = validateWishlistPrice(price)
+    if (priceError) return
+  }
+
   saveField({price})
 }
 </script>
@@ -135,13 +148,14 @@ const savePrice = () => {
     />
 
     <UiInput
-        v-if="isWishlistCategory"
+        v-if="showWishlistPrice"
         id="slideover-price"
         v-model="editPrice"
         label="Стоимость, ₽"
         type="number"
-        placeholder="0"
-        :min="0"
+        :min="priceMin"
+        :max="priceMax"
+        :placeholder="authStore.isGuest ? '0' : '10 000'"
         flush
         :disabled="isPending"
         @blur="savePrice"

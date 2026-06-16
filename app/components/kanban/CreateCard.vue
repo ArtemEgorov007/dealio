@@ -12,6 +12,14 @@ import type {IBoardCard} from '~~/store/board.store'
 import {CATEGORY_OPTIONS} from '~/components/kanban/kanban.labels'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {createCard} from '~/utils/appwrite-cards'
+import {
+    APPWRITE_PRICE_MIN,
+    APPWRITE_PRICE_MAX,
+    validateWishlistPrice,
+    mapAppwriteError,
+    isWishlistCategory,
+} from '~/utils/card-priority'
+import {useAuthStore} from '~~/store/auth.store'
 
 interface ICardFormState {
   name: string
@@ -68,6 +76,7 @@ const toggleForm = () => {
 
 const queryClient = useQueryClient()
 const boardStore = useBoardStore()
+const authStore = useAuthStore()
 
 const {handleSubmit, defineField, handleReset, errors, setFieldValue} = useForm<ICardFormState>({
   initialValues: {
@@ -86,6 +95,12 @@ const [priority] = defineField('priority')
 
 const priorityTone = computed(() => priority.value as 'high' | 'medium' | 'low')
 
+watch(category, (value) => {
+  if (isWishlistCategory(value) && !authStore.isGuest && Number(price.value) < APPWRITE_PRICE_MIN) {
+    setFieldValue('price', APPWRITE_PRICE_MIN)
+  }
+})
+
 watch(() => props.status, (status) => {
   setFieldValue('status', status)
   if (!isOpenForm.value) {
@@ -101,6 +116,10 @@ const {mutate, isPending, isError, error} = useMutation({
     }
     if (data.price < 0) {
       throw new Error('Стоимость не может быть отрицательной')
+    }
+    if (!isGuestSession() && isWishlistCategory(data.customer.name)) {
+      const priceError = validateWishlistPrice(data.price)
+      if (priceError) throw new Error(priceError)
     }
     if (!data.customer.name.trim()) {
       throw new Error('Выберите тип')
@@ -139,7 +158,11 @@ const {mutate, isPending, isError, error} = useMutation({
       return newCard
     }
 
-    return createCard(documentId, payload)
+    try {
+      return await createCard(documentId, payload)
+    } catch (err) {
+      throw new Error(mapAppwriteError(err, 'Не удалось создать карточку'))
+    }
   },
   onSuccess: (result) => {
     if (import.meta.client && isGuestSession() && result) {
@@ -193,7 +216,7 @@ const onSubmit = handleSubmit(values => mutate(values))
 
         <div v-if="isError" class="create-card__error">
           <Icon name="heroicons:exclamation-circle" size="14"/>
-          {{ (error as Error).message }}
+          {{ mapAppwriteError(error, 'Не удалось создать карточку') }}
         </div>
 
         <UiInput
@@ -232,8 +255,9 @@ const onSubmit = handleSubmit(values => mutate(values))
             v-bind="priceAttrs"
             label="Стоимость, ₽"
             type="number"
-            placeholder="0"
-            :min="0"
+            :placeholder="authStore.isGuest ? '0' : '10 000'"
+            :min="authStore.isGuest ? 0 : APPWRITE_PRICE_MIN"
+            :max="authStore.isGuest ? undefined : APPWRITE_PRICE_MAX"
             flush
         />
 

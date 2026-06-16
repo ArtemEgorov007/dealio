@@ -2,6 +2,7 @@ import {useMutation, useQueryClient} from '@tanstack/vue-query'
 
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {updateCard as updateCardApi} from '~/utils/appwrite-cards'
+import {isWishlistCategory, mapAppwriteError, validateWishlistPrice} from '~/utils/card-priority'
 import {useAuthStore} from '~~/store/auth.store'
 import {useBoardStore, type Priority} from '~~/store/board.store'
 import {useCardSlideStore} from '~~/store/card-slide.store'
@@ -45,8 +46,16 @@ export function useUpdateCard() {
                 throw new Error('Название не может быть пустым')
             }
 
-            if (fields.price !== undefined && fields.price < 0) {
-                throw new Error('Стоимость не может быть отрицательной')
+            if (fields.price !== undefined) {
+                if (fields.price < 0) {
+                    throw new Error('Стоимость не может быть отрицательной')
+                }
+
+                const category = fields.category ?? slideStore.card?.category
+                if (!authStore.isGuest && isWishlistCategory(category)) {
+                    const priceError = validateWishlistPrice(fields.price)
+                    if (priceError) throw new Error(priceError)
+                }
             }
 
             if (authStore.isGuest) {
@@ -54,12 +63,16 @@ export function useUpdateCard() {
                 return payload
             }
 
-            await updateCardApi(id, {
-                name: fields.name?.trim(),
-                price: fields.price,
-                status: fields.status,
-                customerName: fields.category,
-            })
+            try {
+                await updateCardApi(id, {
+                    name: fields.name?.trim(),
+                    price: fields.price,
+                    status: fields.status,
+                    customerName: fields.category,
+                })
+            } catch (error) {
+                throw new Error(mapAppwriteError(error, 'Не удалось сохранить изменения'))
+            }
 
             return payload
         },

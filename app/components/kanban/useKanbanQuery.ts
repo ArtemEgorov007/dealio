@@ -10,6 +10,7 @@ import {
 } from '~/components/kanban/kanban.types'
 import {useAuthStore} from '~~/store/auth.store'
 import {listCards} from '~/utils/appwrite-cards'
+import {fromAppwritePrice} from '~/utils/card-priority'
 import {useBoardStore} from '~~/store/board.store'
 
 export function useKanbanQuery() {
@@ -37,12 +38,13 @@ export function useKanbanQuery() {
                 const column = newBoard.find(col => col.id === record.status)
                 if (!column) continue
 
+                const category = record.customer?.name || 'Без категории'
                 const card: ICard = {
                     $createdAt: record.$createdAt,
                     id: record.$id,
                     name: record.name,
-                    price: record.price,
-                    category: record.customer?.name || 'Без категории',
+                    price: fromAppwritePrice(record.price, category),
+                    category,
                     status: column.id,
                     priority: (record.priority as ICard['priority']) ?? 'medium',
                 }

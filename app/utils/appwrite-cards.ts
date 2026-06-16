@@ -4,7 +4,7 @@ import {COLLECTION_CARDS, DB_ID} from '~~/app.constants'
 import type {ICardRecord} from '~~/types/cards.types'
 import {account, DB} from '~/utils/appwrite'
 import {buildUserPermissions} from '~/utils/appwrite-user'
-import {priorityToAppwritePrice} from '~/utils/card-priority'
+import {isWishlistCategory, toAppwritePrice} from '~/utils/card-priority'
 
 async function getSessionUserId(): Promise<string> {
     const user = await account.get()
@@ -38,9 +38,10 @@ export async function createCard(
     data: Omit<Partial<ICardRecord>, '$id' | '$createdAt' | '$updatedAt' | '$permissions' | '$databaseId' | '$collectionId'>,
 ) {
     const userId = await getSessionUserId()
+    const category = data.customer?.name
     const payload = {
         ...data,
-        price: priorityToAppwritePrice(data.price ?? 3),
+        price: toAppwritePrice(data.price ?? 0, category),
     }
     return DB.createDocument(DB_ID, COLLECTION_CARDS, documentId, payload, buildUserPermissions(userId))
 }
@@ -59,18 +60,29 @@ export async function updateCard(
     },
 ) {
     const patch: Record<string, unknown> = {}
+    const needsExisting = data.price !== undefined || data.customerName !== undefined
+    let category = data.customerName
 
-    if (data.name !== undefined) patch.name = data.name
-    if (data.price !== undefined) patch.price = priorityToAppwritePrice(data.price)
-    if (data.status !== undefined) patch.status = data.status
-
-    if (data.customerName !== undefined) {
+    if (needsExisting) {
         const existing = await DB.getDocument<ICardRecord>(DB_ID, COLLECTION_CARDS, documentId)
-        patch.customer = {
-            ...existing.customer,
-            name: data.customerName,
+        category = data.customerName ?? existing.customer.name
+
+        if (data.customerName !== undefined) {
+            patch.customer = {
+                ...existing.customer,
+                name: data.customerName,
+            }
+        }
+
+        if (data.price !== undefined) {
+            patch.price = toAppwritePrice(data.price, category)
+        } else if (data.customerName !== undefined && !isWishlistCategory(data.customerName)) {
+            patch.price = toAppwritePrice(0, data.customerName)
         }
     }
+
+    if (data.name !== undefined) patch.name = data.name
+    if (data.status !== undefined) patch.status = data.status
 
     return DB.updateDocument(DB_ID, COLLECTION_CARDS, documentId, patch)
 }

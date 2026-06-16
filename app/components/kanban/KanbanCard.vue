@@ -83,7 +83,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 }
 
 const categoryClass = computed(() => CATEGORY_COLORS[props.card.category] ?? '')
-const isWishlistItem = computed(() => props.card.price > 0)
+const isWishlistItem = computed(() => props.card.category === 'Wishlist' && props.card.price > 0)
 const isGuest = computed(() => authStore.isGuest)
 
 const formatPrice = (price: number) =>
