@@ -16,6 +16,9 @@ interface Props {
   autocomplete?: string
   name?: string
   id?: string
+  showPasswordToggle?: boolean
+  hint?: string
+  flush?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -25,8 +28,12 @@ const props = withDefaults(defineProps<Props>(), {
   readonly: false,
   success: false,
   required: false,
-  autocomplete: 'off'
+  autocomplete: 'off',
+  showPasswordToggle: false,
+  flush: false,
 })
+
+defineOptions({ inheritAttrs: false })
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string | number | FileList): void
@@ -47,11 +54,32 @@ onMounted(() => {
 
 const inputId = computed(() => props.id || generatedId.value)
 
+const describedBy = computed(() => {
+  const ids: string[] = []
+  if (props.error) ids.push(`${inputId.value}-error`)
+  if (props.hint && !props.error) ids.push(`${inputId.value}-hint`)
+  return ids.length ? ids.join(' ') : undefined
+})
+
 const inputClasses = computed(() => ({
   'ui-input__field--error': !!props.error,
   'ui-input__field--success': props.success,
-  'ui-input__field--disabled': props.disabled
+  'ui-input__field--disabled': props.disabled,
+  'ui-input__field--with-toggle': props.showPasswordToggle && props.type === 'password',
 }))
+
+const isPasswordVisible = ref(false)
+
+const resolvedType = computed(() => {
+  if (props.type === 'password' && props.showPasswordToggle && isPasswordVisible.value) {
+    return 'text'
+  }
+  return props.type
+})
+
+const togglePasswordVisibility = () => {
+  isPasswordVisible.value = !isPasswordVisible.value
+}
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -62,7 +90,7 @@ const handleFileChange = (event: Event) => {
 </script>
 
 <template>
-  <div class="ui-input">
+  <div class="ui-input" :class="{ 'ui-input--flush': flush }">
     <label
         v-if="label"
         :for="inputId"
@@ -72,24 +100,39 @@ const handleFileChange = (event: Event) => {
       {{ label }}
     </label>
 
-    <input
-        :id="inputId"
-        v-model="inputValue"
-        v-bind="$attrs"
-        :type="type"
-        :placeholder="placeholder"
-        :disabled="disabled"
-        :readonly="readonly"
-        :autocomplete="autocomplete"
-        :name="name"
-        :required="required"
-        :aria-invalid="!!error"
-        :aria-required="required"
-        :aria-describedby="error ? `${inputId}-error` : undefined"
-        class="ui-input__field"
-        :class="inputClasses"
-        @change="type === 'file' ? handleFileChange($event) : undefined"
-    />
+    <div class="ui-input__control">
+      <input
+          :id="inputId"
+          v-model="inputValue"
+          v-bind="$attrs"
+          :type="resolvedType"
+          :placeholder="placeholder"
+          :disabled="disabled"
+          :readonly="readonly"
+          :autocomplete="autocomplete"
+          :name="name"
+          :required="required"
+          :aria-invalid="!!error"
+          :aria-required="required"
+          :aria-describedby="describedBy"
+          class="ui-input__field"
+          :class="inputClasses"
+          @change="type === 'file' ? handleFileChange($event) : undefined"
+      />
+      <button
+          v-if="showPasswordToggle && type === 'password'"
+          type="button"
+          class="ui-input__toggle"
+          :aria-label="isPasswordVisible ? 'Скрыть пароль' : 'Показать пароль'"
+          :aria-pressed="isPasswordVisible"
+          tabindex="-1"
+          @click="togglePasswordVisibility"
+      >
+        <Icon :name="isPasswordVisible ? 'heroicons:eye-slash' : 'heroicons:eye'" size="16"/>
+      </button>
+    </div>
+
+    <p v-if="hint && !error" :id="`${inputId}-hint`" class="ui-input__hint">{{ hint }}</p>
 
     <p v-if="error" :id="`${inputId}-error`" class="ui-input__error">
       {{ error }}
@@ -105,6 +148,9 @@ const handleFileChange = (event: Event) => {
   font-family: 'Manrope', sans-serif
   margin-bottom: var(--spacing-4)
 
+  &--flush
+    margin-bottom: 0
+
   &__label
     margin-bottom: 6px
     font-weight: 600
@@ -116,6 +162,11 @@ const handleFileChange = (event: Event) => {
     &--required::after
       content: " *"
       color: var(--color-danger)
+
+  &__control
+    position: relative
+    display: flex
+    align-items: center
 
   &__field
     width: 100%
@@ -159,6 +210,41 @@ const handleFileChange = (event: Event) => {
 
       &::placeholder
         color: var(--color-input-disabled-text)
+
+    &--with-toggle
+      padding-right: 40px
+
+  &__toggle
+    position: absolute
+    right: 10px
+    top: 50%
+    transform: translateY(-50%)
+    display: flex
+    align-items: center
+    justify-content: center
+    width: 28px
+    height: 28px
+    border: none
+    border-radius: var(--radius-sm)
+    background: none
+    color: var(--color-text-muted)
+    cursor: pointer
+    transition: color var(--transition-normal) ease, background-color var(--transition-normal) ease
+
+    &:hover
+      color: var(--color-text)
+      background-color: var(--color-bg-secondary)
+
+    &:focus-visible
+      outline: 2px solid var(--color-primary)
+      outline-offset: 1px
+
+  &__hint
+    margin-top: 5px
+    color: var(--color-text-muted)
+    font-size: var(--font-size-xs)
+    font-weight: 500
+    line-height: 1.4
 
   &__error
     margin-top: 5px

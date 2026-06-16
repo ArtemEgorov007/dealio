@@ -29,6 +29,18 @@ const PRIORITY_OPTIONS: {value: Priority; label: string}[] = [
   {value: 'low', label: 'Низкий'},
 ]
 
+const categoryOptions = CATEGORY_OPTIONS.map(option => ({
+  value: option.value,
+  label: option.label,
+}))
+
+const priorityOptions = PRIORITY_OPTIONS.map(option => ({
+  value: option.value,
+  label: option.label,
+}))
+
+const priorityTone = computed(() => priority.value as 'high' | 'medium' | 'low')
+
 const props = defineProps({
   status: {type: String, default: 'ideas'}
 })
@@ -173,48 +185,35 @@ const onSubmit = handleSubmit(values => mutate(values))
         />
 
         <div class="form-row">
-          <div class="form-field">
-            <label class="form-field__label" for="card-category">Тип</label>
-            <select
-                id="card-category"
-                v-model="category"
-                v-bind="categoryAttrs"
-                class="form-field__select"
-            >
-              <option v-for="option in CATEGORY_OPTIONS" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
+          <UiSelect
+              id="card-category"
+              v-model="category"
+              label="Тип"
+              :options="categoryOptions"
+              flush
+          />
 
-          <div class="form-field">
-            <label class="form-field__label" for="card-priority">Приоритет</label>
-            <select
-                id="card-priority"
-                v-model="priority"
-                v-bind="priorityAttrs"
-                class="form-field__select"
-                :class="`priority-select--${priority}`"
-            >
-              <option v-for="opt in PRIORITY_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div v-if="category === 'Wishlist'" class="form-field">
-          <label class="form-field__label" for="card-price">Стоимость, ₽</label>
-          <input
-              id="card-price"
-              v-model.number="price"
-              v-bind="priceAttrs"
-              type="number"
-              min="0"
-              placeholder="0"
-              class="form-field__input"
+          <UiSelect
+              id="card-priority"
+              v-model="priority"
+              label="Приоритет"
+              :options="priorityOptions"
+              :tone="priorityTone"
+              flush
           />
         </div>
+
+        <UiInput
+            v-if="category === 'Wishlist'"
+            id="card-price"
+            v-model="price"
+            v-bind="priceAttrs"
+            label="Стоимость, ₽"
+            type="number"
+            placeholder="0"
+            :min="0"
+            flush
+        />
 
         <UiButton
             type="submit"
@@ -308,59 +307,6 @@ const onSubmit = handleSubmit(values => mutate(values))
   display: grid
   grid-template-columns: 1fr 1fr
   gap: var(--spacing-3)
-
-.form-field
-  display: flex
-  flex-direction: column
-  gap: var(--spacing-2)
-
-.form-field__label
-  font-size: var(--font-size-sm)
-  font-weight: 600
-  color: var(--color-text)
-
-.form-field__select
-  width: 100%
-  padding: var(--spacing-2) var(--spacing-3)
-  border: var(--border-width) solid var(--color-input-border)
-  border-radius: var(--radius-md)
-  background-color: var(--color-input-bg)
-  color: var(--color-input-text)
-  font-size: var(--font-size-sm)
-  font-family: inherit
-  cursor: pointer
-
-  &:focus
-    outline: none
-    border-color: var(--color-input-border-focus)
-
-  &.priority-select--high
-    color: var(--color-danger)
-
-  &.priority-select--medium
-    color: var(--color-accent)
-
-  &.priority-select--low
-    color: var(--color-text-muted)
-
-.form-field__input
-  width: 100%
-  padding: var(--spacing-2) var(--spacing-3)
-  border: var(--border-width) solid var(--color-input-border)
-  border-radius: var(--radius-md)
-  background-color: var(--color-input-bg)
-  color: var(--color-input-text)
-  font-size: var(--font-size-sm)
-  font-family: inherit
-  font-variant-numeric: tabular-nums
-  box-sizing: border-box
-
-  &:focus
-    outline: none
-    border-color: var(--color-input-border-focus)
-
-  &::placeholder
-    color: var(--color-input-placeholder)
 
 .form-expand-enter-active,
 .form-expand-leave-active

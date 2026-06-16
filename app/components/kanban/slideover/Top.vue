@@ -56,8 +56,8 @@ const PRIORITY_LABELS: Record<Priority, string> = {
   low: 'Низкий',
 }
 
-const handlePriorityChange = (event: Event) => {
-  const val = (event.target as HTMLSelectElement).value as Priority
+const handlePriorityChange = (value: string | number) => {
+  const val = String(value) as Priority
   if (!store.card?.id) return
   if (import.meta.client && isGuest.value) {
     boardStore.updateCardPriority(store.card.id, val)
@@ -65,6 +65,11 @@ const handlePriorityChange = (event: Event) => {
     queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
   }
 }
+
+const prioritySelectOptions = PRIORITY_OPTIONS.map(option => ({
+  value: option.value,
+  label: option.label,
+}))
 
 const CATEGORY_COLORS: Record<string, string> = {
   'Идея': 'category-badge--idea',
@@ -109,17 +114,16 @@ const categoryClass = computed(() => CATEGORY_COLORS[store.card?.category ?? '']
             <span class="priority-dot"></span>
             {{ PRIORITY_LABELS[currentPriority] }}
           </span>
-          <select
+          <UiSelect
               v-if="isGuest"
-              class="priority-select"
-              :value="currentPriority"
+              id="slideover-priority"
+              :model-value="currentPriority"
+              :options="prioritySelectOptions"
+              :tone="currentPriority"
+              size="sm"
+              flush
               @change="handlePriorityChange"
-              aria-label="Изменить приоритет"
-          >
-            <option v-for="opt in PRIORITY_OPTIONS" :key="opt.value" :value="opt.value">
-              {{ opt.label }}
-            </option>
-          </select>
+          />
         </div>
       </div>
 
@@ -219,6 +223,10 @@ const categoryClass = computed(() => CATEGORY_COLORS[store.card?.category ?? '']
   display: flex
   align-items: center
   gap: var(--spacing-2)
+  min-width: 0
+
+  :deep(.ui-select)
+    min-width: 120px
 
 .priority-badge
   display: inline-flex
@@ -252,18 +260,4 @@ const categoryClass = computed(() => CATEGORY_COLORS[store.card?.category ?? '']
   height: 6px
   border-radius: 50%
   flex-shrink: 0
-
-.priority-select
-  background: none
-  border: var(--border-width) solid var(--color-border)
-  border-radius: var(--radius-sm)
-  color: var(--color-text-secondary)
-  font-size: 11px
-  font-family: inherit
-  cursor: pointer
-  padding: 2px 4px
-
-  &:focus
-    outline: none
-    border-color: var(--color-primary)
 </style>

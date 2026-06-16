@@ -7,6 +7,7 @@ import {mapAppwriteUser} from '@/utils/appwrite-user'
 import {clearGuestSession, useAuthStore, useIsLoadingStore} from '~~/store/auth.store'
 import {useRouter} from 'vue-router'
 import {clearCardsCache} from '~/utils/cards-cache'
+import {map_auth_error} from '~/utils/auth-errors'
 
 useSeoMeta({title: 'Вход | Dealio'})
 
@@ -111,9 +112,8 @@ const login = async () => {
     authStore.set(mapAppwriteUser(response))
     clearCardsCache(queryClient)
     await router.push('/')
-  } catch (error: any) {
-    console.error('Ошибка входа:', error)
-    errors.value.general = error.message || 'Ошибка входа. Проверьте данные.'
+  } catch (error: unknown) {
+    errors.value.general = map_auth_error(error, 'Не удалось войти. Проверьте email и пароль.')
   } finally {
     isSubmitting.value = false
     isLoadingStore.set(false)
@@ -130,9 +130,8 @@ const register = async () => {
     await account.create(uuid(), email.value, password.value, name.value)
 
     await login()
-  } catch (error: any) {
-    console.error('Ошибка регистрации:', error)
-    errors.value.general = error.message || 'Ошибка регистрации. Пользователь уже существует?'
+  } catch (error: unknown) {
+    errors.value.general = map_auth_error(error, 'Не удалось создать аккаунт. Возможно, email уже занят.')
   } finally {
     isSubmitting.value = false
     isLoadingStore.set(false)
@@ -194,6 +193,7 @@ const loginAsGuest = async () => {
               label="Полное имя"
               placeholder="Ваше имя"
               type="text"
+              autocomplete="name"
               :error="errors.name"
               @input="clearError('name')"
               required
@@ -205,8 +205,9 @@ const loginAsGuest = async () => {
               v-model="email"
               id="login-email"
               label="Email"
-              placeholder="name@company.com"
+              placeholder="you@example.com"
               type="email"
+              autocomplete="email"
               :error="errors.email"
               @input="clearError('email')"
               required
@@ -218,9 +219,12 @@ const loginAsGuest = async () => {
               v-model="password"
               id="login-password"
               label="Пароль"
-              placeholder="Введите пароль"
+              placeholder="Минимум 6 символов"
               type="password"
+              autocomplete="isLoginMode ? 'current-password' : 'new-password'"
+              show-password-toggle
               :error="errors.password"
+              :hint="!errors.password && !isLoginMode ? 'Не короче 6 символов' : undefined"
               @input="clearError('password')"
               required
           />
@@ -233,6 +237,8 @@ const loginAsGuest = async () => {
               label="Подтвердите пароль"
               placeholder="Повторите пароль"
               type="password"
+              autocomplete="new-password"
+              show-password-toggle
               :error="errors.confirmPassword"
               @input="clearError('confirmPassword')"
               required
@@ -379,6 +385,9 @@ const loginAsGuest = async () => {
   display: flex
   flex-direction: column
   gap: 0
+
+  :deep(.ui-input:last-of-type)
+    margin-bottom: var(--spacing-5)
 
 .form-group
   display: flex
