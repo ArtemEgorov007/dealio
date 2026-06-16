@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import {useClickOutside} from '~/composables/useClickOutside'
+
 export interface SelectOption {
   value: string | number
   label: string
@@ -25,6 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'md',
   tone: 'default',
   flush: false,
+  placeholder: 'Выберите',
 })
 
 const emit = defineEmits<{
@@ -32,6 +35,8 @@ const emit = defineEmits<{
   (e: 'change', value: string | number): void
 }>()
 
+const rootRef = ref<HTMLElement | null>(null)
+const isOpen = ref(false)
 const generatedId = ref('')
 
 onMounted(() => {
@@ -42,34 +47,93 @@ onMounted(() => {
 
 const selectId = computed(() => props.id || generatedId.value)
 
-const selectValue = computed({
-  get: () => props.modelValue,
-  set: (value: string | number) => {
-    emit('update:modelValue', value)
-    emit('change', value)
-  },
-})
+const selectedOption = computed(() =>
+    props.options.find(option => String(option.value) === String(props.modelValue)),
+)
 
-const handleChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement
-  const option = props.options.find(item => String(item.value) === target.value)
-  if (option) {
-    selectValue.value = option.value
+const displayLabel = computed(() => selectedOption.value?.label ?? props.placeholder)
+
+const listboxId = computed(() => `${selectId.value}-listbox`)
+
+const selectOption = (option: SelectOption) => {
+  if (props.disabled) return
+  emit('update:modelValue', option.value)
+  emit('change', option.value)
+  isOpen.value = false
+}
+
+const toggleDropdown = () => {
+  if (props.disabled) return
+  isOpen.value = !isOpen.value
+}
+
+const closeDropdown = () => {
+  isOpen.value = false
+}
+
+const onTriggerKeydown = (event: KeyboardEvent) => {
+  if (props.disabled) return
+
+  if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    isOpen.value = true
+  }
+
+  if (event.key === 'Escape') {
+    isOpen.value = false
   }
 }
+
+const onListKeydown = (event: KeyboardEvent) => {
+  const index = props.options.findIndex(option => String(option.value) === String(props.modelValue))
+  let nextIndex = index
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    nextIndex = index < props.options.length - 1 ? index + 1 : 0
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    nextIndex = index > 0 ? index - 1 : props.options.length - 1
+  }
+
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    if (index >= 0) selectOption(props.options[index])
+    return
+  }
+
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    isOpen.value = false
+    return
+  }
+
+  if (nextIndex !== index && props.options[nextIndex]) {
+    selectOption(props.options[nextIndex])
+  }
+}
+
+useClickOutside(rootRef, closeDropdown)
 </script>
 
 <template>
   <div
+      ref="rootRef"
       class="ui-select"
       :class="[
         `ui-select--${size}`,
-        { 'ui-select--disabled': disabled, 'ui-select--flush': flush }
+        {
+          'ui-select--disabled': disabled,
+          'ui-select--flush': flush,
+          'ui-select--open': isOpen,
+        }
       ]"
   >
     <label
         v-if="label"
-        :for="selectId"
+        :id="`${selectId}-label`"
         class="ui-select__label"
         :class="{ 'ui-select__label--required': required }"
     >
@@ -77,32 +141,55 @@ const handleChange = (event: Event) => {
     </label>
 
     <div class="ui-select__wrap">
-      <select
+      <button
           :id="selectId"
-          :value="String(modelValue)"
+          type="button"
+          class="ui-select__trigger"
+          :class="[
+            { 'ui-select__trigger--error': !!error, 'ui-select__trigger--placeholder': !selectedOption },
+            `ui-select__trigger--tone-${tone}`
+          ]"
           :disabled="disabled"
-          :required="required"
+          :aria-expanded="isOpen"
+          :aria-haspopup="'listbox'"
+          :aria-controls="listboxId"
+          :aria-labelledby="label ? `${selectId}-label` : undefined"
           :aria-invalid="!!error"
           :aria-describedby="error ? `${selectId}-error` : undefined"
-          class="ui-select__field"
-          :class="[
-            { 'ui-select__field--error': !!error },
-            `ui-select__field--tone-${tone}`
-          ]"
-          @change="handleChange"
+          @click="toggleDropdown"
+          @keydown="onTriggerKeydown"
       >
-        <option v-if="placeholder" value="" disabled hidden>{{ placeholder }}</option>
-        <option
-            v-for="option in options"
-            :key="String(option.value)"
-            :value="String(option.value)"
+        <span class="ui-select__value">{{ displayLabel }}</span>
+        <span class="ui-select__chevron" aria-hidden="true">
+          <Icon name="heroicons:chevron-down" size="14"/>
+        </span>
+      </button>
+
+      <Transition name="ui-select-drop">
+        <ul
+            v-if="isOpen"
+            :id="listboxId"
+            class="ui-select__menu"
+            role="listbox"
+            :aria-labelledby="label ? `${selectId}-label` : selectId"
+            tabindex="-1"
+            @keydown="onListKeydown"
         >
-          {{ option.label }}
-        </option>
-      </select>
-      <span class="ui-select__chevron" aria-hidden="true">
-        <Icon name="heroicons:chevron-down" size="14"/>
-      </span>
+          <li
+              v-for="option in options"
+              :key="String(option.value)"
+              role="option"
+              class="ui-select__option"
+              :class="{
+                'ui-select__option--active': String(option.value) === String(modelValue),
+              }"
+              :aria-selected="String(option.value) === String(modelValue)"
+              @click="selectOption(option)"
+          >
+            {{ option.label }}
+          </li>
+        </ul>
+      </Transition>
     </div>
 
     <p v-if="error" :id="`${selectId}-error`" class="ui-select__error">
@@ -118,6 +205,7 @@ const handleChange = (event: Event) => {
   width: 100%
   font-family: var(--font-family-base)
   margin-bottom: var(--spacing-4)
+  position: relative
 
   &--sm
     margin-bottom: 0
@@ -126,7 +214,7 @@ const handleChange = (event: Event) => {
       margin-bottom: 4px
       font-size: 10px
 
-    .ui-select__field
+    .ui-select__trigger
       height: 32px
       padding: 0 28px 0 var(--spacing-3)
       font-size: var(--font-size-xs)
@@ -134,11 +222,21 @@ const handleChange = (event: Event) => {
     .ui-select__chevron
       right: 8px
 
+    .ui-select__menu
+      font-size: var(--font-size-xs)
+
   &--disabled
     opacity: 0.6
 
   &--flush
     margin-bottom: 0
+
+  &--open
+    z-index: calc(var(--z-index-dropdown) + 1)
+
+    .ui-select__chevron
+      color: var(--color-primary)
+      transform: translateY(-50%) rotate(180deg)
 
   &__label
     margin-bottom: 6px
@@ -154,10 +252,8 @@ const handleChange = (event: Event) => {
 
   &__wrap
     position: relative
-    display: flex
-    align-items: center
 
-  &__field
+  &__trigger
     width: 100%
     height: 38px
     padding: 0 36px 0 var(--spacing-4)
@@ -168,9 +264,10 @@ const handleChange = (event: Event) => {
     font-size: var(--font-size-sm)
     line-height: 1.5
     cursor: pointer
-    appearance: none
-    -webkit-appearance: none
-    -moz-appearance: none
+    display: flex
+    align-items: center
+    text-align: left
+    font-family: inherit
     transition: border-color var(--transition-normal) ease, box-shadow var(--transition-normal) ease
 
     &:focus-visible
@@ -178,13 +275,16 @@ const handleChange = (event: Event) => {
       border-color: var(--color-input-border-focus)
       box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12)
 
-    &:hover:not(:disabled):not(:focus-visible)
+    &:hover:not(:disabled)
       border-color: var(--color-input-border-hover)
 
     &:disabled
       background-color: var(--color-input-disabled-bg)
       color: var(--color-input-disabled-text)
       cursor: not-allowed
+
+    &--placeholder .ui-select__value
+      color: var(--color-input-placeholder)
 
     &--error
       border-color: var(--color-danger)
@@ -201,6 +301,13 @@ const handleChange = (event: Event) => {
     &--tone-low
       color: var(--color-text-muted)
 
+  &__value
+    flex: 1
+    min-width: 0
+    overflow: hidden
+    text-overflow: ellipsis
+    white-space: nowrap
+
   &__chevron
     position: absolute
     right: 12px
@@ -213,15 +320,54 @@ const handleChange = (event: Event) => {
     pointer-events: none
     transition: color var(--transition-normal) ease, transform var(--transition-normal) ease
 
-  &__wrap:focus-within .ui-select__chevron
-    color: var(--color-primary)
-    transform: translateY(-50%) rotate(180deg)
+  &__menu
+    position: absolute
+    top: calc(100% + 4px)
+    left: 0
+    right: 0
+    margin: 0
+    padding: var(--spacing-1)
+    list-style: none
+    background-color: var(--color-card-bg)
+    border: var(--border-width) solid var(--color-border)
+    border-radius: var(--radius-md)
+    box-shadow: var(--shadow-lg)
+    max-height: 220px
+    overflow-y: auto
+    z-index: var(--z-index-dropdown)
+
+  &__option
+    padding: 8px var(--spacing-3)
+    border-radius: var(--radius-sm)
+    font-size: var(--font-size-sm)
+    font-weight: 500
+    color: var(--color-text)
+    cursor: pointer
+    transition: background-color var(--transition-fast) ease, color var(--transition-fast) ease
+
+    &:hover
+      background-color: var(--color-primary-light)
+      color: var(--color-primary)
+
+    &--active
+      background-color: var(--color-primary-light)
+      color: var(--color-primary)
+      font-weight: 600
 
   &__error
     margin-top: 5px
     color: var(--color-danger)
     font-size: var(--font-size-xs)
     font-weight: 500
+
+.ui-select-drop-enter-active,
+.ui-select-drop-leave-active
+  transition: opacity 0.14s ease, transform 0.14s ease
+
+.ui-select-drop-enter-from,
+.ui-select-drop-leave-to
+  opacity: 0
+  transform: translateY(-4px)
 
 @media (max-width: 768px)
   .ui-select:not(.ui-select--sm)

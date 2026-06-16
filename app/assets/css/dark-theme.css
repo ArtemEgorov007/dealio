@@ -97,4 +97,7 @@
     --color-error-bg: rgba(248, 113, 113, 0.08);
     --color-error-text: #f87171;
     --color-error-border: rgba(248, 113, 113, 0.25);
+
+    --kanban-grid-pattern: radial-gradient(circle, rgba(100, 116, 139, 0.35) 1px, transparent 1px);
+    --kanban-grid-size: 18px 18px;
 }

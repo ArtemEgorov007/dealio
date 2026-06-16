@@ -48,7 +48,8 @@ export default defineNuxtConfig({
     css: [
         '@/assets/css/normalize.css',
         '@/assets/css/variables.css',
-        '@/assets/css/dark-theme.css'
+        '@/assets/css/dark-theme.css',
+        '@/assets/css/kanban-effects.css',
     ],
 
     pinia: {

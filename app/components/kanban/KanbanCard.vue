@@ -129,11 +129,13 @@ const formatPrice = (price: number) =>
 <style scoped lang="sass">
 .kanban-card
   position: relative
+  min-width: 0
+  max-width: 100%
   background-color: var(--color-card-bg)
   border: var(--border-width) solid var(--color-card-border)
   border-radius: var(--radius-lg)
   cursor: grab
-  transition: all var(--transition-normal) var(--transition-ease)
+  transition: box-shadow var(--transition-normal) var(--transition-ease), transform var(--transition-normal) var(--transition-ease), border-color var(--transition-normal) ease
   user-select: none
   overflow: hidden
   opacity: 0
@@ -186,13 +188,15 @@ const formatPrice = (price: number) =>
 
 .card-body
   padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) calc(var(--spacing-4) + 3px)
+  min-width: 0
 
 .card-top-row
   display: flex
-  align-items: center
+  align-items: flex-start
   justify-content: space-between
   margin-bottom: 6px
   gap: var(--spacing-2)
+  min-width: 0
 
 .card-actions
   display: flex
@@ -209,6 +213,12 @@ const formatPrice = (price: number) =>
   font-weight: 700
   text-transform: uppercase
   letter-spacing: 0.4px
+  max-width: calc(100% - 48px)
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
+  flex-shrink: 1
+  min-width: 0
 
   &.category--idea
     background-color: rgba(14, 165, 233, 0.1)
@@ -274,8 +284,11 @@ const formatPrice = (price: number) =>
   font-size: var(--font-size-sm)
   font-weight: 600
   color: var(--color-text)
-  line-height: 1.35
+  line-height: 1.4
   margin-bottom: var(--spacing-3)
+  overflow-wrap: anywhere
+  word-break: break-word
+  hyphens: auto
 
 .card-price
   font-size: var(--font-size-sm)

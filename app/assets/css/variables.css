@@ -195,4 +195,8 @@
     --color-error-bg: rgba(239, 68, 68, 0.06);
     --color-error-text: #dc2626;
     --color-error-border: rgba(239, 68, 68, 0.25);
+
+    /* Kanban board dot grid */
+    --kanban-grid-pattern: radial-gradient(circle, rgba(148, 163, 184, 0.38) 1px, transparent 1px);
+    --kanban-grid-size: 18px 18px;
 }

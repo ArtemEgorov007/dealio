@@ -66,7 +66,7 @@ const handleCardMoved = () => invalidateBoard()
       </button>
     </div>
 
-    <div v-else-if="data?.length" class="kanban-board-wrap">
+    <div v-else-if="data?.length" class="kanban-board-wrap kanban-board-wrap--grid">
       <div class="kanban-board">
         <KanbanColumn
             v-for="column in data"
@@ -89,8 +89,6 @@ const handleCardMoved = () => invalidateBoard()
       <p class="kanban-state__hint">Добавьте первую карточку, чтобы начать</p>
     </div>
   </div>
-
-  <KanbanSlideover/>
 </template>
 
 <style scoped lang="sass">
@@ -231,8 +229,17 @@ const handleCardMoved = () => invalidateBoard()
     transform: translateY(-1px)
 
 .kanban-board-wrap
+  position: relative
   overflow-x: auto
   padding-bottom: var(--spacing-4)
+  border-radius: var(--radius-xl)
+
+  &--grid
+    background-color: var(--color-bg-secondary)
+    border: var(--border-width) solid var(--color-border)
+    background-image: var(--kanban-grid-pattern)
+    background-size: var(--kanban-grid-size)
+    background-position: center
 
   &::-webkit-scrollbar
     height: 6px
@@ -245,7 +252,10 @@ const handleCardMoved = () => invalidateBoard()
     border-radius: var(--radius-full)
 
 .kanban-board
+  position: relative
+  z-index: 1
   display: flex
   gap: var(--spacing-4)
   min-width: max-content
+  padding: var(--spacing-4)
 </style>

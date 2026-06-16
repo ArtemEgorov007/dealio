@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
-import type {ICardRecord} from '~~/types/cards.types'
 import {useComments} from './useComments'
 import {useCreateComment} from './useCreateComment'
 
 const {data, refetch, isLoading} = useComments()
 const {commentRef, writeComment} = useCreateComment({refetch})
 
-const card = data as unknown as ICardRecord
+const card = computed(() => data.value ?? null)
 </script>
 
 <template>

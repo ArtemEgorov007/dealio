@@ -1,133 +1,101 @@
 <script setup lang="ts">
-import {computed} from 'vue'
 import {useCardSlideStore} from '~~/store/card-slide.store'
 
 const store = useCardSlideStore()
 
-const isLocalOpen = computed({
-  get: () => store.isOpen,
-  set: (value: boolean) => {
-    store.isOpen = value
+const isOpen = computed(() => store.isOpen)
+
+const closePanel = () => {
+  store.isOpen = false
+}
+
+const onEscape = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && isOpen.value) {
+    closePanel()
+  }
+}
+
+watch(isOpen, (open) => {
+  if (!import.meta.client) return
+  document.body.classList.toggle('dealio-slideover-open', open)
+  document.body.style.overflow = open ? 'hidden' : ''
+}, {immediate: true})
+
+onMounted(() => {
+  document.addEventListener('keydown', onEscape)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onEscape)
+  if (import.meta.client) {
+    document.body.classList.remove('dealio-slideover-open')
+    document.body.style.overflow = ''
   }
 })
 </script>
 
 <template>
-  <div class="slideover-wrapper" :class="{ 'slideover-wrapper--open': isLocalOpen }">
-    <Transition name="slideover-overlay">
+  <Teleport to="body">
+    <div v-if="isOpen" class="slideover-root">
       <div
-          v-if="isLocalOpen"
           class="slideover-backdrop"
-          @click="isLocalOpen = false"
-          aria-label="Закрыть панель"
+          aria-hidden="true"
+          @click="closePanel"
       />
-    </Transition>
 
-    <Transition name="slideover">
-      <div
-          v-if="isLocalOpen"
+      <aside
           class="slideover-panel"
           role="dialog"
           aria-modal="true"
           aria-label="Детали элемента"
-          @click.stop
       >
-        <div class="slideover-inner">
-          <div class="slideover-header">
-            <div class="slideover-header__title">
-              <span class="slideover-header__label">Детали элемента</span>
-            </div>
-            <button
+        <header class="slideover-header">
+          <span class="slideover-header__label">Детали элемента</span>
+          <button
+              type="button"
               class="slideover-close"
-              @click="isLocalOpen = false"
               aria-label="Закрыть"
-            >
-              <Icon name="heroicons:x-mark" size="18"/>
-            </button>
-          </div>
-          <div class="slideover-body">
-            <KanbanSlideoverTop/>
-            <KanbanSlideoverComments/>
-          </div>
+              @click="closePanel"
+          >
+            <Icon name="heroicons:x-mark" size="18"/>
+          </button>
+        </header>
+
+        <div v-if="store.card" class="slideover-body">
+          <KanbanSlideoverTop/>
+          <KanbanSlideoverComments/>
         </div>
-      </div>
-    </Transition>
-  </div>
+      </aside>
+    </div>
+  </Teleport>
 </template>
 
-<style lang="sass" scoped>
-.slideover-wrapper
+<style scoped lang="sass">
+.slideover-root
   position: fixed
-  top: 0
-  left: 0
-  width: 100%
-  height: 100%
+  inset: 0
   z-index: var(--z-index-modal)
-  pointer-events: none
-
-  &--open
-    pointer-events: auto
+  pointer-events: auto
 
 .slideover-backdrop
-  position: fixed
-  top: 0
-  left: 0
-  width: 100%
-  height: 100%
+  position: absolute
+  inset: 0
   background-color: var(--color-bg-overlay)
-  backdrop-filter: blur(2px)
-  pointer-events: auto
-
-.slideover-overlay-enter-active
-  transition: opacity var(--transition-slow) ease
-
-.slideover-overlay-leave-active
-  transition: opacity var(--transition-normal) ease
-
-.slideover-overlay-enter-from,
-.slideover-overlay-leave-to
-  opacity: 0
+  animation: backdrop-in 0.2s ease both
 
 .slideover-panel
-  position: fixed
+  position: absolute
   top: 0
   right: 0
-  width: 420px
-  max-width: 100vw
+  width: min(420px, 100vw)
   height: 100%
   display: flex
   flex-direction: column
-  pointer-events: auto
-  z-index: calc(var(--z-index-modal) + 1)
-
-  @media (max-width: 480px)
-    width: 100vw
-
-.slideover-enter-active
-  transition: transform var(--transition-slow) cubic-bezier(0.32, 0.72, 0, 1)
-
-.slideover-leave-active
-  transition: transform var(--transition-normal) cubic-bezier(0.4, 0, 1, 1)
-
-.slideover-enter-from
-  transform: translateX(100%)
-
-.slideover-enter-to
-  transform: translateX(0)
-
-.slideover-leave-from
-  transform: translateX(0)
-
-.slideover-leave-to
-  transform: translateX(100%)
-
-.slideover-inner
-  display: flex
-  flex-direction: column
-  height: 100%
   background-color: var(--color-card-bg)
   border-left: var(--border-width) solid var(--color-border)
   box-shadow: var(--shadow-xl)
+  will-change: transform
+  animation: panel-in 0.24s cubic-bezier(0.32, 0.72, 0, 1) both
 
 .slideover-header
   display: flex
@@ -136,12 +104,6 @@ const isLocalOpen = computed({
   padding: var(--spacing-5) var(--spacing-6)
   border-bottom: var(--border-width) solid var(--color-border)
   flex-shrink: 0
-  background-color: var(--color-card-bg)
-
-.slideover-header__title
-  display: flex
-  flex-direction: column
-  gap: 2px
 
 .slideover-header__label
   font-size: var(--font-size-sm)
@@ -160,7 +122,7 @@ const isLocalOpen = computed({
   border-radius: var(--radius-md)
   color: var(--color-text-muted)
   cursor: pointer
-  transition: all var(--transition-fast) ease
+  transition: background-color var(--transition-fast) ease, color var(--transition-fast) ease, border-color var(--transition-fast) ease
 
   &:hover
     background-color: var(--color-bg-secondary)
@@ -174,8 +136,25 @@ const isLocalOpen = computed({
 .slideover-body
   flex: 1
   overflow-y: auto
+  overscroll-behavior: contain
   padding: var(--spacing-5) var(--spacing-6)
   display: flex
   flex-direction: column
   gap: var(--spacing-5)
+
+@keyframes backdrop-in
+  from
+    opacity: 0
+  to
+    opacity: 1
+
+@keyframes panel-in
+  from
+    transform: translateX(100%)
+  to
+    transform: translateX(0)
+
+@media (max-width: 480px)
+  .slideover-panel
+    width: 100vw
 </style>

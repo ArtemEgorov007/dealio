@@ -82,6 +82,8 @@ onBeforeUnmount(() => {
     </main>
 
     <LayoutMobileBottomNav v-if="authStore.isAuth && route.path !== '/login'" class="mobile-bottom-nav"/>
+
+    <KanbanSlideover v-if="authStore.isAuth && route.path !== '/login'"/>
   </div>
 </template>
 

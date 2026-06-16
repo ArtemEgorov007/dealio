@@ -130,8 +130,6 @@ const handleArchive = (card: ICard) => {
       </div>
     </div>
   </div>
-
-  <KanbanSlideover/>
 </template>
 
 <style scoped lang="sass">

@@ -1,0 +1,17 @@
+/* Performance helpers when card slideover is open */
+.dealio-slideover-open .kanban-card {
+    transition: none !important;
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+.dealio-slideover-open .kanban-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.dealio-slideover-open .kanban-card .card-archive-btn,
+.dealio-slideover-open .kanban-card .drag-hint {
+    opacity: 0 !important;
+}

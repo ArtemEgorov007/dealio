@@ -152,7 +152,11 @@ const categoryClass = computed(() => CATEGORY_COLORS[store.card?.category ?? '']
   font-weight: 800
   color: var(--color-text)
   letter-spacing: -0.3px
-  line-height: 1.25
+  line-height: 1.3
+  overflow-wrap: anywhere
+  word-break: break-word
+  hyphens: auto
+  max-width: 100%
 
 .card-info__price
   font-size: var(--font-size-2xl)
