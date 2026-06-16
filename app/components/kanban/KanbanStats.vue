@@ -109,12 +109,8 @@ const statTiles = computed((): StatTile[] => {
   <section class="stats-panel" aria-label="Сводка доски">
     <div class="stats-panel__texture" aria-hidden="true"></div>
 
-    <header class="stats-panel__head">
-      <div class="stats-panel__title-wrap">
-        <span class="stats-panel__eyebrow">Сводка</span>
-        <h2 class="stats-panel__title">Пульс доски</h2>
-      </div>
-      <div v-if="!isLoading && stats" class="stats-panel__badge">
+    <header v-if="!isLoading && stats" class="stats-panel__head">
+      <div class="stats-panel__badge">
         <span class="stats-panel__pulse"></span>
         {{ stats.total }} активных
       </div>
@@ -187,27 +183,9 @@ const statTiles = computed((): StatTile[] => {
   position: relative
   z-index: 1
   display: flex
-  align-items: flex-end
-  justify-content: space-between
-  gap: var(--spacing-4)
+  align-items: center
+  justify-content: flex-end
   margin-bottom: var(--spacing-4)
-
-.stats-panel__eyebrow
-  display: block
-  font-size: 10px
-  font-weight: 800
-  letter-spacing: 0.14em
-  text-transform: uppercase
-  color: var(--color-primary)
-  margin-bottom: 4px
-
-.stats-panel__title
-  margin: 0
-  font-size: var(--font-size-lg)
-  font-weight: 800
-  letter-spacing: -0.3px
-  color: var(--color-text)
-  line-height: 1.1
 
 .stats-panel__badge
   display: inline-flex
