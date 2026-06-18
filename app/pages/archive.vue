@@ -145,7 +145,7 @@ const handleDeletePermanently = (id: string) => {
 }
 
 const formatPrice = (price: number) =>
-  price.toLocaleString('ru-RU', {style: 'currency', currency: 'RUB', maximumFractionDigits: 0})
+  price.toLocaleString('ru-RU', {maximumFractionDigits: 0})
 </script>
 
 <template>
@@ -373,15 +373,15 @@ const formatPrice = (price: number) =>
   letter-spacing: 0.4px
 
   &.badge--idea
-    background-color: rgba(14, 165, 233, 0.1)
+    background-color: var(--kanban-ideas-bg)
     color: var(--kanban-ideas-color)
 
   &.badge--task
-    background-color: rgba(245, 158, 11, 0.1)
+    background-color: var(--kanban-tasks-bg)
     color: var(--kanban-tasks-color)
 
   &.badge--wish
-    background-color: rgba(236, 72, 153, 0.1)
+    background-color: var(--kanban-wishlist-bg)
     color: var(--kanban-wishlist-color)
 
 .priority-badge
@@ -394,19 +394,19 @@ const formatPrice = (price: number) =>
   font-weight: 700
 
   &.priority--high
-    background-color: rgba(239, 68, 68, 0.1)
+    background-color: var(--color-danger-light)
     color: var(--color-danger)
     .priority-dot
       background-color: var(--color-danger)
 
   &.priority--medium
-    background-color: rgba(245, 158, 11, 0.1)
+    background-color: var(--color-bg-tertiary)
     color: var(--color-accent)
     .priority-dot
       background-color: var(--color-accent)
 
   &.priority--low
-    background-color: rgba(100, 116, 139, 0.1)
+    background-color: var(--color-bg-tertiary)
     color: var(--color-text-muted)
     .priority-dot
       background-color: var(--color-text-muted)
