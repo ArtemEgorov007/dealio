@@ -15,7 +15,7 @@ Kanban-доска для личных идей, задач и wishlist. Nuxt 4 +
 
 ## Стек
 
-Nuxt 4 · Vue 3 · TypeScript · Pinia · TanStack Query · Appwrite · Inter / Roboto Mono
+Nuxt 4 · Vue 3 · TypeScript · Pinia · TanStack Query · Appwrite
 
 ## Запуск
 
