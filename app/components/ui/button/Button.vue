@@ -100,12 +100,10 @@ const handleClick = (event: MouseEvent) => {
     background-color: var(--color-button-primary-bg)
     color: var(--color-button-primary-text)
     border-color: var(--color-button-primary-bg)
-    box-shadow: 0 1px 3px rgba(13, 148, 136, 0.25)
 
     &:hover:enabled
       background-color: var(--color-button-primary-bg-hover)
       border-color: var(--color-button-primary-bg-hover)
-      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.35)
       transform: translateY(-1px)
 
     &:active:enabled

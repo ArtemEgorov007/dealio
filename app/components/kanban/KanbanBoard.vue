@@ -141,18 +141,13 @@ const handleCardMoved = () => invalidateBoard()
   align-items: center
   gap: 6px
   padding: 3px 10px
-  background-color: rgba(245, 158, 11, 0.1)
-  color: #b45309
+  background-color: rgba(255, 154, 68, 0.1)
+  color: #ff9a44
   border-radius: var(--radius-full)
   font-size: var(--font-size-xs)
   font-weight: 700
   letter-spacing: 0.3px
-  border: 1px solid rgba(245, 158, 11, 0.2)
-
-[data-theme="dark"] .kanban-demo-badge
-  color: #fbbf24
-  background-color: rgba(251, 191, 36, 0.1)
-  border-color: rgba(251, 191, 36, 0.2)
+  border: 1px solid rgba(255, 154, 68, 0.2)
 
 .demo-dot
   width: 6px

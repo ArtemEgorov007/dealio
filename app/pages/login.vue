@@ -309,10 +309,7 @@ const loginAsGuest = async () => {
 .login__bg-mesh
   position: absolute
   inset: 0
-  background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(13, 148, 136, 0.07) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 50% 50%, rgba(14, 165, 233, 0.04) 0%, transparent 60%)
-
-[data-theme="dark"] .login__bg-mesh
-  background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(20, 184, 166, 0.08) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 50% 50%, rgba(56, 189, 248, 0.04) 0%, transparent 60%)
+  background: none
 
 .login__container
   position: relative

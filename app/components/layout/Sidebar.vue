@@ -144,16 +144,15 @@ const {logout} = useLogout()
 .logo-mark
   width: 32px
   height: 32px
-  background: linear-gradient(135deg, var(--color-primary), #0f9b8e)
+  background: var(--color-primary)
   border-radius: var(--radius-md)
   display: flex
   align-items: center
   justify-content: center
   flex-shrink: 0
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3)
 
 .logo-icon
-  color: white
+  color: var(--color-text-inverse)
   font-size: 16px
   font-weight: 800
   letter-spacing: -0.5px
@@ -190,11 +189,12 @@ const {logout} = useLogout()
   width: 32px
   height: 32px
   border-radius: var(--radius-full)
-  background: linear-gradient(135deg, #8b5cf6, #0d9488)
+  background: var(--color-bg-tertiary)
+  border: var(--border-width) solid var(--color-border)
   display: flex
   align-items: center
   justify-content: center
-  color: white
+  color: var(--color-text)
   font-size: var(--font-size-sm)
   font-weight: 700
   flex-shrink: 0
