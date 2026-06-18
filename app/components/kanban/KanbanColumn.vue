@@ -94,7 +94,8 @@ const onCardCreated = () => {
     ]"
       @dragover="handleDragOver"
       @dragleave="handleDragLeave"
-      @drop="handleDrop(column)"
+      @dragenter.prevent
+      @drop.prevent="handleDrop(column)"
   >
     <div class="column-header">
       <h2 class="column-title">{{ column.name }}</h2>

@@ -5,6 +5,7 @@ import {useQueryClient} from '@tanstack/vue-query'
 import {useKanbanQuery} from '~/components/kanban/useKanbanQuery'
 import type {ICard, IColumn} from '~/components/kanban/kanban.types'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
+import {blockNativeDropNavigation} from '~/components/kanban/kanban-drag'
 import {useAuthStore} from '~~/store/auth.store'
 
 const authStore = useAuthStore()
@@ -25,6 +26,8 @@ const handleDragStart = (card: ICard, column: IColumn) => {
   sourceColumnRef.value = column
   if (import.meta.client) {
     document.body.classList.add('dealio-kanban-dragging')
+    document.addEventListener('dragover', blockNativeDropNavigation, true)
+    document.addEventListener('drop', blockNativeDropNavigation, true)
   }
 }
 
@@ -33,6 +36,8 @@ const handleDragEnd = () => {
   sourceColumnRef.value = null
   if (import.meta.client) {
     document.body.classList.remove('dealio-kanban-dragging')
+    document.removeEventListener('dragover', blockNativeDropNavigation, true)
+    document.removeEventListener('drop', blockNativeDropNavigation, true)
   }
 }
 

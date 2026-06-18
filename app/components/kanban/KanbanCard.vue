@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 import {useCardSlideStore} from '~~/store/card-slide.store'
 import {useArchiveCard} from '~/components/kanban/useArchiveCard'
+import {prepareCardDragTransfer} from '~/components/kanban/kanban-drag'
 
 dayjs.locale('ru')
 
@@ -31,8 +32,8 @@ const handleEnterAnimationEnd = (event: AnimationEvent) => {
 }
 
 const handleDragStart = (event: DragEvent) => {
-  event.dataTransfer?.setData('text/plain', props.card.id)
-  event.dataTransfer!.effectAllowed = 'move'
+  event.stopPropagation()
+  prepareCardDragTransfer(event, props.card.id)
   skipClick.value = true
   emit('dragstart')
 }
@@ -84,6 +85,7 @@ const formatPrice = (price: number) =>
       draggable="true"
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
+      @selectstart.prevent
       @animationend="handleEnterAnimationEnd"
       @click="handleOpenSlideover"
       role="button"
@@ -125,6 +127,8 @@ const formatPrice = (price: number) =>
   cursor: pointer
   transition: background-color var(--transition-fast) ease
   user-select: none
+  touch-action: pan-x pan-y
+  -webkit-user-drag: element
 
   &:first-child
     border-radius: var(--radius-md) var(--radius-md) 0 0

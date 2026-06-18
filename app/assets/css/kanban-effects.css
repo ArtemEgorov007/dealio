@@ -14,3 +14,8 @@
 .dealio-kanban-dragging .kanban-card--dragging {
     cursor: grabbing;
 }
+
+.dealio-kanban-dragging a,
+.dealio-kanban-dragging .nav-item {
+    pointer-events: none;
+}
