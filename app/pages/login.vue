@@ -333,15 +333,14 @@ const loginAsGuest = async () => {
 .login__logo-mark
   width: 36px
   height: 36px
-  background: linear-gradient(135deg, var(--color-primary), #0f9b8e)
+  background: var(--color-primary)
   border-radius: var(--radius-md)
   display: flex
   align-items: center
   justify-content: center
-  color: white
+  color: var(--color-text-inverse)
   font-size: 18px
   font-weight: 800
-  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.3)
   line-height: 1
 
 .login__logo-text
