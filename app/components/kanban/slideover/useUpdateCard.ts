@@ -22,6 +22,7 @@ export function useUpdateCard() {
     const boardStore = useBoardStore()
     const slideStore = useCardSlideStore()
     const queryClient = useQueryClient()
+    const {showSuccess, showError} = useAppToast()
 
     const invalidate = () => {
         queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
@@ -80,6 +81,8 @@ export function useUpdateCard() {
             const {id, ...fields} = payload
             patchSlideCard(fields)
             invalidate()
+            showSuccess('Изменения сохранены')
         },
+        onError: showError,
     })
 }

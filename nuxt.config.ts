@@ -6,7 +6,14 @@ export default defineNuxtConfig({
     app: {
         baseURL: process.env.NUXT_APP_BASE_URL || '/',
         head: {
+            htmlAttrs: {lang: 'ru'},
+            title: 'Dealio — трекер идей, задач и wishlist',
             link: [{rel: 'icon', type: 'image/svg+xml', href: 'logo.svg'}],
+            meta: [
+                {name: 'description', content: 'Dealio — kanban-трекер идей, задач и wishlist'},
+                {name: 'theme-color', content: '#000000'},
+                {name: 'color-scheme', content: 'dark'},
+            ],
         },
     },
 
@@ -18,6 +25,7 @@ export default defineNuxtConfig({
         '@nuxt/icon',
         '@pinia/nuxt',
         '@nuxt/ui',
+        '@vueuse/nuxt',
 
         [
             '@vee-validate/nuxt',

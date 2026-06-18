@@ -77,6 +77,7 @@ const toggleForm = () => {
 const queryClient = useQueryClient()
 const boardStore = useBoardStore()
 const authStore = useAuthStore()
+const {showSuccess, showError} = useAppToast()
 
 const {handleSubmit, defineField, handleReset, errors, setFieldValue} = useForm<ICardFormState>({
   initialValues: {
@@ -174,8 +175,10 @@ const {mutate, isPending, isError, error} = useMutation({
 
     handleReset()
     isOpenForm.value = false
+    showSuccess('Карточка создана')
     emit('card-created')
   },
+  onError: showError,
 })
 
 const onSubmit = handleSubmit(values => mutate(values))

@@ -8,6 +8,7 @@ export function useCreateComment({refetch}: { refetch: () => void }) {
     const store = useCardSlideStore()
     const boardStore = useBoardStore()
     const queryClient = useQueryClient()
+    const {showError} = useAppToast()
     const commentRef = ref<string>('')
 
     const {mutate} = useMutation({
@@ -35,6 +36,7 @@ export function useCreateComment({refetch}: { refetch: () => void }) {
             refetch()
             commentRef.value = ''
         },
+        onError: showError,
     })
 
     const writeComment = () => {

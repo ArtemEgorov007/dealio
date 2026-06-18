@@ -90,6 +90,8 @@ const archiveRowTitle = (card: ArchiveListItem) => {
   return parts.join(' · ')
 }
 
+const {showSuccess, showError} = useAppToast()
+
 const invalidateBoard = () => {
   queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
   queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
@@ -123,7 +125,11 @@ const {mutate: restoreCard, isPending: isRestoring} = useMutation({
       throw new Error(mapAppwriteError(error, 'Не удалось восстановить карточку'))
     }
   },
-  onSuccess: () => invalidateBoard(),
+  onSuccess: () => {
+    showSuccess('Карточка восстановлена')
+    invalidateBoard()
+  },
+  onError: showError,
 })
 
 const handleRestore = (id: string) => {
@@ -137,6 +143,7 @@ const handleDeletePermanently = (id: string) => {
   } else {
     authArchiveStore.remove(id)
   }
+  showSuccess('Карточка удалена навсегда')
   invalidateBoard()
 }
 

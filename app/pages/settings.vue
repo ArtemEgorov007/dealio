@@ -102,6 +102,7 @@ const saveRetention = (days: number) => {
 
 <style scoped lang="sass">
 .settings-page
+  width: 100%
   padding: var(--spacing-6)
   max-width: 680px
   margin: 0 auto

@@ -26,6 +26,7 @@ const emit = defineEmits<{
 const isDragOver = ref(false)
 const queryClient = useQueryClient()
 const boardStore = useBoardStore()
+const {showError} = useAppToast()
 
 const {mutate, isPending} = useMutation({
   mutationKey: ['move-card'],
@@ -46,6 +47,7 @@ const {mutate, isPending} = useMutation({
     queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
     emit('card-moved')
   },
+  onError: showError,
 })
 
 const handleDragStart = (card: ICard, column: IColumn) => {

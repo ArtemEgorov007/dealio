@@ -13,6 +13,7 @@ export function useArchiveCard() {
     const boardStore = useBoardStore()
     const authArchiveStore = useAuthArchiveStore()
     const queryClient = useQueryClient()
+    const toast = useMutationToast('Карточка отправлена в архив')
 
     const invalidate = () => {
         queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
@@ -41,6 +42,10 @@ export function useArchiveCard() {
 
             authArchiveStore.archiveFromCard(card)
         },
-        onSuccess: () => invalidate(),
+        onSuccess: () => {
+            toast.onSuccess()
+            invalidate()
+        },
+        onError: toast.onError,
     })
 }

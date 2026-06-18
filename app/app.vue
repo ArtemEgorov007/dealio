@@ -2,9 +2,11 @@
 </script>
 
 <template>
-  <NuxtLayout>
-    <NuxtPage/>
-  </NuxtLayout>
+  <UApp :toaster="{ position: 'bottom-right', duration: 3500 }">
+    <NuxtLayout>
+      <NuxtPage/>
+    </NuxtLayout>
+  </UApp>
 </template>
 
 <style lang="sass">

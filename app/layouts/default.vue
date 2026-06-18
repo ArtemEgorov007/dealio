@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import {onMounted, onBeforeUnmount} from 'vue'
+import {onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {useQueryClient} from '@tanstack/vue-query'
+import {useIntervalFn} from '@vueuse/core'
 import {account} from '~/utils/appwrite'
 import {mapAppwriteUser} from '~/utils/appwrite-user'
 
@@ -20,7 +21,19 @@ const boardStore = useBoardStore()
 const authArchiveStore = useAuthArchiveStore()
 const queryClient = useQueryClient()
 
-let pruneTimer: ReturnType<typeof setInterval> | null = null
+const pruneGuestArchive = () => {
+  if (!authStore.isGuest) return
+  const before = boardStore.cards.length
+  boardStore.pruneExpired()
+  if (before !== boardStore.cards.length) {
+    queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
+    queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
+  }
+}
+
+const {resume} = useIntervalFn(pruneGuestArchive, PRUNE_INTERVAL_MS, {
+  immediate: false,
+})
 
 onMounted(async () => {
   if (route.path === '/login') {
@@ -33,17 +46,8 @@ onMounted(async () => {
     boardStore.init()
     isLoadingStore.set(false)
 
-    // Периодическая очистка истёкших архивных карточек (только client, один интервал на сессию)
-    if (import.meta.client && !pruneTimer) {
-      pruneTimer = setInterval(() => {
-        const before = boardStore.cards.length
-        boardStore.pruneExpired()
-        const after = boardStore.cards.length
-        if (before !== after) {
-          queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
-          queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
-        }
-      }, PRUNE_INTERVAL_MS)
+    if (import.meta.client) {
+      resume()
     }
 
     return
@@ -60,13 +64,6 @@ onMounted(async () => {
     await router.replace('/login')
   } finally {
     isLoadingStore.set(false)
-  }
-})
-
-onBeforeUnmount(() => {
-  if (pruneTimer !== null) {
-    clearInterval(pruneTimer)
-    pruneTimer = null
   }
 })
 </script>

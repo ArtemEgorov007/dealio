@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import {useClickOutside} from '~/composables/useClickOutside'
-
 export interface SelectOption {
   value: string | number
   label: string
@@ -115,7 +113,7 @@ const onListKeydown = (event: KeyboardEvent) => {
   }
 }
 
-useClickOutside(rootRef, closeDropdown)
+onClickOutside(rootRef, closeDropdown)
 </script>
 
 <template>
