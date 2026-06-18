@@ -106,7 +106,7 @@ const handleCardMoved = () => invalidateBoard()
   display: flex
   flex-direction: column
   flex: 1
-  min-height: 100%
+  min-height: 0
 
 .kanban-page__head
   flex-shrink: 0

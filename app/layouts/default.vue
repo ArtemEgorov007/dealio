@@ -92,21 +92,23 @@ onBeforeUnmount(() => {
 <style scoped lang="sass">
 .layout
   display: flex
-  min-height: 100vh
-  width: 100vw
-  overflow-x: hidden
+  height: 100vh
+  width: 100%
+  overflow: hidden
   background-color: var(--color-bg)
 
 .layout__main
   flex: 1
-  min-height: 100vh
   min-width: 0
+  min-height: 0
   overflow-x: hidden
   background-color: var(--color-bg)
 
   &--auth
     display: flex
     flex-direction: column
+    overflow-y: auto
+    overscroll-behavior: contain
     padding-bottom: 0
 
     @media (max-width: 768px)

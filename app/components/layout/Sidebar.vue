@@ -70,9 +70,7 @@ const {logout} = useLogout()
   display: flex
   flex-direction: column
   width: var(--sidebar-width-expanded)
-  height: 100vh
-  position: sticky
-  top: 0
+  height: 100%
   flex-shrink: 0
   background-color: var(--color-bg-surface)
   border-right: var(--border-width) solid var(--color-border)

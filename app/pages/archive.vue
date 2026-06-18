@@ -71,27 +71,23 @@ const daysLeft = (archivedAt?: string): number => {
   return Math.max(0, retentionDays.value - elapsed)
 }
 
+const CATEGORY_COLUMN: Record<string, string> = {
+  'Идея': 'ideas',
+  'Задача': 'tasks',
+  'Wishlist': 'wishlist',
+}
+
+const columnIdFromCategory = (category: string) => CATEGORY_COLUMN[category] ?? 'tasks'
+
 const formatArchivedAt = (date?: string) =>
   date ? dayjs(date).format('D MMMM YYYY') : '—'
 
-const CATEGORY_COLORS: Record<string, string> = {
-  'Идея': 'badge--idea',
-  'Задача': 'badge--task',
-  'Wishlist': 'badge--wish',
-}
-
-const categoryClass = (name: string) => CATEGORY_COLORS[name] ?? ''
-
-const PRIORITY_CLASS: Record<string, string> = {
-  high: 'priority--high',
-  medium: 'priority--medium',
-  low: 'priority--low',
-}
-
-const PRIORITY_LABELS: Record<string, string> = {
-  high: 'Высокий',
-  medium: 'Средний',
-  low: 'Низкий',
+const archiveRowTitle = (card: ArchiveListItem) => {
+  const parts = [card.category]
+  if (card.archivedAt) {
+    parts.push(`Архивировано ${formatArchivedAt(card.archivedAt)}`)
+  }
+  return parts.join(' · ')
 }
 
 const invalidateBoard = () => {
@@ -160,69 +156,70 @@ const formatPrice = (price: number) =>
       </p>
     </header>
 
-    <div v-if="archivedCards.length === 0" class="archive-empty">
-      <div class="empty-icon-wrap">
-        <Icon name="heroicons:archive-box" size="36"/>
+    <div class="archive-surface">
+      <div v-if="archivedCards.length === 0" class="archive-empty">
+        <div class="empty-icon-wrap">
+          <Icon name="heroicons:archive-box" size="36"/>
+        </div>
+        <p class="empty-title">Архив пуст</p>
+        <p class="empty-hint">
+          Наведите на карточку на доске и нажмите иконку архива — элемент переместится сюда.
+        </p>
       </div>
-      <p class="empty-title">Архив пуст</p>
-      <p class="empty-hint">
-        Наведите на карточку на доске и нажмите иконку архива — элемент переместится сюда.
-      </p>
-    </div>
 
-    <div v-else class="archive-list">
-      <div
-          v-for="card in archivedCards"
-          :key="card.id"
-          class="archive-card"
-          :class="`archive-card--priority-${card.priority}`"
-      >
-        <div class="archive-card__priority-bar" :class="`pbar--${card.priority}`"></div>
+      <div v-else class="archive-list-wrap">
+        <div class="archive-list">
+          <div
+              v-for="(card, index) in archivedCards"
+              :key="card.id"
+              class="archive-row archive-row--enter"
+              :title="archiveRowTitle(card)"
+              :style="{ animationDelay: `${Math.min(index, 24) * 30}ms` }"
+          >
+            <span class="archive-row__name">{{ card.name }}</span>
 
-        <div class="archive-card__body">
-          <div class="archive-card__top">
-            <div class="archive-card__badges">
-              <span class="category-badge" :class="categoryClass(card.category)">
-                {{ card.category }}
+            <div class="archive-row__right">
+              <span
+                  class="archive-row__countdown"
+                  :class="{ 'countdown--urgent': daysLeft(card.archivedAt) <= 3 }"
+              >
+                <Icon name="heroicons:clock" size="11"/>
+                <span v-if="daysLeft(card.archivedAt) === 0">Сегодня</span>
+                <span v-else>{{ daysLeft(card.archivedAt) }} дн.</span>
               </span>
-              <span class="priority-badge" :class="PRIORITY_CLASS[card.priority]">
-                <span class="priority-dot"></span>
-                {{ PRIORITY_LABELS[card.priority] }}
+
+              <span
+                  v-if="card.price > 0"
+                  class="archive-row__price tabular-nums"
+              >
+                {{ formatPrice(card.price) }}
               </span>
+              <span
+                  v-else
+                  class="archive-row__dot"
+                  :class="`archive-row__dot--${columnIdFromCategory(card.category)}`"
+              ></span>
+
+              <div class="archive-row__actions">
+                <button
+                    class="archive-action archive-action--restore"
+                    :disabled="isRestoring"
+                    aria-label="Восстановить"
+                    title="Восстановить"
+                    @click="handleRestore(card.id)"
+                >
+                  <Icon name="heroicons:arrow-uturn-left" size="13"/>
+                </button>
+                <button
+                    class="archive-action archive-action--delete"
+                    aria-label="Удалить навсегда"
+                    title="Удалить навсегда"
+                    @click="handleDeletePermanently(card.id)"
+                >
+                  <Icon name="heroicons:trash" size="13"/>
+                </button>
+              </div>
             </div>
-            <div class="archive-card__countdown" :class="{ 'countdown--urgent': daysLeft(card.archivedAt) <= 3 }">
-              <Icon name="heroicons:clock" size="11"/>
-              <span v-if="daysLeft(card.archivedAt) === 0">Удаляется сегодня</span>
-              <span v-else>{{ daysLeft(card.archivedAt) }} дн.</span>
-            </div>
-          </div>
-
-          <div class="archive-card__name">{{ card.name }}</div>
-
-          <div v-if="card.price > 0" class="archive-card__price">
-            {{ formatPrice(card.price) }}
-          </div>
-
-          <div class="archive-card__meta">
-            <span class="archive-card__date">
-              <Icon name="heroicons:archive-box-arrow-down" size="11"/>
-              Архивировано {{ formatArchivedAt(card.archivedAt) }}
-            </span>
-          </div>
-
-          <div class="archive-card__actions">
-            <button
-                class="action-btn action-btn--restore"
-                :disabled="isRestoring"
-                @click="handleRestore(card.id)"
-            >
-              <Icon name="heroicons:arrow-uturn-left" size="14"/>
-              Восстановить
-            </button>
-            <button class="action-btn action-btn--delete" @click="handleDeletePermanently(card.id)">
-              <Icon name="heroicons:trash" size="14"/>
-              Удалить
-            </button>
           </div>
         </div>
       </div>
@@ -232,12 +229,16 @@ const formatPrice = (price: number) =>
 
 <style scoped lang="sass">
 .archive-page
-  padding: var(--spacing-6)
-  max-width: 900px
-  margin: 0 auto
+  display: flex
+  flex-direction: column
+  width: 100%
 
 .archive-header
-  margin-bottom: var(--spacing-6)
+  flex-shrink: 0
+  padding: var(--spacing-6) var(--spacing-6) var(--spacing-4)
+
+  @media (max-width: 768px)
+    padding: var(--spacing-4) var(--spacing-4) var(--spacing-3)
 
 .archive-header__left
   display: flex
@@ -269,6 +270,13 @@ const formatPrice = (price: number) =>
   font-size: var(--font-size-sm)
   color: var(--color-text-muted)
   font-weight: 500
+
+.archive-surface
+  padding: 0 var(--spacing-6) var(--spacing-6)
+  border-top: var(--border-width) solid var(--color-border)
+
+  @media (max-width: 768px)
+    padding: 0 var(--spacing-4) var(--spacing-4)
 
 .archive-empty
   display: flex
@@ -302,196 +310,139 @@ const formatPrice = (price: number) =>
   max-width: 360px
   line-height: 1.5
 
+.archive-list-wrap
+  max-width: 720px
+  margin: 0 auto
+  padding-top: var(--spacing-4)
+
 .archive-list
-  display: grid
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))
-  gap: var(--spacing-4)
-
-.archive-card
-  position: relative
-  background-color: var(--color-card-bg)
-  border: var(--border-width) solid var(--color-card-border)
-  border-radius: var(--radius-lg)
-  overflow: hidden
-  transition: box-shadow var(--transition-normal) ease
-  opacity: 0
-  animation: card-in 0.3s ease forwards
-
-  &:hover
-    box-shadow: var(--shadow-card-hover)
-
-@keyframes card-in
-  from
-    opacity: 0
-    transform: translateY(6px)
-  to
-    opacity: 1
-    transform: translateY(0)
-
-.archive-card__priority-bar
-  position: absolute
-  left: 0
-  top: 0
-  width: 3px
-  height: 100%
-
-  &.pbar--high
-    background-color: var(--color-danger)
-
-  &.pbar--medium
-    background-color: var(--color-accent)
-
-  &.pbar--low
-    background-color: var(--color-text-muted)
-
-.archive-card__body
-  padding: var(--spacing-4) var(--spacing-4) var(--spacing-4) calc(var(--spacing-4) + 3px)
   display: flex
   flex-direction: column
-  gap: var(--spacing-3)
 
-.archive-card__top
+.archive-row
   display: flex
   align-items: center
   justify-content: space-between
-  gap: var(--spacing-2)
+  gap: var(--spacing-3)
+  min-width: 0
+  background-color: var(--kanban-card-bg)
+  border: var(--border-width) solid var(--color-card-border)
+  border-bottom: none
+  padding: 11px 12px
+  transition: background-color var(--transition-fast) ease
 
-.archive-card__badges
+  &--enter
+    opacity: 0
+    animation: row-in 0.2s ease forwards
+
+  &:first-child
+    border-radius: var(--radius-md) var(--radius-md) 0 0
+
+  &:last-child
+    border-bottom: var(--border-width) solid var(--color-card-border)
+    border-radius: 0 0 var(--radius-md) var(--radius-md)
+
+  &:hover,
+  &:focus-within
+    background-color: var(--color-bg-tertiary)
+
+    .archive-row__actions
+      opacity: 1
+
+@keyframes row-in
+  from
+    opacity: 0
+  to
+    opacity: 1
+
+.archive-row__name
+  font-size: var(--font-size-sm)
+  font-weight: 500
+  color: var(--color-text)
+  min-width: 0
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
+
+.archive-row__right
   display: flex
   align-items: center
   gap: var(--spacing-2)
-  flex-wrap: wrap
-
-.category-badge
-  display: inline-flex
-  align-items: center
-  padding: 2px 7px
-  border-radius: var(--radius-full)
-  font-size: 10px
-  font-weight: 700
-  text-transform: uppercase
-  letter-spacing: 0.4px
-
-  &.badge--idea
-    background-color: var(--kanban-ideas-bg)
-    color: var(--kanban-ideas-color)
-
-  &.badge--task
-    background-color: var(--kanban-tasks-bg)
-    color: var(--kanban-tasks-color)
-
-  &.badge--wish
-    background-color: var(--kanban-wishlist-bg)
-    color: var(--kanban-wishlist-color)
-
-.priority-badge
-  display: inline-flex
-  align-items: center
-  gap: 4px
-  padding: 2px 7px
-  border-radius: var(--radius-full)
-  font-size: 10px
-  font-weight: 700
-
-  &.priority--high
-    background-color: var(--color-danger-light)
-    color: var(--color-danger)
-    .priority-dot
-      background-color: var(--color-danger)
-
-  &.priority--medium
-    background-color: var(--color-bg-tertiary)
-    color: var(--color-accent)
-    .priority-dot
-      background-color: var(--color-accent)
-
-  &.priority--low
-    background-color: var(--color-bg-tertiary)
-    color: var(--color-text-muted)
-    .priority-dot
-      background-color: var(--color-text-muted)
-
-.priority-dot
-  width: 5px
-  height: 5px
-  border-radius: 50%
   flex-shrink: 0
 
-.archive-card__countdown
-  display: flex
+.archive-row__countdown
+  display: inline-flex
   align-items: center
   gap: 4px
-  font-size: 11px
+  font-size: var(--font-size-xs)
   font-weight: 600
   color: var(--color-text-muted)
   white-space: nowrap
+  transition: opacity var(--transition-fast) ease
 
   &.countdown--urgent
     color: var(--color-danger)
 
-.archive-card__name
-  font-size: var(--font-size-sm)
-  font-weight: 600
-  color: var(--color-text)
-  line-height: 1.35
-
-.archive-card__price
-  font-size: var(--font-size-sm)
-  font-weight: 800
-  color: var(--kanban-wishlist-color)
-  font-variant-numeric: tabular-nums
-  font-feature-settings: "tnum"
-
-.archive-card__meta
-  display: flex
-  align-items: center
-
-.archive-card__date
-  display: flex
-  align-items: center
-  gap: 4px
-  font-size: 11px
-  color: var(--color-text-muted)
-  font-weight: 500
-
-.archive-card__actions
-  display: flex
-  gap: var(--spacing-2)
-  padding-top: var(--spacing-2)
-  border-top: var(--border-width) solid var(--color-border)
-
-.action-btn
-  display: inline-flex
-  align-items: center
-  gap: var(--spacing-1)
-  padding: 5px var(--spacing-3)
-  border-radius: var(--radius-md)
+.archive-row__price
   font-size: var(--font-size-xs)
   font-weight: 600
+  color: var(--color-text-secondary)
+  font-family: var(--font-numeric)
+
+.archive-row__dot
+  width: 6px
+  height: 6px
+  border-radius: 50%
+  flex-shrink: 0
+  background-color: var(--color-text-muted)
+
+  &--ideas
+    background-color: var(--kanban-ideas-color)
+
+  &--tasks
+    background-color: var(--kanban-tasks-color)
+
+  &--wishlist
+    background-color: var(--kanban-wishlist-color)
+
+.archive-row__actions
+  display: flex
+  align-items: center
+  gap: 2px
+  opacity: 0
+  transition: opacity var(--transition-fast) ease
+
+@media (hover: none), (max-width: 768px)
+  .archive-row__actions
+    opacity: 1
+
+.archive-action
+  width: 20px
+  height: 20px
+  display: flex
+  align-items: center
+  justify-content: center
+  background: none
+  border: none
+  border-radius: var(--radius-sm)
+  color: var(--color-text-muted)
   cursor: pointer
-  border: var(--border-width) solid transparent
+  padding: 0
   transition: all var(--transition-fast) ease
 
   &:disabled
     opacity: 0.6
     cursor: not-allowed
 
-  &--restore
-    background-color: var(--color-primary-light)
+  &:focus-visible
+    outline: 2px solid var(--color-primary)
+    outline-offset: 2px
+
+  &--restore:hover:not(:disabled)
+    background-color: var(--color-bg-secondary)
     color: var(--color-primary)
-    border-color: var(--color-primary-muted)
 
-    &:hover:not(:disabled)
-      background-color: var(--color-primary)
-      color: white
-
-  &--delete
-    background-color: var(--color-danger-light)
+  &--delete:hover
+    background-color: var(--color-bg-secondary)
     color: var(--color-danger)
-    border-color: rgba(239, 68, 68, 0.2)
-    margin-left: auto
-
-    &:hover
-      background-color: var(--color-danger)
-      color: white
 </style>
