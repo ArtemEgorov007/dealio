@@ -4,94 +4,94 @@
     --color-white: #ffffff;
     --color-black: #000000;
 
-    /* Системные цвета — новая палитра (teal-акцент, slate-нейтрали) */
-    --color-primary: #0d9488;
-    --color-primary-hover: #0f766e;
-    --color-primary-active: #115e59;
-    --color-primary-light: rgba(13, 148, 136, 0.08);
-    --color-primary-muted: rgba(13, 148, 136, 0.15);
-    --color-secondary: #64748b;
-    --color-secondary-hover: #475569;
-    --color-accent: #f59e0b;
-    --color-accent-hover: #d97706;
-    --color-success: #10b981;
-    --color-success-hover: #059669;
-    --color-danger: #ef4444;
-    --color-danger-hover: #dc2626;
-    --color-danger-light: rgba(239, 68, 68, 0.08);
-    --color-warning: #f59e0b;
-    --color-warning-hover: #d97706;
-    --color-info: #0ea5e9;
-    --color-info-hover: #0284c7;
+    /* Системные цвета — монохром + единичный белый акцент (Vercel-style) */
+    --color-primary: #ffffff;
+    --color-primary-hover: #e5e5e5;
+    --color-primary-active: #d4d4d4;
+    --color-primary-light: rgba(255, 255, 255, 0.06);
+    --color-primary-muted: rgba(255, 255, 255, 0.12);
+    --color-secondary: #888888;
+    --color-secondary-hover: #aaaaaa;
+    --color-accent: #ff9a44;
+    --color-accent-hover: #ffac63;
+    --color-success: #34e89e;
+    --color-success-hover: #4eedab;
+    --color-danger: #f87171;
+    --color-danger-hover: #fb9a9a;
+    --color-danger-light: rgba(248, 113, 113, 0.08);
+    --color-warning: #ff9a44;
+    --color-warning-hover: #ffac63;
+    --color-info: #4facfe;
+    --color-info-hover: #6fbdfe;
 
     /* Цвета фона */
-    --color-bg: #f6f8fb;
-    --color-bg-secondary: #f0f3f8;
-    --color-bg-tertiary: #e8edf4;
-    --color-bg-surface: #ffffff;
-    --color-bg-overlay: rgba(15, 23, 42, 0.45);
-    --color-bg-alt: #eef2f7;
+    --color-bg: #000000;
+    --color-bg-secondary: #0a0a0a;
+    --color-bg-tertiary: #111111;
+    --color-bg-surface: #000000;
+    --color-bg-overlay: rgba(0, 0, 0, 0.6);
+    --color-bg-alt: #0a0a0a;
 
-    /* Цвета текста (ink-slate) */
-    --color-text: #0f172a;
-    --color-text-secondary: #475569;
-    --color-text-tertiary: #64748b;
-    --color-text-muted: #94a3b8;
-    --color-text-inverse: #ffffff;
+    /* Цвета текста */
+    --color-text: #f5f5f7;
+    --color-text-secondary: #b0b0b3;
+    --color-text-tertiary: #888888;
+    --color-text-muted: #666666;
+    --color-text-inverse: #000000;
 
     /* Цвета для компонентов */
-    --color-border: #e2e8f0;
-    --color-border-hover: #cbd5e1;
-    --color-border-focus: #0d9488;
+    --color-border: #1f1f1f;
+    --color-border-hover: #2a2a2a;
+    --color-border-focus: #ffffff;
 
     /* Цвета для карточек */
-    --color-card-bg: #ffffff;
-    --color-card-border: #e2e8f0;
-    --color-card-shadow: rgba(15, 23, 42, 0.04);
+    --color-card-bg: #0a0a0a;
+    --color-card-border: #1f1f1f;
+    --color-card-shadow: rgba(0, 0, 0, 0.4);
 
     /* Цвета для кнопок */
-    --color-button-primary-bg: #0d9488;
-    --color-button-primary-bg-hover: #0f766e;
-    --color-button-primary-text: #ffffff;
-    --color-button-secondary-bg: #f1f5f9;
-    --color-button-secondary-bg-hover: #e2e8f0;
-    --color-button-secondary-text: #0f172a;
-    --color-button-outline-border: #0d9488;
-    --color-button-outline-text: #0d9488;
-    --color-button-outline-text-hover: #0f766e;
-    --color-button-ghost-text: #475569;
-    --color-button-ghost-text-hover: #0f172a;
-    --color-button-danger-bg: #ef4444;
-    --color-button-danger-bg-hover: #dc2626;
-    --color-button-danger-text: #ffffff;
-    --color-button-disabled-bg: #f1f5f9;
-    --color-button-disabled-text: #94a3b8;
+    --color-button-primary-bg: #ffffff;
+    --color-button-primary-bg-hover: #e5e5e5;
+    --color-button-primary-text: #000000;
+    --color-button-secondary-bg: #111111;
+    --color-button-secondary-bg-hover: #1a1a1a;
+    --color-button-secondary-text: #f5f5f7;
+    --color-button-outline-border: #2a2a2a;
+    --color-button-outline-text: #f5f5f7;
+    --color-button-outline-text-hover: #ffffff;
+    --color-button-ghost-text: #888888;
+    --color-button-ghost-text-hover: #f5f5f7;
+    --color-button-danger-bg: #f87171;
+    --color-button-danger-bg-hover: #fb9a9a;
+    --color-button-danger-text: #000000;
+    --color-button-disabled-bg: #111111;
+    --color-button-disabled-text: #4d4d4d;
 
     /* Цвета для инпутов */
-    --color-input-bg: #ffffff;
-    --color-input-border: #e2e8f0;
-    --color-input-border-hover: #cbd5e1;
-    --color-input-border-focus: #0d9488;
-    --color-input-text: #0f172a;
-    --color-input-placeholder: #94a3b8;
-    --color-input-disabled-bg: #f8fafc;
-    --color-input-disabled-text: #94a3b8;
+    --color-input-bg: #0a0a0a;
+    --color-input-border: #2a2a2a;
+    --color-input-border-hover: #3a3a3a;
+    --color-input-border-focus: #ffffff;
+    --color-input-text: #f5f5f7;
+    --color-input-placeholder: #666666;
+    --color-input-disabled-bg: #111111;
+    --color-input-disabled-text: #4d4d4d;
 
-    /* Тени — многослойные, мягкие */
-    --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-    --shadow-md: 0 4px 8px rgba(15, 23, 42, 0.07), 0 2px 4px rgba(15, 23, 42, 0.04);
-    --shadow-lg: 0 10px 24px rgba(15, 23, 42, 0.09), 0 4px 8px rgba(15, 23, 42, 0.05);
-    --shadow-xl: 0 24px 48px rgba(15, 23, 42, 0.12), 0 8px 16px rgba(15, 23, 42, 0.06);
-    --shadow-card-hover: 0 8px 20px rgba(15, 23, 42, 0.10), 0 2px 6px rgba(15, 23, 42, 0.05);
+    /* Тени — почти не используются (плоский дизайн), оставлены минимальными для модалок/дропдаунов */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.55);
+    --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.6);
+    --shadow-card-hover: 0 0 0 1px var(--color-border-hover);
 
     /* Радиусы */
     --radius-xs: 3px;
     --radius-sm: 5px;
     --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
-    --radius-2xl: 20px;
+    --radius-lg: 10px;
+    --radius-xl: 14px;
+    --radius-2xl: 18px;
     --radius-full: 9999px;
 
     /* Отступы */
@@ -110,7 +110,7 @@
     --spacing-12: 3rem; /* 48px */
 
     /* Шрифты */
-    --font-family-base: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-size-xs: 0.6875rem; /* 11px */
     --font-size-sm: 0.8125rem; /* 13px */
     --font-size-base: 0.9375rem; /* 15px */
@@ -135,8 +135,8 @@
     --line-height-relaxed: 1.625;
     --line-height-loose: 2;
 
-    /* Числа: табличная цифровая верстка */
-    --font-numeric: 'Manrope', sans-serif;
+    /* Числа: моноширинный шрифт, табличная цифровая верстка */
+    --font-numeric: 'Roboto Mono', monospace;
     --font-feature-numeric: "tnum", "tabular-nums";
 
     /* Breakpoints */
@@ -165,43 +165,43 @@
     /* Компоненты */
     --navbar-height: 60px;
     --border-width: 1px;
-    --sidebar-width-expanded: 232px;
+    --sidebar-width-expanded: 220px;
     --sidebar-width-collapsed: 64px;
 
-    /* Kanban column colors (ideas / tasks / doing / done / wishlist) */
-    --kanban-todo-color: #64748b;
-    --kanban-todo-bg: rgba(100, 116, 139, 0.08);
-    --kanban-agreed-color: #0ea5e9;
-    --kanban-agreed-bg: rgba(14, 165, 233, 0.08);
-    --kanban-progress-color: #f59e0b;
-    --kanban-progress-bg: rgba(245, 158, 11, 0.08);
-    --kanban-produced-color: #8b5cf6;
-    --kanban-produced-bg: rgba(139, 92, 246, 0.08);
-    --kanban-done-color: #10b981;
-    --kanban-done-bg: rgba(16, 185, 129, 0.08);
+    /* Kanban column colors (ideas / tasks / doing / done / wishlist) — точки-индикаторы, не фон */
+    --kanban-todo-color: #888888;
+    --kanban-todo-bg: rgba(136, 136, 136, 0.08);
+    --kanban-agreed-color: #4facfe;
+    --kanban-agreed-bg: rgba(79, 172, 254, 0.08);
+    --kanban-progress-color: #ff9a44;
+    --kanban-progress-bg: rgba(255, 154, 68, 0.08);
+    --kanban-produced-color: #a78bfa;
+    --kanban-produced-bg: rgba(167, 139, 250, 0.08);
+    --kanban-done-color: #34e89e;
+    --kanban-done-bg: rgba(52, 232, 158, 0.08);
     /* tracker statuses */
-    --kanban-ideas-color: #0ea5e9;
-    --kanban-ideas-bg: rgba(14, 165, 233, 0.08);
-    --kanban-tasks-color: #f59e0b;
-    --kanban-tasks-bg: rgba(245, 158, 11, 0.08);
-    --kanban-doing-color: #8b5cf6;
-    --kanban-doing-bg: rgba(139, 92, 246, 0.08);
-    --kanban-done-tracker-color: #10b981;
-    --kanban-done-tracker-bg: rgba(16, 185, 129, 0.08);
-    --kanban-wishlist-color: #ec4899;
-    --kanban-wishlist-bg: rgba(236, 72, 153, 0.08);
+    --kanban-ideas-color: #4facfe;
+    --kanban-ideas-bg: rgba(79, 172, 254, 0.08);
+    --kanban-tasks-color: #a78bfa;
+    --kanban-tasks-bg: rgba(167, 139, 250, 0.08);
+    --kanban-doing-color: #ff9a44;
+    --kanban-doing-bg: rgba(255, 154, 68, 0.08);
+    --kanban-done-tracker-color: #34e89e;
+    --kanban-done-tracker-bg: rgba(52, 232, 158, 0.08);
+    --kanban-wishlist-color: #ff6b9d;
+    --kanban-wishlist-bg: rgba(255, 107, 157, 0.08);
 
     /* Error colors */
-    --color-error-bg: rgba(239, 68, 68, 0.06);
-    --color-error-text: #dc2626;
-    --color-error-border: rgba(239, 68, 68, 0.25);
+    --color-error-bg: rgba(248, 113, 113, 0.08);
+    --color-error-text: #f87171;
+    --color-error-border: rgba(248, 113, 113, 0.25);
 
-    /* Kanban board dot grid */
-    --kanban-grid-pattern: radial-gradient(circle, rgba(148, 163, 184, 0.22) 1px, transparent 1px);
-    --kanban-grid-size: 18px 18px;
-    --kanban-surface-bg: #e8edf4;
-    --kanban-column-bg: #ffffff;
-    --kanban-column-border: #d5dde8;
-    --kanban-column-shadow: 0 4px 16px rgba(15, 23, 42, 0.09), 0 1px 3px rgba(15, 23, 42, 0.05);
-    --kanban-card-bg: #f6f8fb;
+    /* Kanban board surface — без точечной сетки, плоский чёрный фон */
+    --kanban-grid-pattern: none;
+    --kanban-grid-size: 0 0;
+    --kanban-surface-bg: #000000;
+    --kanban-column-bg: transparent;
+    --kanban-column-border: transparent;
+    --kanban-column-shadow: none;
+    --kanban-card-bg: #0a0a0a;
 }

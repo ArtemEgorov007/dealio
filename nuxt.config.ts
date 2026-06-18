@@ -36,7 +36,8 @@ export default defineNuxtConfig({
             '@nuxtjs/google-fonts',
             {
                 families: {
-                    Manrope: [400, 500, 600, 700, 800]
+                    Inter: [400, 500, 600, 700],
+                    'Roboto Mono': [500, 600]
                 },
                 display: 'swap',
                 preload: true,
@@ -48,7 +49,6 @@ export default defineNuxtConfig({
     css: [
         '@/assets/css/normalize.css',
         '@/assets/css/variables.css',
-        '@/assets/css/dark-theme.css',
         '@/assets/css/kanban-effects.css',
     ],
 
