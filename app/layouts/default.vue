@@ -9,7 +9,6 @@ import {useAuthStore, useIsLoadingStore, isGuestSession} from '~~/store/auth.sto
 import {useBoardStore} from '~~/store/board.store'
 import {useAuthArchiveStore} from '~~/store/auth-archive.store'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
-import { useTheme } from '~/composables/useTheme'
 
 const PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000 // 6 часов
 
@@ -20,13 +19,10 @@ const authStore = useAuthStore()
 const boardStore = useBoardStore()
 const authArchiveStore = useAuthArchiveStore()
 const queryClient = useQueryClient()
-const { initTheme } = useTheme()
 
 let pruneTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
-  initTheme()
-
   if (route.path === '/login') {
     isLoadingStore.set(false)
     return

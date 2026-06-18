@@ -47,11 +47,6 @@ const {logout} = useLogout()
     </nav>
 
     <div class="sidebar__footer">
-      <div class="sidebar__theme-toggle">
-        <UiThemeToggle />
-        <span v-if="isOpen" class="footer-label">Тема</span>
-      </div>
-
       <div class="sidebar__user" v-if="isOpen && authStore.user">
         <div class="user-avatar">
           {{ authStore.user.name?.charAt(0)?.toUpperCase() || 'U' }}
@@ -101,9 +96,6 @@ const {logout} = useLogout()
     .footer-label
       display: none
 
-    .sidebar__theme-toggle
-      justify-content: center
-
     .user-avatar
       margin: 0 auto
 
@@ -131,12 +123,6 @@ const {logout} = useLogout()
     display: flex
     flex-direction: column
     gap: var(--spacing-3)
-
-  &__theme-toggle
-    display: flex
-    align-items: center
-    gap: var(--spacing-3)
-    padding: var(--spacing-1) 0
 
   &__user
     display: flex
