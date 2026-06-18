@@ -11,11 +11,11 @@ Kanban-доска для личных идей, задач и wishlist. Nuxt 4 +
 - **Сводка** — статистика и прогресс по доске
 - **Архив** — демо (localStorage) и аккаунт Appwrite (локальный буфер + удаление с доски)
 - **Демо-режим** — без регистрации, mock-данные
-- **Тёмная тема**
+- **Тёмный UI** — монохромный, Vercel-style (без переключателя тем)
 
 ## Стек
 
-Nuxt 4 · Vue 3 · TypeScript · Pinia · TanStack Query · Appwrite · Manrope
+Nuxt 4 · Vue 3 · TypeScript · Pinia · TanStack Query · Appwrite · Inter / Roboto Mono
 
 ## Запуск
 
@@ -57,6 +57,16 @@ types/cards.types.ts    — типы (Appwrite collection `deals`)
 - **deals / comments** — Row security ON; Users: Create на коллекции
 
 Деплой: push в `main` → GitHub Actions (`NUXT_APP_BASE_URL=/dealio/`).
+
+## Дизайн
+
+Текущий UI — монохромный тёмный стиль в духе Vercel/Linear: чёрный фон, тонкие границы вместо заливок/градиентов, цвет типа карточки передаётся точкой-индикатором (для Wishlist — ценой). Денежные суммы — без значка ₽, числа — моноширинным шрифтом.
+
+Редизайн (2026-06-18) сделан в паре с Claude Code:
+
+1. **Брейнсторм** — через визуальную песочницу (`superpowers:brainstorming`) перебрали несколько направлений (Editorial / Warm minimal / Vibrant), затем после ревью ушли от «Vibrant» (градиенты, похожие на стиль 2017 года) к строгой Vercel-эстетике; отдельно проитерировали композицию доски (карточки-блоки → плотные строки) и метрики (карточки → текстовая строка → пилюли-чипы).
+2. **Спека и план** — зафиксированы в `docs/superpowers/specs/` и `docs/superpowers/plans/`.
+3. **Реализация** — `superpowers:subagent-driven-development`: 7 задач плана, каждая — отдельный имплементер-субагент + ревью спеки/качества, плюс финальный ревью всей ветки перед мёрджем.
 
 ## Скрипты
 
