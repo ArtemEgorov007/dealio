@@ -1,0 +1,80 @@
+/* Nuxt UI toaster: Tailwind-утилиты не компилируются — позиция и стиль задаём явно */
+
+ol.dealio-toast-host {
+    position: fixed !important;
+    z-index: 1100 !important;
+    top: 1rem !important;
+    bottom: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: min(24rem, calc(100vw - 2rem)) !important;
+    max-width: calc(100vw - 2rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    pointer-events: none;
+}
+
+ol.dealio-toast-host [data-state='open'] {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    pointer-events: auto;
+}
+
+.dealio-toast {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    width: 100%;
+    display: flex !important;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 0.875rem 1rem !important;
+    background-color: var(--color-card-bg) !important;
+    border: var(--border-width) solid var(--color-border) !important;
+    border-radius: var(--radius-lg) !important;
+    color: var(--color-text) !important;
+    box-shadow: var(--shadow-lg);
+    pointer-events: auto;
+}
+
+.dealio-toast__title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--color-text);
+}
+
+.dealio-toast__desc {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-top: 0.125rem;
+}
+
+.dealio-toast__icon {
+    flex-shrink: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: 0.125rem;
+}
+
+.dealio-toast--success .dealio-toast__icon {
+    color: var(--color-success);
+}
+
+.dealio-toast--error .dealio-toast__icon {
+    color: var(--color-danger);
+}
+
+@media (max-width: 768px) {
+    ol.dealio-toast-host {
+        top: max(0.75rem, env(safe-area-inset-top, 0.75rem)) !important;
+    }
+}

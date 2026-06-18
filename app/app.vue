@@ -2,7 +2,13 @@
 </script>
 
 <template>
-  <UApp :toaster="{ position: 'bottom-right', duration: 3500 }">
+  <UApp
+      :toaster="{
+        position: 'top-center',
+        duration: 3500,
+        class: 'dealio-toast-host',
+      }"
+  >
     <NuxtLayout>
       <NuxtPage/>
     </NuxtLayout>

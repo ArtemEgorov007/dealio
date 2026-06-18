@@ -1,5 +1,12 @@
 const TOAST_DURATION_MS = 3500
 
+const toastUi = {
+    root: 'dealio-toast',
+    title: 'dealio-toast__title',
+    description: 'dealio-toast__desc',
+    icon: 'dealio-toast__icon',
+}
+
 export function useAppToast() {
     const toast = useToast()
 
@@ -7,9 +14,11 @@ export function useAppToast() {
         toast.add({
             title,
             description,
-            color: 'success',
+            color: 'neutral',
             icon: 'heroicons:check-circle',
             duration: TOAST_DURATION_MS,
+            class: 'dealio-toast dealio-toast--success',
+            ui: toastUi,
         })
     }
 
@@ -17,9 +26,11 @@ export function useAppToast() {
         const title = error instanceof Error ? error.message : fallback
         toast.add({
             title,
-            color: 'error',
+            color: 'neutral',
             icon: 'heroicons:exclamation-circle',
             duration: TOAST_DURATION_MS + 500,
+            class: 'dealio-toast dealio-toast--error',
+            ui: toastUi,
         })
     }
 

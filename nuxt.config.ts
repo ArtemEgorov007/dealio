@@ -58,6 +58,7 @@ export default defineNuxtConfig({
         '@/assets/css/normalize.css',
         '@/assets/css/variables.css',
         '@/assets/css/kanban-effects.css',
+        '@/assets/css/toast-overrides.css',
     ],
 
     pinia: {
