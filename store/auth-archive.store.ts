@@ -115,6 +115,12 @@ export const useAuthArchiveStore = defineStore('auth-archive', {
             this._persist()
         },
 
+        restore(card: IAuthArchivedCard) {
+            if (this.cards.some(item => item.id === card.id)) return
+            this.cards.unshift(card)
+            this._persist()
+        },
+
         takeForRestore(id: string): IAuthArchivedCard | null {
             const card = this.cards.find(item => item.id === id) ?? null
             if (!card) return null

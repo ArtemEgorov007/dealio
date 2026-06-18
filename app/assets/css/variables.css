@@ -162,7 +162,11 @@
     --transition-slow: 0.28s;
     --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Компоненты */
+    /* Панели / toast — общая кривая выезда справа */
+    --dealio-motion-duration: 0.24s;
+    --dealio-motion-ease: cubic-bezier(0.32, 0.72, 0, 1);
+    --dealio-slideover-width: 420px;
+    --mobile-bottom-nav-offset: 72px;
     --navbar-height: 60px;
     --border-width: 1px;
     --sidebar-width-expanded: 220px;

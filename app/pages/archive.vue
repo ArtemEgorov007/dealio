@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {toRaw} from 'vue'
 import {useMutation, useQueryClient} from '@tanstack/vue-query'
 
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
@@ -90,7 +91,7 @@ const archiveRowTitle = (card: ArchiveListItem) => {
   return parts.join(' · ')
 }
 
-const {showSuccess, showError} = useAppToast()
+const {showSuccess, showError, showUndoDelete} = useAppToast()
 
 const invalidateBoard = () => {
   queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
@@ -139,11 +140,28 @@ const handleRestore = (id: string) => {
 
 const handleDeletePermanently = (id: string) => {
   if (isGuest.value) {
+    const card = boardStore.cards.find(item => item.$id === id)
+    if (!card) return
+
+    const snapshot = structuredClone(toRaw(card))
     boardStore.deleteCardPermanently(id)
+
+    showUndoDelete(() => {
+      boardStore.restoreDeletedArchivedCard(snapshot)
+      invalidateBoard()
+    })
   } else {
+    const card = authArchiveStore.archivedCards.find(item => item.id === id)
+    if (!card) return
+
+    const snapshot = structuredClone(toRaw(card))
     authArchiveStore.remove(id)
+
+    showUndoDelete(() => {
+      authArchiveStore.restore(snapshot)
+    })
   }
-  showSuccess('Карточка удалена навсегда')
+
   invalidateBoard()
 }
 
@@ -332,6 +350,8 @@ const formatPrice = (price: number) =>
   justify-content: space-between
   gap: var(--spacing-3)
   min-width: 0
+  max-width: 100%
+  overflow: hidden
   background-color: var(--kanban-card-bg)
   border: var(--border-width) solid var(--color-card-border)
   border-bottom: none
@@ -363,6 +383,7 @@ const formatPrice = (price: number) =>
     opacity: 1
 
 .archive-row__name
+  flex: 1 1 auto
   font-size: var(--font-size-sm)
   font-weight: 500
   color: var(--color-text)
@@ -376,6 +397,7 @@ const formatPrice = (price: number) =>
   align-items: center
   gap: var(--spacing-2)
   flex-shrink: 0
+  min-width: 0
 
 .archive-row__countdown
   display: inline-flex
@@ -391,10 +413,15 @@ const formatPrice = (price: number) =>
     color: var(--color-danger)
 
 .archive-row__price
+  max-width: 72px
   font-size: var(--font-size-xs)
   font-weight: 600
   color: var(--color-text-secondary)
   font-family: var(--font-numeric)
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
+  flex-shrink: 0
 
 .archive-row__dot
   width: 6px

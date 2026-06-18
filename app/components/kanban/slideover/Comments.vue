@@ -159,6 +159,7 @@ const card = computed(() => data.value ?? null)
 
 .comment__bubble
   flex: 1
+  min-width: 0
   background-color: var(--color-bg-secondary)
   border: var(--border-width) solid var(--color-border)
   border-radius: var(--radius-lg)
@@ -175,6 +176,8 @@ const card = computed(() => data.value ?? null)
   font-size: var(--font-size-sm)
   color: var(--color-text)
   line-height: var(--line-height-normal)
+  overflow-wrap: anywhere
+  word-break: break-word
 
 .comments__empty
   display: flex

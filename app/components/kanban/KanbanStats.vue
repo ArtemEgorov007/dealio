@@ -109,6 +109,7 @@ const statTiles = computed((): StatTile[] => {
   display: inline-flex
   align-items: center
   gap: 6px
+  max-width: 100%
   border: var(--border-width) solid var(--color-border)
   border-radius: var(--radius-full)
   padding: 5px 12px
@@ -149,4 +150,8 @@ const statTiles = computed((): StatTile[] => {
   color: var(--color-text)
   font-weight: 600
   font-family: var(--font-numeric)
+  min-width: 0
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
 </style>

@@ -4,8 +4,10 @@
 <template>
   <UApp
       :toaster="{
-        position: 'top-center',
+        position: 'top-right',
         duration: 3500,
+        expand: false,
+        progress: false,
         class: 'dealio-toast-host',
       }"
   >

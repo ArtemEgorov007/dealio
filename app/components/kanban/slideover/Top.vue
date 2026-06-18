@@ -276,10 +276,15 @@ const handleArchive = () => {
   font-weight: 600
   color: var(--color-text)
   text-align: right
+  min-width: 0
+  max-width: 58%
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
 
 .card-info__error
   display: flex
-  align-items: center
+  align-items: flex-start
   gap: var(--spacing-2)
   padding: var(--spacing-2) var(--spacing-3)
   background-color: var(--color-error-bg)
@@ -288,6 +293,8 @@ const handleArchive = () => {
   border-radius: var(--radius-md)
   font-size: var(--font-size-xs)
   font-weight: 500
+  overflow-wrap: anywhere
+  word-break: break-word
 
 .card-info__saving
   margin: 0

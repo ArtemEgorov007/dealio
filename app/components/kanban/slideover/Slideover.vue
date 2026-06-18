@@ -39,37 +39,39 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="slideover-root">
-      <div
-          class="slideover-backdrop"
-          aria-hidden="true"
-          @click="closePanel"
-      />
+    <Transition name="dealio-slideover" :duration="{ enter: 240, leave: 240 }">
+      <div v-if="isOpen" class="slideover-root">
+        <div
+            class="slideover-backdrop"
+            aria-hidden="true"
+            @click="closePanel"
+        />
 
-      <aside
-          class="slideover-panel"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Редактирование элемента"
-      >
-        <header class="slideover-header">
-          <span class="slideover-header__label">Редактирование</span>
-          <button
-              type="button"
-              class="slideover-close"
-              aria-label="Закрыть"
-              @click="closePanel"
-          >
-            <Icon name="heroicons:x-mark" size="18"/>
-          </button>
-        </header>
+        <aside
+            class="slideover-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Редактирование элемента"
+        >
+          <header class="slideover-header">
+            <span class="slideover-header__label">Редактирование</span>
+            <button
+                type="button"
+                class="slideover-close"
+                aria-label="Закрыть"
+                @click="closePanel"
+            >
+              <Icon name="heroicons:x-mark" size="18"/>
+            </button>
+          </header>
 
-        <div v-if="store.card" class="slideover-body">
-          <KanbanSlideoverTop/>
-          <KanbanSlideoverComments/>
-        </div>
-      </aside>
-    </div>
+          <div v-if="store.card" class="slideover-body">
+            <KanbanSlideoverTop/>
+            <KanbanSlideoverComments/>
+          </div>
+        </aside>
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -84,13 +86,12 @@ onBeforeUnmount(() => {
   position: absolute
   inset: 0
   background-color: var(--color-bg-overlay)
-  animation: backdrop-in 0.2s ease both
 
 .slideover-panel
   position: absolute
   top: 0
   right: 0
-  width: min(420px, 100vw)
+  width: min(var(--dealio-slideover-width), 100vw)
   height: 100%
   display: flex
   flex-direction: column
@@ -98,7 +99,6 @@ onBeforeUnmount(() => {
   border-left: var(--border-width) solid var(--color-border)
   box-shadow: var(--shadow-xl)
   will-change: transform
-  animation: panel-in 0.24s cubic-bezier(0.32, 0.72, 0, 1) both
 
 .slideover-header
   display: flex
@@ -145,17 +145,21 @@ onBeforeUnmount(() => {
   flex-direction: column
   gap: var(--spacing-5)
 
-@keyframes backdrop-in
-  from
-    opacity: 0
-  to
-    opacity: 1
+.dealio-slideover-enter-active,
+.dealio-slideover-leave-active
+  .slideover-backdrop
+    transition: opacity var(--dealio-motion-duration) var(--dealio-motion-ease)
 
-@keyframes panel-in
-  from
+  .slideover-panel
+    transition: transform var(--dealio-motion-duration) var(--dealio-motion-ease)
+
+.dealio-slideover-enter-from,
+.dealio-slideover-leave-to
+  .slideover-backdrop
+    opacity: 0
+
+  .slideover-panel
     transform: translateX(100%)
-  to
-    transform: translateX(0)
 
 @media (max-width: 480px)
   .slideover-panel

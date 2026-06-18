@@ -135,6 +135,7 @@ const onCardCreated = () => {
   flex-shrink: 0
   display: flex
   flex-direction: column
+  min-width: 0
 
   &--over
     .column-content
@@ -164,6 +165,8 @@ const onCardCreated = () => {
 .column-content
   display: flex
   flex-direction: column
+  min-width: 0
+  overflow: hidden
 
 .empty-column
   display: flex

@@ -184,6 +184,12 @@ export const useBoardStore = defineStore('board', {
             this._persist()
         },
 
+        restoreDeletedArchivedCard(card: IBoardCard) {
+            if (this.cards.some(c => c.$id === card.$id)) return
+            this.cards.unshift(card)
+            this._persist()
+        },
+
         pruneExpired() {
             this._pruneExpired()
         },

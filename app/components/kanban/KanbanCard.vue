@@ -119,7 +119,10 @@ const formatPrice = (price: number) =>
   align-items: center
   justify-content: space-between
   gap: var(--spacing-3)
+  width: 100%
+  max-width: 100%
   min-width: 0
+  overflow: hidden
   background-color: var(--kanban-card-bg)
   border: var(--border-width) solid var(--color-card-border)
   border-bottom: none
@@ -162,6 +165,7 @@ const formatPrice = (price: number) =>
     opacity: 1
 
 .card-name
+  flex: 1 1 auto
   font-size: var(--font-size-sm)
   font-weight: 500
   color: var(--color-text)
@@ -175,12 +179,18 @@ const formatPrice = (price: number) =>
   align-items: center
   gap: var(--spacing-2)
   flex-shrink: 0
+  min-width: 0
 
 .card-price
+  max-width: 72px
   font-size: var(--font-size-xs)
   font-weight: 600
   color: var(--color-text-secondary)
   font-family: var(--font-numeric)
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
+  flex-shrink: 0
 
 .card-dot
   width: 6px
