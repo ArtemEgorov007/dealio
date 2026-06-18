@@ -278,7 +278,7 @@ useClickOutside(rootRef, closeDropdown)
     &:focus-visible
       outline: none
       border-color: var(--color-input-border-focus)
-      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12)
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12)
 
     &:hover:not(:disabled)
       border-color: var(--color-input-border-hover)

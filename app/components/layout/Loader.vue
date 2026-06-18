@@ -44,15 +44,14 @@ const baseURL = app.baseURL
 .loader-logo-mark
   width: 44px
   height: 44px
-  background: linear-gradient(135deg, var(--color-primary), #0f9b8e)
+  background: var(--color-primary)
   border-radius: var(--radius-lg)
   display: flex
   align-items: center
   justify-content: center
-  color: white
+  color: var(--color-text-inverse)
   font-size: 22px
   font-weight: 800
-  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.3)
   line-height: 1
 
 .loader-logo-text
