@@ -1,11 +1,9 @@
-/* Slideover open: отключаем hover-эффекты карточки под курсором */
+/* Slideover open: отключаем hover-эффекты строки под курсором */
 .dealio-slideover-open .kanban-card:hover {
-    box-shadow: var(--shadow-sm) !important;
-    border-color: var(--color-card-border) !important;
+    background-color: var(--kanban-card-bg) !important;
 }
 
-.dealio-slideover-open .kanban-card .card-archive-btn,
-.dealio-slideover-open .kanban-card .drag-hint {
+.dealio-slideover-open .kanban-card .card-archive-btn {
     opacity: 0 !important;
 }
 
