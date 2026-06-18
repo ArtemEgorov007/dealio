@@ -151,10 +151,10 @@ const handleArchive = () => {
         v-model="editName"
         label="Заголовок"
         placeholder="Название элемента"
+        :rows="3"
         flush
         :disabled="isPending"
         @blur="saveName"
-        @keydown.enter="($event.target as HTMLInputElement).blur()"
     />
 
     <UiInput

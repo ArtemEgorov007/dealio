@@ -118,6 +118,7 @@ const card = computed(() => data.value ?? null)
   &:hover:not(:disabled)
     background-color: var(--color-primary-hover)
     transform: translateY(-1px)
+    color: var(--color-black)
 
   &:disabled
     background-color: var(--color-button-disabled-bg)

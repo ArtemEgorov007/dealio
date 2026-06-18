@@ -68,6 +68,43 @@ types/cards.types.ts    — типы (Appwrite collection `deals`)
 2. **Спека и план** — зафиксированы в `docs/superpowers/specs/` и `docs/superpowers/plans/`.
 3. **Реализация** — `superpowers:subagent-driven-development`: 7 задач плана, каждая — отдельный имплементер-субагент + ревью спеки/качества, плюс финальный ревью всей ветки перед мёрджем.
 
+## Vibecoding (Cursor, 2026-06-18)
+
+После редизайна проект допилили в Cursor — правки по QA, mobile и UX. Коммиты `dc0e6ca` → `410dd7d`.
+
+### Архив и layout
+
+- **Архив при большом списке** — один scroll-контейнер, строки как на доске, nav не уезжает; stress-тест 100+ карточек на главной без поломки layout.
+- **Удаление навсегда** — toast с откатом **10 секунд**: живой счётчик, progress bar, кнопка «Отменить» в стиле `UiButton` (`outline` + `sm`); восстановление через `restore` в store (guest + auth).
+
+### Toast-уведомления
+
+- **UApp + Toaster** — `useAppToast`, toast на мутациях (архив, create, update, move, comments).
+- **Видимость** — явные CSS-оверрайды (Nuxt UI Tailwind не применялся → toast был за экраном).
+- **Позиция и анимация** — desktop: правый верхний угол, выезд/заезд справа; mobile: над bottom nav, без перекрытия; ширина по контенту; при открытом slideover toast сдвигается влево.
+- **Общая кривая** — `--dealio-motion-duration` / `--dealio-motion-ease` (как у slideover).
+
+### Kanban и mobile
+
+- **Drag на мобилке** — безопасный drag payload, пустой drag-image, guards на drop, `pointer-events: none` на ссылках во время drag (не открывались сторонние сайты).
+- **Overflow контента** — ellipsis для длинных названий и цен wishlist в карточках, архиве, slideover, stats-чипах; комментарии с `overflow-wrap`.
+
+### Slideover и инфраструктура
+
+- **Slideover** — симметричный exit через `<Transition>` + `:duration="{ enter: 240, leave: 240 }"`.
+- **@vueuse/nuxt** — `onClickOutside` в Select, `useIntervalFn` для prune архива.
+- **SEO** в `nuxt.config.ts`, кастомная **`error.vue`**, Manrope через `--font-family-base`.
+
+### Ключевые файлы
+
+| Область | Файлы |
+|---------|--------|
+| Toast | `app/composables/useAppToast.ts`, `app/assets/css/toast-overrides.css`, `app/app.vue` |
+| Архив | `app/pages/archive.vue`, `store/board.store.ts`, `store/auth-archive.store.ts` |
+| Drag | `app/components/kanban/kanban-drag.ts`, `kanban-effects.css` |
+| Layout | `app/layouts/default.vue`, `Slideover.vue` |
+| Overflow | `KanbanCard.vue`, `KanbanColumn.vue`, `archive.vue`, `Comments.vue`, `Top.vue` |
+
 ## Скрипты
 
 | Команда | Описание |

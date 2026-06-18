@@ -19,6 +19,7 @@ interface Props {
   showPasswordToggle?: boolean
   hint?: string
   flush?: boolean
+  rows?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -68,6 +69,8 @@ const inputClasses = computed(() => ({
   'ui-input__field--with-toggle': props.showPasswordToggle && props.type === 'password',
 }))
 
+const isMultiline = computed(() => (props.rows ?? 0) > 1)
+
 const isPasswordVisible = ref(false)
 
 const resolvedType = computed(() => {
@@ -100,8 +103,27 @@ const handleFileChange = (event: Event) => {
       {{ label }}
     </label>
 
-    <div class="ui-input__control">
+    <div class="ui-input__control" :class="{ 'ui-input__control--multiline': isMultiline }">
+      <textarea
+          v-if="isMultiline"
+          :id="inputId"
+          v-model="inputValue"
+          v-bind="$attrs"
+          :placeholder="placeholder"
+          :disabled="disabled"
+          :readonly="readonly"
+          :autocomplete="autocomplete"
+          :name="name"
+          :required="required"
+          :rows="rows"
+          :aria-invalid="!!error"
+          :aria-required="required"
+          :aria-describedby="describedBy"
+          class="ui-input__field ui-input__field--multiline"
+          :class="inputClasses"
+      />
       <input
+          v-else
           :id="inputId"
           v-model="inputValue"
           v-bind="$attrs"
@@ -168,6 +190,9 @@ const handleFileChange = (event: Event) => {
     display: flex
     align-items: center
 
+    &--multiline
+      align-items: stretch
+
   &__field
     width: 100%
     padding: 9px var(--spacing-4)
@@ -213,6 +238,14 @@ const handleFileChange = (event: Event) => {
 
     &--with-toggle
       padding-right: 40px
+
+    &--multiline
+      height: auto
+      min-height: calc(3lh + 18px)
+      resize: vertical
+      line-height: var(--line-height-normal)
+      padding-top: 9px
+      padding-bottom: 9px
 
   &__toggle
     position: absolute
