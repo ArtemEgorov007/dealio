@@ -95,14 +95,9 @@ const onCardCreated = () => {
       @drop="handleDrop(column)"
   >
     <div class="column-header">
-      <div class="column-header__left">
-        <span class="column-dot" :class="`column-dot--${column.id}`"></span>
-        <h2 class="column-title">{{ column.name }}</h2>
-      </div>
+      <h2 class="column-title">{{ column.name }}</h2>
       <span class="column-count">{{ column.items.length }}</span>
     </div>
-
-    <CreateCard :status="column.id" @card-created="onCardCreated"/>
 
     <div class="column-content">
       <div v-if="isPending" class="loading-indicator">
@@ -126,83 +121,46 @@ const onCardCreated = () => {
         <span>Пусто</span>
       </div>
     </div>
+
+    <CreateCard :status="column.id" @card-created="onCardCreated"/>
   </div>
 </template>
 
 <style scoped lang="sass">
 .kanban-column
-  width: 288px
+  width: 220px
   flex-shrink: 0
-  background-color: var(--kanban-column-bg)
-  border-radius: var(--radius-xl)
-  padding: var(--spacing-4)
-  border: var(--border-width) solid var(--kanban-column-border)
-  box-shadow: var(--kanban-column-shadow)
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease
   display: flex
   flex-direction: column
 
   &--over
-    border-color: var(--color-primary)
-    background-color: var(--color-primary-light)
-    box-shadow: var(--shadow-md), 0 0 0 2px var(--color-primary-muted)
+    .column-content
+      outline: 1px dashed var(--color-border-hover)
+      outline-offset: 4px
+      border-radius: var(--radius-md)
 
 .column-header
   display: flex
   justify-content: space-between
   align-items: center
-  margin-bottom: var(--spacing-3)
-  padding-bottom: var(--spacing-3)
-  border-bottom: var(--border-width) solid var(--color-border)
-
-.column-header__left
-  display: flex
-  align-items: start
-  gap: var(--spacing-2)
-
-.column-dot
-  width: 8px
-  height: 8px
-  border-radius: 50%
-  flex-shrink: 0
-
-  &--ideas
-    background-color: var(--kanban-ideas-color)
-
-  &--tasks
-    background-color: var(--kanban-tasks-color)
-
-  &--doing
-    background-color: var(--kanban-doing-color)
-
-  &--done
-    background-color: var(--kanban-done-tracker-color)
-
-  &--wishlist
-    background-color: var(--kanban-wishlist-color)
+  margin-bottom: var(--spacing-2)
+  padding: 0 2px
 
 .column-title
   margin: 0
   font-size: var(--font-size-sm)
-  font-weight: 700
+  font-weight: 500
   color: var(--color-text)
-  letter-spacing: -0.1px
 
 .column-count
   font-size: var(--font-size-xs)
-  font-weight: 700
+  font-weight: 500
   color: var(--color-text-muted)
-  background-color: var(--color-bg-secondary)
-  padding: 2px 7px
-  border-radius: var(--radius-full)
-  min-width: 22px
-  text-align: center
   font-variant-numeric: tabular-nums
 
 .column-content
   display: flex
   flex-direction: column
-  gap: var(--spacing-2)
 
 .empty-column
   display: flex
@@ -213,7 +171,7 @@ const onCardCreated = () => {
   padding: var(--spacing-6) var(--spacing-3)
   min-height: 88px
   border: 1.5px dashed var(--color-border)
-  border-radius: var(--radius-lg)
+  border-radius: var(--radius-md)
   color: var(--color-text-muted)
   font-size: var(--font-size-sm)
   font-weight: 500

@@ -276,7 +276,7 @@ const onSubmit = handleSubmit(values => mutate(values))
 
 <style scoped lang="sass">
 .create-card
-  margin-bottom: var(--spacing-3)
+  margin-top: var(--spacing-2)
 
 .create-card__trigger
   display: flex

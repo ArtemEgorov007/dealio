@@ -68,17 +68,10 @@ const formatDate = (dateString: string) => {
   return date.format('D MMM')
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  'Идея': 'category--idea',
-  'Задача': 'category--task',
-  'Wishlist': 'category--wish',
-}
-
-const categoryClass = computed(() => CATEGORY_COLORS[props.card.category] ?? '')
 const isWishlistItem = computed(() => props.card.category === 'Wishlist' && props.card.price > 0)
 
 const formatPrice = (price: number) =>
-    price.toLocaleString('ru-RU', {style: 'currency', currency: 'RUB', maximumFractionDigits: 0})
+    price.toLocaleString('ru-RU', {maximumFractionDigits: 0})
 </script>
 
 <template>
@@ -86,7 +79,6 @@ const formatPrice = (price: number) =>
       class="kanban-card"
       :class="[
         `kanban-card--${columnId}`,
-        `kanban-card--priority-${card.priority}`,
         { 'kanban-card--dragging': isDragging, 'kanban-card--enter': !isEntered },
       ]"
       draggable="true"
@@ -99,42 +91,21 @@ const formatPrice = (price: number) =>
       tabindex="0"
       @keydown.enter="handleOpenSlideover"
   >
-    <div class="card-priority-bar" :class="`priority-bar--${card.priority}`"></div>
+    <span class="card-name">{{ card.name }}</span>
 
-    <div class="card-body">
-      <div class="card-top-row">
-        <span class="card-badge" :class="categoryClass">{{ card.category }}</span>
-        <div class="card-actions">
-          <span class="priority-pill" :class="`priority-pill--${card.priority}`">
-            <span class="priority-dot"></span>
-          </span>
-          <button
-              class="card-archive-btn"
-              :disabled="isArchiving"
-              @click.stop="handleArchive"
-              aria-label="В архив"
-              title="В архив"
-          >
-            <Icon name="heroicons:archive-box-arrow-down" size="13"/>
-          </button>
-        </div>
-      </div>
+    <div class="card-right">
+      <span v-if="isWishlistItem" class="card-price tabular-nums">{{ formatPrice(card.price) }}</span>
+      <span v-else class="card-dot" :class="`card-dot--${columnId}`"></span>
 
-      <div class="card-name">{{ card.name }}</div>
-
-      <div v-if="isWishlistItem" class="card-price tabular-nums">
-        {{ formatPrice(card.price) }}
-      </div>
-
-      <div class="card-meta">
-        <span class="card-date">
-          <Icon name="heroicons:clock" size="11" class="meta-icon"/>
-          {{ formatDate(card.$createdAt) }}
-        </span>
-        <span class="drag-hint" aria-hidden="true">
-          <Icon name="heroicons:arrows-up-down" size="12"/>
-        </span>
-      </div>
+      <button
+          class="card-archive-btn"
+          :disabled="isArchiving"
+          @click.stop="handleArchive"
+          aria-label="В архив"
+          title="В архив"
+      >
+        <Icon name="heroicons:archive-box-arrow-down" size="13"/>
+      </button>
     </div>
   </div>
 </template>
@@ -142,144 +113,96 @@ const formatPrice = (price: number) =>
 <style scoped lang="sass">
 .kanban-card
   position: relative
+  display: flex
+  align-items: center
+  justify-content: space-between
+  gap: var(--spacing-3)
   min-width: 0
-  max-width: 100%
   background-color: var(--kanban-card-bg)
   border: var(--border-width) solid var(--color-card-border)
-  border-radius: var(--radius-lg)
-  box-shadow: var(--shadow-sm)
+  border-bottom: none
+  padding: 11px 12px
   cursor: pointer
-  transition: box-shadow var(--transition-normal) var(--transition-ease), transform var(--transition-normal) var(--transition-ease), border-color var(--transition-normal) ease
+  transition: background-color var(--transition-fast) ease
   user-select: none
-  overflow: hidden
-  opacity: 1
+
+  &:first-child
+    border-radius: var(--radius-md) var(--radius-md) 0 0
+
+  &:last-child
+    border-bottom: var(--border-width) solid var(--color-card-border)
+    border-radius: 0 0 var(--radius-md) var(--radius-md)
 
   &--enter
     opacity: 0
-    animation: card-in 0.3s ease forwards
+    animation: card-in 0.2s ease forwards
 
   &:hover
-    box-shadow: var(--shadow-card-hover)
-    border-color: var(--color-border-hover)
-
-    .drag-hint
-      opacity: 1
+    background-color: var(--color-bg-tertiary)
 
     .card-archive-btn
       opacity: 1
 
   &--dragging
     cursor: grabbing
-    transform: translateY(-1px) scale(0.99)
-    box-shadow: var(--shadow-lg)
-    opacity: 0.85
+    opacity: 0.6
 
   &:focus-visible
     outline: 2px solid var(--color-primary)
-    outline-offset: 2px
+    outline-offset: -2px
 
 @keyframes card-in
   from
     opacity: 0
-    transform: translateY(8px)
   to
     opacity: 1
-    transform: translateY(0)
 
-.card-priority-bar
-  position: absolute
-  top: 0
-  left: 0
-  width: 3px
-  height: 100%
-
-  &--high
-    background-color: var(--color-danger)
-
-  &--medium
-    background-color: var(--color-accent)
-
-  &--low
-    background-color: var(--color-text-muted)
-
-.card-body
-  padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) calc(var(--spacing-4) + 3px)
+.card-name
+  font-size: var(--font-size-sm)
+  font-weight: 500
+  color: var(--color-text)
   min-width: 0
-
-.card-top-row
-  display: flex
-  align-items: flex-start
-  justify-content: space-between
-  margin-bottom: 6px
-  gap: var(--spacing-2)
-  min-width: 0
-
-.card-actions
-  display: flex
-  align-items: center
-  gap: var(--spacing-1)
-  flex-shrink: 0
-
-.card-badge
-  display: inline-flex
-  align-items: center
-  padding: 2px 7px
-  border-radius: var(--radius-full)
-  font-size: 10px
-  font-weight: 700
-  text-transform: uppercase
-  letter-spacing: 0.4px
-  max-width: calc(100% - 48px)
   overflow: hidden
   text-overflow: ellipsis
   white-space: nowrap
-  flex-shrink: 1
-  min-width: 0
 
-  &.category--idea
-    background-color: rgba(14, 165, 233, 0.1)
-    color: var(--kanban-ideas-color)
-
-  &.category--task
-    background-color: rgba(245, 158, 11, 0.1)
-    color: var(--kanban-tasks-color)
-
-  &.category--wish
-    background-color: rgba(236, 72, 153, 0.1)
-    color: var(--kanban-wishlist-color)
-
-.priority-pill
-  display: inline-flex
+.card-right
+  display: flex
   align-items: center
-  justify-content: center
-  width: 16px
-  height: 16px
-  border-radius: var(--radius-full)
+  gap: var(--spacing-2)
+  flex-shrink: 0
 
-  &--high
-    background-color: rgba(239, 68, 68, 0.12)
-    .priority-dot
-      background-color: var(--color-danger)
+.card-price
+  font-size: var(--font-size-xs)
+  font-weight: 600
+  color: var(--color-text-secondary)
+  font-family: var(--font-numeric)
 
-  &--medium
-    background-color: rgba(245, 158, 11, 0.12)
-    .priority-dot
-      background-color: var(--color-accent)
-
-  &--low
-    background-color: rgba(100, 116, 139, 0.12)
-    .priority-dot
-      background-color: var(--color-text-muted)
-
-.priority-dot
+.card-dot
   width: 6px
   height: 6px
   border-radius: 50%
   flex-shrink: 0
+  background-color: var(--color-text-muted)
+
+  &--ideas
+    background-color: var(--kanban-ideas-color)
+
+  &--tasks
+    background-color: var(--kanban-tasks-color)
+
+  &--doing
+    background-color: var(--kanban-doing-color)
+
+  &--done
+    background-color: var(--kanban-done-tracker-color)
+
+  &--wishlist
+    background-color: var(--kanban-wishlist-color)
 
 .card-archive-btn
-  width: 22px
-  height: 22px
+  width: 20px
+  height: 20px
   display: flex
   align-items: center
   justify-content: center
@@ -295,47 +218,4 @@ const formatPrice = (price: number) =>
   &:hover
     background-color: var(--color-bg-secondary)
     color: var(--color-danger)
-
-.card-name
-  font-size: var(--font-size-sm)
-  font-weight: 600
-  color: var(--color-text)
-  line-height: 1.4
-  margin-bottom: var(--spacing-3)
-  overflow-wrap: anywhere
-  word-break: break-word
-  hyphens: auto
-
-.card-price
-  font-size: var(--font-size-sm)
-  font-weight: 800
-  color: var(--kanban-wishlist-color)
-  margin-bottom: var(--spacing-2)
-  letter-spacing: -0.3px
-  font-variant-numeric: tabular-nums
-  font-feature-settings: "tnum"
-
-.card-meta
-  display: flex
-  align-items: center
-  justify-content: space-between
-
-.card-date
-  display: flex
-  align-items: center
-  gap: 4px
-  font-size: 11px
-  color: var(--color-text-muted)
-  font-weight: 500
-
-.meta-icon
-  opacity: 0.6
-
-.drag-hint
-  color: var(--color-text-muted)
-  opacity: 0
-  transition: opacity var(--transition-fast) ease
-  display: flex
-  align-items: center
-  cursor: grab
 </style>
