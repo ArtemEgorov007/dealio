@@ -2,9 +2,10 @@
 import type {ICard} from '~/components/kanban/kanban.types'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
+import {inject} from 'vue'
 import {useCardSlideStore} from '~~/store/card-slide.store'
 import {useArchiveCard} from '~/components/kanban/useArchiveCard'
-import {prepareCardDragTransfer} from '~/components/kanban/kanban-drag'
+import {KANBAN_DRAG_KEY} from '~/components/kanban/kanban-drag-context'
 import {isWishlistCategory} from '~/utils/card-priority'
 
 dayjs.locale('ru')
@@ -15,15 +16,14 @@ const props = defineProps<{
   isDragging?: boolean
 }>()
 
-const emit = defineEmits<{
-  (e: 'dragstart'): void
-  (e: 'dragend'): void
-}>()
+const kanbanDrag = inject(KANBAN_DRAG_KEY)
+if (!kanbanDrag) {
+  throw new Error('KanbanCard must be used inside KanbanBoard')
+}
 
 const cardSlideStore = useCardSlideStore()
 const {mutate: archiveCard, isPending: isArchiving} = useArchiveCard()
 
-const skipClick = ref(false)
 const isEntered = ref(false)
 
 const handleEnterAnimationEnd = (event: AnimationEvent) => {
@@ -32,24 +32,12 @@ const handleEnterAnimationEnd = (event: AnimationEvent) => {
   }
 }
 
-const handleDragStart = (event: DragEvent) => {
-  event.stopPropagation()
-  prepareCardDragTransfer(event, props.card.id)
-  skipClick.value = true
-  emit('dragstart')
-}
-
-const handleDragEnd = () => {
-  emit('dragend')
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      skipClick.value = false
-    }, 50)
-  })
+const handlePointerDown = (event: PointerEvent) => {
+  kanbanDrag.onCardPointerDown(event, props.card, props.columnId)
 }
 
 const handleOpenSlideover = () => {
-  if (skipClick.value) return
+  if (kanbanDrag.wasDragging.value) return
   cardSlideStore.set(props.card)
 }
 
@@ -57,17 +45,6 @@ const handleArchive = (event: MouseEvent) => {
   event.stopPropagation()
   if (isArchiving.value) return
   archiveCard(props.card)
-}
-
-const formatDate = (dateString: string) => {
-  const date = dayjs(dateString)
-  const now = dayjs()
-  const diffInDays = now.diff(date, 'day')
-
-  if (diffInDays === 0) return 'Сегодня'
-  if (diffInDays === 1) return 'Вчера'
-  if (diffInDays < 7) return `${diffInDays}д назад`
-  return date.format('D MMM')
 }
 
 const isWishlistItem = computed(() => isWishlistCategory(props.card.category) && props.card.price > 0)
@@ -83,10 +60,7 @@ const formatPrice = (price: number) =>
         `kanban-card--${columnId}`,
         { 'kanban-card--dragging': isDragging, 'kanban-card--enter': !isEntered },
       ]"
-      draggable="true"
-      @dragstart="handleDragStart"
-      @dragend="handleDragEnd"
-      @selectstart.prevent
+      @pointerdown="handlePointerDown"
       @animationend="handleEnterAnimationEnd"
       @click="handleOpenSlideover"
       role="button"
@@ -129,10 +103,9 @@ const formatPrice = (price: number) =>
   border-bottom: none
   padding: 11px 12px
   cursor: pointer
-  transition: background-color var(--transition-fast) ease
+  transition: background-color var(--transition-fast) ease, opacity var(--transition-normal) var(--transition-ease), transform var(--transition-normal) var(--transition-ease), box-shadow var(--transition-normal) var(--transition-ease)
   user-select: none
   touch-action: pan-x pan-y
-  -webkit-user-drag: element
 
   &:first-child
     border-radius: var(--radius-md) var(--radius-md) 0 0
@@ -152,8 +125,9 @@ const formatPrice = (price: number) =>
       opacity: 1
 
   &--dragging
-    cursor: grabbing
-    opacity: 0.6
+    opacity: 0.4
+    transform: scale(0.98)
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28)
 
   &:focus-visible
     outline: 2px solid var(--color-primary)

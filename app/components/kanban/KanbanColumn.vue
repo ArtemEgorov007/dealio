@@ -1,82 +1,28 @@
 <script setup lang="ts">
-import type {IColumn, ICard} from '~/components/kanban/kanban.types'
-import type {EnumStatus} from '~~/types/cards.types'
+import type {IColumn} from '~/components/kanban/kanban.types'
 
-import {ref} from 'vue'
-import {useMutation, useQueryClient} from '@tanstack/vue-query'
+import {computed, inject} from 'vue'
+import {useQueryClient} from '@tanstack/vue-query'
 
 import CreateCard from '~/components/kanban/CreateCard.vue'
+import {KANBAN_DRAG_KEY} from '~/components/kanban/kanban-drag-context'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {isGuestSession} from '~~/store/auth.store'
-import {useBoardStore} from '~~/store/board.store'
-import {updateCardStatus} from '~/utils/appwrite-cards'
 
 const props = defineProps<{
-  column: IColumn,
-  dragCard: ICard | null,
-  sourceColumn: IColumn | null
+  column: IColumn
 }>()
 
-const emit = defineEmits<{
-  (e: 'dragstart', card: ICard, column: IColumn): void
-  (e: 'dragend'): void
-  (e: 'card-moved'): void
-}>()
+const kanbanDrag = inject(KANBAN_DRAG_KEY)
+if (!kanbanDrag) {
+  throw new Error('KanbanColumn must be used inside KanbanBoard')
+}
 
-const isDragOver = ref(false)
 const queryClient = useQueryClient()
-const boardStore = useBoardStore()
-const {showError} = useAppToast()
 
-const {mutate, isPending} = useMutation({
-  mutationKey: ['move-card'],
-  mutationFn: ({docId, status}: { docId: string; status: EnumStatus }) => {
-    if (import.meta.client && isGuestSession()) {
-      return Promise.resolve({docId, status})
-    }
-    return updateCardStatus(docId, status)
-  },
-  onSuccess: (_, variables) => {
-    if (import.meta.client && isGuestSession()) {
-      boardStore.updateCardStatus(variables.docId, variables.status)
-      queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
-      queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
-      emit('card-moved')
-      return
-    }
-    queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
-    emit('card-moved')
-  },
-  onError: showError,
-})
+const isDragOver = computed(() => kanbanDrag.dropTargetColumnId.value === props.column.id)
 
-const handleDragStart = (card: ICard, column: IColumn) => {
-  emit('dragstart', card, column)
-}
-
-const handleDragOver = (event: DragEvent) => {
-  event.preventDefault()
-  isDragOver.value = true
-}
-
-const handleDragLeave = () => {
-  isDragOver.value = false
-}
-
-const handleDrop = (targetColumn: IColumn) => {
-  isDragOver.value = false
-
-  if (props.dragCard && props.sourceColumn && props.sourceColumn.id !== targetColumn.id) {
-    mutate({
-      docId: props.dragCard.id,
-      status: targetColumn.id as EnumStatus
-    })
-  }
-}
-
-const handleDragEnd = () => {
-  emit('dragend')
-}
+const isMovingHere = computed(() => kanbanDrag.movingToColumnId.value === props.column.id)
 
 const onCardCreated = () => {
   if (import.meta.client && isGuestSession()) return
@@ -92,10 +38,7 @@ const onCardCreated = () => {
       `kanban-column--${column.id}`,
       { 'kanban-column--over': isDragOver }
     ]"
-      @dragover="handleDragOver"
-      @dragleave="handleDragLeave"
-      @dragenter.prevent
-      @drop.prevent="handleDrop(column)"
+      :data-column-id="column.id"
   >
     <div class="column-header">
       <h2 class="column-title">{{ column.name }}</h2>
@@ -103,7 +46,7 @@ const onCardCreated = () => {
     </div>
 
     <div class="column-content">
-      <div v-if="isPending" class="loading-indicator">
+      <div v-if="isMovingHere" class="loading-indicator">
         <div class="spinner-mini"></div>
         <span>Перемещение...</span>
       </div>
@@ -113,13 +56,11 @@ const onCardCreated = () => {
           :key="card.id"
           :card="card"
           :column-id="column.id"
-          :is-dragging="dragCard?.id === card.id"
+          :is-dragging="kanbanDrag.dragCard.value?.id === card.id"
           :style="{ animationDelay: `${index * 40}ms` }"
-          @dragstart="handleDragStart(card, column)"
-          @dragend="handleDragEnd"
       />
 
-      <div v-if="column.items.length === 0 && !isPending" class="empty-column">
+      <div v-if="column.items.length === 0 && !isMovingHere" class="empty-column">
         <Icon name="heroicons:inbox" size="20" class="empty-icon"/>
         <span>Пусто</span>
       </div>
@@ -139,9 +80,12 @@ const onCardCreated = () => {
 
   &--over
     .column-content
-      outline: 1px dashed var(--color-border-hover)
-      outline-offset: 4px
-      border-radius: var(--radius-md)
+      outline-color: var(--color-white)
+      background-color: rgba(255, 255, 255, 0.04)
+
+    .empty-column
+      border-color: transparent
+      opacity: 0.45
 
 .column-header
   display: flex
@@ -174,6 +118,10 @@ const onCardCreated = () => {
   flex-direction: column
   min-width: 0
   overflow: hidden
+  border-radius: var(--radius-md)
+  outline: 1px dashed transparent
+  outline-offset: 4px
+  transition: outline-color var(--transition-normal) var(--transition-ease), background-color var(--transition-normal) var(--transition-ease)
 
 .empty-column
   display: flex
@@ -188,6 +136,7 @@ const onCardCreated = () => {
   color: var(--color-text-muted)
   font-size: var(--font-size-sm)
   font-weight: 500
+  transition: border-color var(--transition-normal) var(--transition-ease), opacity var(--transition-normal) var(--transition-ease)
 
   .empty-icon
     opacity: 0.4

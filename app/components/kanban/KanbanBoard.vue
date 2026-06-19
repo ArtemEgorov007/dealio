@@ -1,18 +1,29 @@
 <script setup lang="ts">
-import {ref} from 'vue'
+import {computed, provide, ref} from 'vue'
 import {useQueryClient} from '@tanstack/vue-query'
 
 import {useKanbanQuery} from '~/components/kanban/useKanbanQuery'
-import type {ICard, IColumn} from '~/components/kanban/kanban.types'
+import type {ICard} from '~/components/kanban/kanban.types'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
-import {blockNativeDropNavigation} from '~/components/kanban/kanban-drag'
+import {KANBAN_DRAG_KEY} from '~/components/kanban/kanban-drag-context'
+import {
+    createDragGhost,
+    KANBAN_DRAG_THRESHOLD_PX,
+    moveDragGhost,
+    removeDragGhost,
+    resolveDropColumnId,
+} from '~/components/kanban/kanban-pointer-drag'
+import {useMoveCard} from '~/components/kanban/useMoveCard'
 import {useAuthStore} from '~~/store/auth.store'
+import type {EnumStatus} from '~~/types/cards.types'
 
 const authStore = useAuthStore()
 const queryClient = useQueryClient()
 
 const dragCardRef = ref<ICard | null>(null)
-const sourceColumnRef = ref<IColumn | null>(null)
+const sourceColumnIdRef = ref<string | null>(null)
+const dropTargetColumnIdRef = ref<string | null>(null)
+const wasDraggingRef = ref(false)
 
 const {data, isLoading, isError, error} = useKanbanQuery()
 
@@ -21,27 +32,151 @@ const invalidateBoard = () => {
   queryClient.invalidateQueries({queryKey: [CARDS_STATS_QUERY_KEY]})
 }
 
-const handleDragStart = (card: ICard, column: IColumn) => {
-  dragCardRef.value = card
-  sourceColumnRef.value = column
-  if (import.meta.client) {
-    document.body.classList.add('dealio-kanban-dragging')
-    document.addEventListener('dragover', blockNativeDropNavigation, true)
-    document.addEventListener('drop', blockNativeDropNavigation, true)
-  }
+const {moveCard, isMoving, movingToStatus} = useMoveCard(invalidateBoard)
+
+const movingToColumnId = computed(() =>
+    isMoving.value ? movingToStatus.value?.status : null,
+)
+
+let pendingPointerId: number | null = null
+let pendingCard: ICard | null = null
+let pendingColumnId: string | null = null
+let pendingElement: HTMLElement | null = null
+let pendingStartX = 0
+let pendingStartY = 0
+
+let ghostElement: HTMLElement | null = null
+let ghostOffsetX = 0
+let ghostOffsetY = 0
+
+const clearPointerSession = () => {
+  pendingPointerId = null
+  pendingCard = null
+  pendingColumnId = null
+  pendingElement = null
 }
 
-const handleDragEnd = () => {
+const endDrag = () => {
+  removeDragGhost(ghostElement)
+  ghostElement = null
+
   dragCardRef.value = null
-  sourceColumnRef.value = null
+  sourceColumnIdRef.value = null
+  dropTargetColumnIdRef.value = null
+
   if (import.meta.client) {
     document.body.classList.remove('dealio-kanban-dragging')
-    document.removeEventListener('dragover', blockNativeDropNavigation, true)
-    document.removeEventListener('drop', blockNativeDropNavigation, true)
+    document.removeEventListener('pointermove', handlePointerMove)
+    document.removeEventListener('pointerup', handlePointerUp)
+    document.removeEventListener('pointercancel', handlePointerUp)
   }
 }
 
-const handleCardMoved = () => invalidateBoard()
+const startActiveDrag = (event: PointerEvent) => {
+  if (!pendingCard || !pendingColumnId || !pendingElement) return
+
+  wasDraggingRef.value = true
+  dragCardRef.value = pendingCard
+  sourceColumnIdRef.value = pendingColumnId
+
+  const ghost = createDragGhost(pendingElement, event.clientX, event.clientY)
+  ghostElement = ghost.ghost
+  ghostOffsetX = ghost.offsetX
+  ghostOffsetY = ghost.offsetY
+
+  document.body.classList.add('dealio-kanban-dragging')
+  clearPointerSession()
+}
+
+const handlePointerMove = (event: PointerEvent) => {
+  if (pendingCard && pendingPointerId === event.pointerId) {
+    const dx = event.clientX - pendingStartX
+    const dy = event.clientY - pendingStartY
+
+    if (Math.hypot(dx, dy) < KANBAN_DRAG_THRESHOLD_PX) {
+      return
+    }
+
+    startActiveDrag(event)
+  }
+
+  if (!dragCardRef.value || !ghostElement) {
+    return
+  }
+
+  event.preventDefault()
+  moveDragGhost(ghostElement, event.clientX, event.clientY, ghostOffsetX, ghostOffsetY)
+
+  const columnId = resolveDropColumnId(event.clientX, event.clientY)
+  dropTargetColumnIdRef.value =
+      columnId && columnId !== sourceColumnIdRef.value ? columnId : null
+}
+
+const releasePointerCapture = (event: PointerEvent) => {
+  if (pendingElement?.hasPointerCapture(event.pointerId)) {
+    pendingElement.releasePointerCapture(event.pointerId)
+  }
+}
+
+const handlePointerUp = (event: PointerEvent) => {
+  releasePointerCapture(event)
+
+  if (pendingPointerId === event.pointerId) {
+    clearPointerSession()
+    document.removeEventListener('pointermove', handlePointerMove)
+    document.removeEventListener('pointerup', handlePointerUp)
+    document.removeEventListener('pointercancel', handlePointerUp)
+    return
+  }
+
+  if (!dragCardRef.value || !sourceColumnIdRef.value) {
+    endDrag()
+    return
+  }
+
+  const targetColumnId = dropTargetColumnIdRef.value
+
+  if (targetColumnId) {
+    moveCard({
+      docId: dragCardRef.value.id,
+      status: targetColumnId as EnumStatus,
+    })
+  }
+
+  endDrag()
+
+  setTimeout(() => {
+    wasDraggingRef.value = false
+  }, 50)
+}
+
+const onCardPointerDown = (event: PointerEvent, card: ICard, columnId: string) => {
+  if (event.button !== 0) return
+  if ((event.target as HTMLElement).closest('.card-archive-btn')) return
+  if (dragCardRef.value || pendingCard) return
+
+  wasDraggingRef.value = false
+  pendingPointerId = event.pointerId
+  pendingCard = card
+  pendingColumnId = columnId
+  pendingElement = event.currentTarget as HTMLElement
+  pendingStartX = event.clientX
+  pendingStartY = event.clientY
+
+  pendingElement.setPointerCapture(event.pointerId)
+
+  document.addEventListener('pointermove', handlePointerMove)
+  document.addEventListener('pointerup', handlePointerUp)
+  document.addEventListener('pointercancel', handlePointerUp)
+}
+
+provide(KANBAN_DRAG_KEY, {
+  dragCard: dragCardRef,
+  dropTargetColumnId: dropTargetColumnIdRef,
+  movingToColumnId,
+  onCardPointerDown,
+  wasDragging: wasDraggingRef,
+})
 </script>
 
 <template>
@@ -86,11 +221,6 @@ const handleCardMoved = () => invalidateBoard()
             v-for="column in data"
             :key="column.id"
             :column="column"
-            :drag-card="dragCardRef"
-            :source-column="sourceColumnRef"
-            @dragstart="handleDragStart"
-            @dragend="handleDragEnd"
-            @card-moved="handleCardMoved"
         />
       </div>
     </div>

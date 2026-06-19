@@ -7,15 +7,25 @@
     opacity: 0 !important;
 }
 
-.dealio-kanban-dragging .kanban-card:not(.kanban-card--dragging) {
-    cursor: pointer;
+body.dealio-kanban-dragging,
+body.dealio-kanban-dragging * {
+    cursor: grab !important;
 }
 
-.dealio-kanban-dragging .kanban-card--dragging {
-    cursor: grabbing;
+body.dealio-kanban-dragging {
+    user-select: none;
+    touch-action: none;
+}
+
+.dealio-kanban-dragging .kanban-card:not(.kanban-card--dragging) {
+    transition: opacity var(--transition-normal) var(--transition-ease), transform var(--transition-normal) var(--transition-ease);
 }
 
 .dealio-kanban-dragging a,
 .dealio-kanban-dragging .nav-item {
     pointer-events: none;
+}
+
+.kanban-drag-ghost {
+    cursor: grab !important;
 }
