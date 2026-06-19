@@ -8,7 +8,7 @@ export const MENU_DATA: IMenuItem[] = [
     {
         icon: 'heroicons:squares-2x2',
         name: 'Доска',
-        url: '/',
+        url: '/board',
     },
     {
         icon: 'heroicons:chart-bar-square',

@@ -3,14 +3,22 @@ export default defineNuxtConfig({
 
     ssr: false,
 
+    runtimeConfig: {
+        public: {
+            crmSpreadsheetId: process.env.NUXT_PUBLIC_CRM_SPREADSHEET_ID || '',
+            crmSheetsApiKey: process.env.NUXT_PUBLIC_CRM_SHEETS_API_KEY || '',
+            crmGasUrl: process.env.NUXT_PUBLIC_CRM_GAS_URL || '',
+        },
+    },
+
     app: {
         baseURL: process.env.NUXT_APP_BASE_URL || '/',
         head: {
             htmlAttrs: {lang: 'ru'},
-            title: 'Dealio — трекер идей, задач и желаний',
+            title: 'CRM — выдача бирок',
             link: [{rel: 'icon', type: 'image/svg+xml', href: 'logo.svg'}],
             meta: [
-                {name: 'description', content: 'Dealio — kanban-трекер идей, задач и желаний'},
+                {name: 'description', content: 'CRM — регистрация, выбор цеха и выдача бирок'},
                 {name: 'theme-color', content: '#000000'},
                 {name: 'color-scheme', content: 'dark'},
             ],
@@ -71,7 +79,7 @@ export default defineNuxtConfig({
         '/customers': {redirect: '/wishlist'},
         '/customers/**': {redirect: '/wishlist'},
         '/payments': {redirect: '/archive'},
-        '/kanban': {redirect: '/'},
+        '/kanban': {redirect: '/board'},
         '/feedback': {redirect: '/help'},
     }
 })

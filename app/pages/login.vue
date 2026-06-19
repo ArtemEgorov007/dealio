@@ -27,7 +27,7 @@ const queryClient = useQueryClient()
 
 onMounted(async () => {
   if (authStore.isAuth) {
-    await router.replace('/')
+    await router.replace('/board')
     return
   }
 
@@ -36,7 +36,7 @@ onMounted(async () => {
     clearGuestSession()
     authStore.set(mapAppwriteUser(user))
     clearCardsCache(queryClient)
-    await router.replace('/')
+    await router.replace('/board')
   } catch {
     // нет активной сессии
   }
@@ -111,7 +111,7 @@ const login = async () => {
     clearGuestSession()
     authStore.set(mapAppwriteUser(response))
     clearCardsCache(queryClient)
-    await router.push('/')
+    await router.push('/board')
   } catch (error: unknown) {
     errors.value.general = map_auth_error(error, 'Не удалось войти. Проверьте email и пароль.')
   } finally {

@@ -22,7 +22,7 @@ const {logout} = useLogout()
 <template>
   <aside class="sidebar" :class="{ 'sidebar--collapsed': !isOpen }">
     <div class="sidebar__header">
-      <NuxtLink to="/" class="logo-link" @click="handleLogoClick">
+      <NuxtLink to="/board" class="logo-link" @click="handleLogoClick">
         <div class="logo-mark">
           <span class="logo-icon">D</span>
         </div>
