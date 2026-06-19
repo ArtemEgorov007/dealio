@@ -17,9 +17,8 @@ export interface CrmEmployeeProfile {
 }
 
 export interface CrmBadgeIssue {
-    issuedAt: string
+    workshopId: WorkshopId
     fio: string
-    workshopLabel: string
     badgeContent: string
 }
 

@@ -16,6 +16,7 @@ const {showSuccess, showError} = useAppToast()
 
 const isSaving = ref(true)
 const saveError = ref('')
+const saveWarning = ref('')
 
 const badgeContent = computed(() => sessionStore.selectedBadge)
 const workshopTitle = computed(() =>
@@ -27,14 +28,18 @@ const writeJournalEntry = async () => {
 
     isSaving.value = true
     saveError.value = ''
+    saveWarning.value = ''
 
     try {
-        await appendBadgeJournalEntry({
-            issuedAt: new Date().toLocaleString('ru-RU'),
+        const result = await appendBadgeJournalEntry({
+            workshopId: employeeStore.workshopId,
             fio: employeeStore.fio,
-            workshopLabel: workshopTitle.value,
             badgeContent: badgeContent.value,
         })
+
+        if (result === 'skipped') {
+            saveWarning.value = 'Журнал не подключён. Настройте Web App на странице /crm-setup'
+        }
     } catch (error) {
         saveError.value = error instanceof Error ? error.message : 'Не удалось записать в журнал'
     } finally {
@@ -73,6 +78,7 @@ onMounted(writeJournalEntry)
 
     <template v-else>
       <p v-if="saveError" class="receipt-error">{{ saveError }}</p>
+      <p v-if="saveWarning" class="receipt-warning">{{ saveWarning }}</p>
 
       <article class="badge-card">
         <p class="badge-card__label">Ваша бирка</p>
@@ -110,6 +116,14 @@ onMounted(writeJournalEntry)
   border-radius: var(--radius-md)
   background-color: rgba(239, 68, 68, 0.1)
   color: var(--color-danger)
+  font-size: var(--font-size-sm)
+
+.receipt-warning
+  margin: 0
+  padding: 10px 12px
+  border-radius: var(--radius-md)
+  background-color: rgba(234, 179, 8, 0.12)
+  color: var(--color-text)
   font-size: var(--font-size-sm)
 
 .badge-card

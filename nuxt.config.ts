@@ -5,7 +5,8 @@ export default defineNuxtConfig({
 
     runtimeConfig: {
         public: {
-            crmSpreadsheetId: process.env.NUXT_PUBLIC_CRM_SPREADSHEET_ID || '',
+            crmSpreadsheetId: process.env.NUXT_PUBLIC_CRM_SPREADSHEET_ID || '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U',
+            crmIssueSheetGid: process.env.NUXT_PUBLIC_CRM_ISSUE_SHEET_GID || '1376055067',
             crmSheetsApiKey: process.env.NUXT_PUBLIC_CRM_SHEETS_API_KEY || '',
             crmGasUrl: process.env.NUXT_PUBLIC_CRM_GAS_URL || '',
         },

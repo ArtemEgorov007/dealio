@@ -130,6 +130,7 @@ onMounted(loadBadges)
   font-size: var(--font-size-sm)
   font-weight: 500
   line-height: 1.4
+  white-space: pre-line
 
 .spinner
   width: 28px

@@ -1,0 +1,169 @@
+<script setup lang="ts">
+import {
+    getCrmGasUrl,
+    getCrmSheetsMode,
+    saveCrmGasUrl,
+    testCrmGasConnection,
+} from '~/utils/crm-sheets'
+import {DEFAULT_SPREADSHEET_ID} from '~/utils/crm-sheets'
+
+definePageMeta({layout: 'crm'})
+
+useSeoMeta({title: 'Подключение таблицы | CRM'})
+
+const gasUrl = ref(getCrmGasUrl())
+const testResult = ref('')
+const isTesting = ref(false)
+const sheetsMode = computed(() => getCrmSheetsMode())
+
+const GAS_CODE_FILE = 'scripts/crm-gas-webapp.js'
+const FINDTAG_PROJECT_URL = 'https://script.google.com/home/projects/1m7e2q7A6IxEaf6xT10US-AATUyms3BgEbInPCVg_fWOr3-dztQrYY76s/edit'
+
+const saveUrl = () => {
+    saveCrmGasUrl(gasUrl.value)
+    testResult.value = 'URL сохранён в localStorage'
+}
+
+const runTest = async () => {
+    if (!gasUrl.value.trim()) {
+        testResult.value = 'Вставьте URL Web App'
+        return
+    }
+
+    isTesting.value = true
+    testResult.value = 'Проверка…'
+
+    const result = await testCrmGasConnection(gasUrl.value.trim())
+    if (result.ok) {
+        saveCrmGasUrl(gasUrl.value.trim())
+        testResult.value = `OK · Колпино: ${result.badgesCount} бирок`
+    } else {
+        testResult.value = result.error || 'Ошибка'
+    }
+
+    isTesting.value = false
+}
+</script>
+
+<template>
+  <CrmScreen title="Подключение таблицы">
+    <p class="setup-lead">
+      Таблица:
+      <a
+          :href="`https://docs.google.com/spreadsheets/d/${DEFAULT_SPREADSHEET_ID}/edit`"
+          target="_blank"
+          rel="noopener"
+      >Ведомости</a>
+    </p>
+
+    <div class="setup-card">
+      <p class="setup-card__title">Чтение бирок</p>
+      <p class="setup-card__status">
+        Режим: <strong>{{ sheetsMode === 'csv' ? 'таблица (CSV)' : sheetsMode }}</strong>
+      </p>
+      <p class="setup-card__hint">
+        Лист «Выдача» уже читается напрямую — 681 бирка Колпино, 1038 Волхонка.
+      </p>
+    </div>
+
+    <div class="setup-card">
+      <p class="setup-card__title">Выдача бирки — отдельный скрипт</p>
+      <p class="setup-card__hint setup-card__hint--warn">
+        <a :href="FINDTAG_PROJECT_URL" target="_blank" rel="noopener">FindTagMFT</a>
+        (Telegram-бот) не трогаем — у него свой деплой и триггеры.
+        CRM — новый проект Apps Script только для журнала.
+      </p>
+      <ol class="setup-steps">
+        <li><a href="https://script.google.com/home" target="_blank" rel="noopener">script.google.com</a> → <strong>Создать проект</strong> (название, напр. «CRM Ведомости»)</li>
+        <li>Вставьте код из <code>{{ GAS_CODE_FILE }}</code></li>
+        <li><strong>Развернуть → Новое развёртывание → Веб-приложение</strong></li>
+        <li>Запуск от имени: <strong>Я</strong> · Доступ: <strong>Все</strong></li>
+        <li>URL веб-приложения → вставьте ниже</li>
+      </ol>
+
+      <label class="setup-field">
+        <span>URL Web App</span>
+        <input v-model="gasUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+      </label>
+
+      <div class="setup-actions">
+        <UiButton :disabled="isTesting" @click="runTest">
+          Проверить
+        </UiButton>
+        <UiButton variant="outline" @click="saveUrl">
+          Сохранить
+        </UiButton>
+      </div>
+
+      <p v-if="testResult" class="setup-result">{{ testResult }}</p>
+    </div>
+  </CrmScreen>
+</template>
+
+<style scoped lang="sass">
+.setup-lead
+  margin: 0 0 var(--spacing-4)
+  font-size: var(--font-size-sm)
+  color: var(--color-text-secondary)
+
+.setup-card
+  padding: var(--spacing-4)
+  margin-bottom: var(--spacing-4)
+  border: var(--border-width) solid var(--color-border)
+  border-radius: var(--radius-lg)
+  background: var(--color-card-bg)
+
+.setup-card__title
+  margin: 0 0 var(--spacing-2)
+  font-weight: 600
+
+.setup-card__status
+  margin: 0 0 var(--spacing-2)
+  font-size: var(--font-size-sm)
+
+.setup-card__hint
+  margin: 0 0 var(--spacing-3)
+  font-size: var(--font-size-sm)
+  color: var(--color-text-secondary)
+
+  &--warn
+    padding: 10px 12px
+    border-radius: var(--radius-md)
+    background: rgba(234, 179, 8, 0.12)
+    color: var(--color-text)
+
+.setup-steps
+  margin: 0 0 var(--spacing-4)
+  padding-left: 1.2rem
+  font-size: var(--font-size-sm)
+  line-height: 1.6
+
+.setup-field
+  display: flex
+  flex-direction: column
+  gap: var(--spacing-2)
+  margin-bottom: var(--spacing-3)
+  font-size: var(--font-size-sm)
+
+  input
+    padding: 10px 12px
+    border: var(--border-width) solid var(--color-border)
+    border-radius: var(--radius-md)
+    background: var(--color-bg)
+    color: var(--color-text)
+
+.setup-actions
+  display: flex
+  gap: var(--spacing-2)
+
+.setup-result
+  margin: var(--spacing-3) 0 0
+  font-size: var(--font-size-sm)
+  color: var(--color-text-secondary)
+
+.setup-note
+  margin: 0
+  font-size: var(--font-size-xs)
+  color: var(--color-text-muted)
+  white-space: pre-line
+</style>
