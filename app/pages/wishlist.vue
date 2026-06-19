@@ -1,10 +1,10 @@
 <script setup lang="ts">
-useSeoMeta({ title: 'Wishlist | Dealio' })
+useSeoMeta({ title: 'Желания | Dealio' })
 </script>
 
 <template>
   <UiUnderDevelopment
-      title="Wishlist скоро появится"
+      title="Желания скоро появятся"
       description="Здесь будет отдельный список желаний с ценами — пока работайте с доской"
   />
 </template>

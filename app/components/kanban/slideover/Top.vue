@@ -2,7 +2,7 @@
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
-import {APPWRITE_PRICE_MIN, APPWRITE_PRICE_MAX, validateWishlistPrice} from '~/utils/card-priority'
+import {APPWRITE_PRICE_MIN, APPWRITE_PRICE_MAX, validateWishlistPrice, isWishlistCategory} from '~/utils/card-priority'
 import {CATEGORY_OPTIONS, COLUMN_LABELS} from '~/components/kanban/kanban.labels'
 import {useUpdateCard} from '~/components/kanban/slideover/useUpdateCard'
 import {useArchiveCard} from '~/components/kanban/useArchiveCard'
@@ -52,7 +52,7 @@ const priorityOptions = PRIORITY_OPTIONS.map(option => ({
 
 const priorityTone = computed(() => editPriority.value)
 
-const showWishlistPrice = computed(() => editCategory.value === 'Wishlist')
+const showWishlistPrice = computed(() => isWishlistCategory(editCategory.value))
 
 const priceMin = computed(() => authStore.isGuest ? 0 : APPWRITE_PRICE_MIN)
 const priceMax = computed(() => authStore.isGuest ? undefined : APPWRITE_PRICE_MAX)
@@ -97,7 +97,7 @@ const saveCategory = (value: string | number) => {
   if (category === store.card?.category) return
 
   const patch: Parameters<typeof saveField>[0] = {category}
-  if (category !== 'Wishlist') {
+  if (!isWishlistCategory(category)) {
     editPrice.value = 0
     patch.price = 0
   } else if (!isGuest.value && editPrice.value < APPWRITE_PRICE_MIN) {

@@ -18,6 +18,10 @@ export function prepareCardDragTransfer(event: DragEvent, cardId: string): void 
 }
 
 export function blockNativeDropNavigation(event: DragEvent): void {
+    const target = event.target
+    if (target instanceof Element && target.closest('.kanban-column')) {
+        return
+    }
+
     event.preventDefault()
-    event.stopPropagation()
 }

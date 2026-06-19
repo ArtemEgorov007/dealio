@@ -9,7 +9,7 @@ import {EnumStatus} from '~~/types/cards.types'
 import {isGuestSession} from '~~/store/auth.store'
 import {useBoardStore, type Priority} from '~~/store/board.store'
 import type {IBoardCard} from '~~/store/board.store'
-import {CATEGORY_OPTIONS} from '~/components/kanban/kanban.labels'
+import {CATEGORY_OPTIONS, WISHLIST_CATEGORY} from '~/components/kanban/kanban.labels'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {createCard} from '~/utils/appwrite-cards'
 import {
@@ -35,7 +35,7 @@ interface ICardFormState {
 const CATEGORY_BY_STATUS: Partial<Record<EnumStatus, string>> = {
   [EnumStatus.ideas]: 'Идея',
   [EnumStatus.tasks]: 'Задача',
-  [EnumStatus.wishlist]: 'Wishlist',
+  [EnumStatus.wishlist]: WISHLIST_CATEGORY,
 }
 
 const PRIORITY_OPTIONS: {value: Priority; label: string}[] = [
@@ -250,7 +250,7 @@ const onSubmit = handleSubmit(values => mutate(values))
         />
 
         <UiInput
-            v-if="category === 'Wishlist'"
+            v-if="isWishlistCategory(category)"
             id="card-price"
             v-model="price"
             v-bind="priceAttrs"

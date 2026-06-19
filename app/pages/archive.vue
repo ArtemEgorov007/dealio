@@ -4,7 +4,8 @@ import {useMutation, useQueryClient} from '@tanstack/vue-query'
 
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {createCard} from '~/utils/appwrite-cards'
-import {mapAppwriteError} from '~/utils/card-priority'
+import {mapAppwriteError, isWishlistCategory} from '~/utils/card-priority'
+import {WISHLIST_CATEGORY, WISHLIST_CATEGORY_LABEL} from '~/components/kanban/kanban.labels'
 import {useBoardStore} from '~~/store/board.store'
 import {useAuthStore} from '~~/store/auth.store'
 import {buildRestorePayload, useAuthArchiveStore} from '~~/store/auth-archive.store'
@@ -59,7 +60,7 @@ const archivedCards = computed((): ArchiveListItem[] => {
   return authArchiveStore.archivedCards.map(card => ({
     id: card.id,
     name: card.name,
-    price: card.category === 'Wishlist' ? card.price : 0,
+    price: isWishlistCategory(card.category) ? card.price : 0,
     priority: card.priority,
     archivedAt: card.archivedAt,
     category: card.category,
@@ -75,7 +76,8 @@ const daysLeft = (archivedAt?: string): number => {
 const CATEGORY_COLUMN: Record<string, string> = {
   'Идея': 'ideas',
   'Задача': 'tasks',
-  'Wishlist': 'wishlist',
+  [WISHLIST_CATEGORY]: 'wishlist',
+  [WISHLIST_CATEGORY_LABEL]: 'wishlist',
 }
 
 const columnIdFromCategory = (category: string) => CATEGORY_COLUMN[category] ?? 'tasks'

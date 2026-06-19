@@ -1,11 +1,13 @@
-/** Appwrite `deals.price`: integer 10_000–1_000_000. В UI — ₽ для Wishlist, иначе 0. */
+import {WISHLIST_CATEGORY, WISHLIST_CATEGORY_LABEL} from '~/components/kanban/kanban.labels'
+
+/** Appwrite `deals.price`: integer 10_000–1_000_000. В UI — ₽ для желаний, иначе 0. */
 
 export const APPWRITE_PRICE_MIN = 10_000
 export const APPWRITE_PRICE_MAX = 1_000_000
 export const APPWRITE_PRICE_SENTINEL = APPWRITE_PRICE_MIN
 
 export function isWishlistCategory(category?: string): boolean {
-    return category === 'Wishlist'
+    return category === WISHLIST_CATEGORY || category === WISHLIST_CATEGORY_LABEL
 }
 
 export function toAppwritePrice(price: number, category?: string): number {
@@ -30,7 +32,7 @@ export function fromAppwritePrice(price: number, category?: string): number {
 export function validateWishlistPrice(price: number): string | null {
     const value = Math.round(Number(price) || 0)
     if (value < APPWRITE_PRICE_MIN || value > APPWRITE_PRICE_MAX) {
-        return `Стоимость для Wishlist: от ${APPWRITE_PRICE_MIN.toLocaleString('ru-RU')} до ${APPWRITE_PRICE_MAX.toLocaleString('ru-RU')} ₽`
+        return `Стоимость для желаний: от ${APPWRITE_PRICE_MIN.toLocaleString('ru-RU')} до ${APPWRITE_PRICE_MAX.toLocaleString('ru-RU')} ₽`
     }
     return null
 }

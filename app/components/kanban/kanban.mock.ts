@@ -1,5 +1,6 @@
 import { EnumStatus } from '~~/types/cards.types'
 import type { ICardRecord } from '~~/types/cards.types'
+import { WISHLIST_CATEGORY } from '~/components/kanban/kanban.labels'
 
 export const MOCK_CARDS: ICardRecord[] = [
     {
@@ -155,7 +156,7 @@ export const MOCK_CARDS: ICardRecord[] = [
         customer: {
             $id: 'cat-009',
             $createdAt: '2025-06-14T09:00:00.000Z',
-            name: 'Wishlist',
+            name: WISHLIST_CATEGORY,
             email: '',
             avatar_url: '',
         },
@@ -176,7 +177,7 @@ export const MOCK_CARDS: ICardRecord[] = [
         customer: {
             $id: 'cat-010',
             $createdAt: '2025-06-13T11:00:00.000Z',
-            name: 'Wishlist',
+            name: WISHLIST_CATEGORY,
             email: '',
             avatar_url: '',
         },
@@ -191,7 +192,7 @@ export const MOCK_CARDS: ICardRecord[] = [
         customer: {
             $id: 'cat-011',
             $createdAt: '2025-06-12T15:00:00.000Z',
-            name: 'Wishlist',
+            name: WISHLIST_CATEGORY,
             email: '',
             avatar_url: '',
         },

@@ -74,7 +74,7 @@ const statTiles = computed((): StatTile[] => {
     {id: 'total', label: 'всего', value: String(stats.value.total)},
     {id: 'doing', label: 'в работе', value: String(stats.value.doing)},
     {id: 'done', label: 'готово', value: String(stats.value.done)},
-    {id: 'wishlist', label: 'wishlist', value: formatSum(stats.value.wishlistSum)},
+    {id: 'wishlist', label: 'желания', value: formatSum(stats.value.wishlistSum)},
   ]
 })
 </script>
@@ -93,7 +93,7 @@ const statTiles = computed((): StatTile[] => {
     >
       <span class="chip__dot" :class="`chip__dot--${tile.id}`"></span>
       <strong class="chip__value tabular-nums">{{ tile.value }}</strong>
-      {{ tile.label }}
+      <span class="chip__label">{{ tile.label }}</span>
     </span>
   </div>
 </template>
@@ -110,6 +110,7 @@ const statTiles = computed((): StatTile[] => {
   align-items: center
   gap: 6px
   max-width: 100%
+  min-width: 0
   border: var(--border-width) solid var(--color-border)
   border-radius: var(--radius-full)
   padding: 5px 12px
@@ -150,6 +151,12 @@ const statTiles = computed((): StatTile[] => {
   color: var(--color-text)
   font-weight: 600
   font-family: var(--font-numeric)
+  min-width: 0
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
+
+.chip__label
   min-width: 0
   overflow: hidden
   text-overflow: ellipsis

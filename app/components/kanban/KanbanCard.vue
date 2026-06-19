@@ -5,6 +5,7 @@ import 'dayjs/locale/ru'
 import {useCardSlideStore} from '~~/store/card-slide.store'
 import {useArchiveCard} from '~/components/kanban/useArchiveCard'
 import {prepareCardDragTransfer} from '~/components/kanban/kanban-drag'
+import {isWishlistCategory} from '~/utils/card-priority'
 
 dayjs.locale('ru')
 
@@ -69,7 +70,7 @@ const formatDate = (dateString: string) => {
   return date.format('D MMM')
 }
 
-const isWishlistItem = computed(() => props.card.category === 'Wishlist' && props.card.price > 0)
+const isWishlistItem = computed(() => isWishlistCategory(props.card.category) && props.card.price > 0)
 
 const formatPrice = (price: number) =>
     price.toLocaleString('ru-RU', {maximumFractionDigits: 0})

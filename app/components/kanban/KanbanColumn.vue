@@ -147,20 +147,27 @@ const onCardCreated = () => {
   display: flex
   justify-content: space-between
   align-items: center
+  gap: var(--spacing-2)
   margin-bottom: var(--spacing-2)
   padding: 0 2px
+  min-width: 0
 
 .column-title
   margin: 0
   font-size: var(--font-size-sm)
   font-weight: 500
   color: var(--color-text)
+  min-width: 0
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
 
 .column-count
   font-size: var(--font-size-xs)
   font-weight: 500
   color: var(--color-text-muted)
   font-variant-numeric: tabular-nums
+  flex-shrink: 0
 
 .column-content
   display: flex

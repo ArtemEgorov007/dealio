@@ -7,10 +7,10 @@ export default defineNuxtConfig({
         baseURL: process.env.NUXT_APP_BASE_URL || '/',
         head: {
             htmlAttrs: {lang: 'ru'},
-            title: 'Dealio — трекер идей, задач и wishlist',
+            title: 'Dealio — трекер идей, задач и желаний',
             link: [{rel: 'icon', type: 'image/svg+xml', href: 'logo.svg'}],
             meta: [
-                {name: 'description', content: 'Dealio — kanban-трекер идей, задач и wishlist'},
+                {name: 'description', content: 'Dealio — kanban-трекер идей, задач и желаний'},
                 {name: 'theme-color', content: '#000000'},
                 {name: 'color-scheme', content: 'dark'},
             ],
