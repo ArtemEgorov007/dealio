@@ -4,6 +4,7 @@ export const useCrmSessionStore = defineStore('crm-session', {
     state: () => ({
         selectedBadge: '' as string,
         issued: false,
+        journalSkipped: false,
     }),
 
     getters: {
@@ -14,15 +15,18 @@ export const useCrmSessionStore = defineStore('crm-session', {
         selectBadge(content: string) {
             this.selectedBadge = content.trim()
             this.issued = false
+            this.journalSkipped = false
         },
 
-        markIssued() {
+        markIssued(journalSkipped = false) {
             this.issued = true
+            this.journalSkipped = journalSkipped
         },
 
         clearSelectedBadge() {
             this.selectedBadge = ''
             this.issued = false
+            this.journalSkipped = false
         },
     },
 })

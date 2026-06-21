@@ -17,6 +17,7 @@ const badges = ref<string[]>([])
 const isLoading = ref(true)
 const error = ref('')
 const query = ref('')
+const pendingBadge = ref<string | null>(null)
 
 const workshopTitle = computed(() =>
     employeeStore.workshopId ? workshopLabel(employeeStore.workshopId) : '',
@@ -46,7 +47,18 @@ const loadBadges = async () => {
 }
 
 const selectBadge = (content: string) => {
-    sessionStore.selectBadge(content)
+    pendingBadge.value = content
+}
+
+const cancelPendingBadge = () => {
+    pendingBadge.value = null
+}
+
+const onBadgeIssued = (skippedJournal: boolean) => {
+    if (!pendingBadge.value) return
+    sessionStore.selectBadge(pendingBadge.value)
+    sessionStore.markIssued(skippedJournal)
+    pendingBadge.value = null
     router.push('/receipt')
 }
 
@@ -129,6 +141,12 @@ onMounted(loadBadges)
       </UiButton>
     </template>
   </CrmScreen>
+
+  <CrmBadgeConfirmSheet
+      :badge="pendingBadge"
+      @issued="onBadgeIssued"
+      @cancel="cancelPendingBadge"
+  />
 </template>
 
 <style scoped lang="sass">
