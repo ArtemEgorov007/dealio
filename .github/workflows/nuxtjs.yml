@@ -34,6 +34,7 @@ jobs:
       - name: Generate static site
         env:
           NUXT_APP_BASE_URL: /dealio/
+          NUXT_PUBLIC_CRM_GAS_URL: ${{ secrets.NUXT_PUBLIC_CRM_GAS_URL }}
         run: npm run generate
 
       - name: Setup Pages
