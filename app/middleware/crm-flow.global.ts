@@ -11,7 +11,11 @@ const CRM_ROUTES = new Set([
 const DEALIO_PREFIXES = ['/board', '/login', '/archive', '/settings', '/dashboard', '/ideas', '/tasks', '/wishlist', '/help']
 
 export default defineNuxtRouteMiddleware((to) => {
-    if (DEALIO_PREFIXES.some(prefix => to.path === prefix || to.path.startsWith(`${prefix}/`))) {
+    // GitHub Pages добавляет конечный слэш при прямой навигации/обновлении страницы
+    // (например /badges/) — без нормализации сравнения ниже не сработают.
+    const path = to.path.length > 1 ? to.path.replace(/\/$/, '') : to.path
+
+    if (DEALIO_PREFIXES.some(prefix => path === prefix || path.startsWith(`${prefix}/`))) {
         return
     }
 
@@ -22,16 +26,16 @@ export default defineNuxtRouteMiddleware((to) => {
         employeeStore.init()
     }
 
-    if (to.path === '/') {
+    if (path === '/') {
         if (!employeeStore.hasFio) return navigateTo('/register')
         return navigateTo('/workshop')
     }
 
-    if (!CRM_ROUTES.has(to.path)) {
+    if (!CRM_ROUTES.has(path)) {
         return
     }
 
-    if (to.path === '/register') {
+    if (path === '/register') {
         if (employeeStore.hasFio) return navigateTo('/workshop')
         return
     }
@@ -40,7 +44,7 @@ export default defineNuxtRouteMiddleware((to) => {
         return navigateTo('/register')
     }
 
-    if (to.path === '/workshop') {
+    if (path === '/workshop') {
         return
     }
 
@@ -48,7 +52,7 @@ export default defineNuxtRouteMiddleware((to) => {
         return navigateTo('/workshop')
     }
 
-    if (to.path === '/receipt' && !sessionStore.hasSelectedBadge) {
+    if (path === '/receipt' && !sessionStore.hasSelectedBadge) {
         return navigateTo('/badges')
     }
 })
