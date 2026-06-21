@@ -82,6 +82,44 @@ const onEscape = (event: KeyboardEvent) => {
 
 onMounted(() => document.addEventListener('keydown', onEscape))
 onBeforeUnmount(() => document.removeEventListener('keydown', onEscape))
+
+// Свайп вниз по ручке шторки — закрывает попап, как системные шторки
+// в iOS/Android. Ниже порога — отпружинивает обратно.
+const DISMISS_THRESHOLD = 90
+
+const isDragging = ref(false)
+const dragY = ref(0)
+let dragStartY = 0
+
+const panelStyle = computed(() => isDragging.value
+    ? {transform: `translateY(${dragY.value}px)`, transition: 'none'}
+    : undefined,
+)
+
+const onDragStart = (event: PointerEvent) => {
+    if (phase.value === 'saving') return
+    isDragging.value = true
+    dragStartY = event.clientY
+    dragY.value = 0
+    window.addEventListener('pointermove', onDragMove)
+    window.addEventListener('pointerup', onDragEnd)
+}
+
+const onDragMove = (event: PointerEvent) => {
+    dragY.value = Math.max(0, event.clientY - dragStartY)
+}
+
+const onDragEnd = () => {
+    window.removeEventListener('pointermove', onDragMove)
+    window.removeEventListener('pointerup', onDragEnd)
+    isDragging.value = false
+
+    if (dragY.value > DISMISS_THRESHOLD) {
+        cancel()
+    }
+
+    dragY.value = 0
+}
 </script>
 
 <template>
@@ -94,11 +132,18 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEscape))
           role="dialog"
           aria-modal="true"
           aria-label="Подтверждение выдачи бирки"
+          :style="panelStyle"
       >
-        <span class="crm-sheet-handle"/>
+        <div class="crm-sheet-grip" @pointerdown="onDragStart">
+          <span class="crm-sheet-handle"/>
+        </div>
 
         <p class="crm-sheet-label">{{ phase === 'error' ? 'Ошибка записи' : 'Выдать бирку' }}</p>
-        <p class="crm-sheet-content">{{ formatBadgeDisplay(badge) }}</p>
+
+        <article class="crm-sheet-card">
+          <p class="crm-sheet-content">{{ formatBadgeDisplay(badge) }}</p>
+        </article>
+
         <p class="crm-sheet-meta">{{ employeeStore.fio }} · {{ workshopTitle }}</p>
         <p v-if="phase === 'error'" class="crm-sheet-error">{{ error }}</p>
 
@@ -137,7 +182,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEscape))
   flex-direction: column
   align-items: center
   gap: var(--spacing-2)
-  padding: var(--spacing-3) var(--spacing-5) calc(var(--spacing-5) + env(safe-area-inset-bottom))
+  padding: 0 var(--spacing-5) calc(var(--spacing-5) + env(safe-area-inset-bottom))
   background-color: var(--color-bg)
   border: var(--border-width) solid var(--color-border)
   border-bottom: none
@@ -145,12 +190,19 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEscape))
   box-shadow: var(--shadow-xl)
   will-change: transform
 
+.crm-sheet-grip
+  display: flex
+  justify-content: center
+  width: 100%
+  padding: var(--spacing-3) 0
+  touch-action: none
+  cursor: grab
+
 .crm-sheet-handle
   width: 36px
   height: 4px
   border-radius: var(--radius-full)
   background-color: var(--color-border)
-  margin-bottom: var(--spacing-2)
 
 .crm-sheet-label
   align-self: flex-start
@@ -161,13 +213,21 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEscape))
   letter-spacing: 0.4px
   color: var(--color-text-muted)
 
+.crm-sheet-card
+  width: 100%
+  box-sizing: border-box
+  padding: var(--spacing-4)
+  border: var(--border-width) solid var(--color-border)
+  border-radius: var(--radius-md)
+  background-color: var(--color-card-bg)
+
 .crm-sheet-content
-  align-self: flex-start
   margin: 0
-  font-size: var(--font-size-xl)
-  font-weight: 700
-  line-height: 1.35
+  font-size: var(--font-size-sm)
+  font-weight: 500
+  line-height: 1.4
   color: var(--color-text)
+  white-space: pre-line
   overflow-wrap: anywhere
 
 .crm-sheet-meta

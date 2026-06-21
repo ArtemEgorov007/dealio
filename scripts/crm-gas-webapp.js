@@ -97,9 +97,9 @@ function getWorkshopBadges_(workshop) {
 }
 
 /**
- * Помечает бирку выданной (ставит дату в колонку C исходного листа цеха —
- * по этому полю бот и лист «Выдача» отличают невыданные бирки) и пишет
- * строку в общий журнал бота тем же набором колонок, что и сам бот.
+ * Пишет строку в журнал. По прямому указанию заказчика — больше НЕ
+ * трогает листы цехов (Колпино/Волхонка), только «Журнал выдачи бирок».
+ * Бирка из листа «Выдача» сама после этого не пропадает.
  */
 function issueBadge_(workshop, fio, badgeContent) {
     const lock = LockService.getScriptLock()
@@ -108,44 +108,11 @@ function issueBadge_(workshop, fio, badgeContent) {
     }
 
     try {
-        const workshopLabel = markBadgeIssued_(workshop, badgeContent)
+        const workshopLabel = getWorkshopSheetName_(workshop)
         appendJournalRow_(fio, badgeContent, workshopLabel)
     } finally {
         lock.releaseLock()
     }
-}
-
-function markBadgeIssued_(workshop, badgeContent) {
-    const sheetName = getWorkshopSheetName_(workshop)
-    const sheet = getSpreadsheet_().getSheetByName(sheetName)
-    if (!sheet) {
-        throw new Error('Sheet not found: ' + sheetName)
-    }
-
-    const lastRow = sheet.getLastRow()
-    if (lastRow < 1) {
-        throw new Error('Бирка не найдена: ' + badgeContent)
-    }
-
-    const tags = sheet.getRange(1, 1, lastRow, 1).getValues()
-    const fullTarget = normalizeCell_(badgeContent)
-    const tagTarget = extractBadgeTag_(badgeContent)
-
-    for (let rowIndex = 0; rowIndex < tags.length; rowIndex += 1) {
-        const cell = normalizeCell_(tags[rowIndex][0])
-        if (!cell) continue
-
-        if (cell === fullTarget || cell === tagTarget) {
-            sheet.getRange(rowIndex + 1, 3).setValue(new Date())
-            return sheetName
-        }
-    }
-
-    throw new Error('Бирка не найдена: ' + tagTarget)
-}
-
-function extractBadgeTag_(badgeContent) {
-    return normalizeCell_(badgeContent).split(/\n/)[0]
 }
 
 function appendJournalRow_(fio, badgeContent, workshopLabel) {
