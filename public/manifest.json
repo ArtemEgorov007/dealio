@@ -1,0 +1,14 @@
+{
+    "name": "Морфлот Технология — выдача бирок",
+    "short_name": "Бирки МТ",
+    "start_url": ".",
+    "scope": ".",
+    "display": "standalone",
+    "background_color": "#FBFBFB",
+    "theme_color": "#016ED7",
+    "lang": "ru",
+    "icons": [
+        {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+        {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    ]
+}

@@ -19,11 +19,17 @@ export default defineNuxtConfig({
         head: {
             htmlAttrs: {lang: 'ru'},
             title: 'CRM — выдача бирок',
-            link: [{rel: 'icon', type: 'image/svg+xml', href: `${baseURL}favicon-mt.svg`}],
+            link: [
+                {rel: 'icon', type: 'image/svg+xml', href: `${baseURL}favicon-mt.svg`},
+                {rel: 'apple-touch-icon', href: `${baseURL}icon-192.png`},
+                {rel: 'manifest', href: `${baseURL}manifest.json`},
+            ],
             meta: [
                 {name: 'description', content: 'CRM — регистрация, выбор цеха и выдача бирок'},
                 {name: 'theme-color', content: '#000000'},
                 {name: 'color-scheme', content: 'dark'},
+                {name: 'apple-mobile-web-app-capable', content: 'yes'},
+                {name: 'apple-mobile-web-app-status-bar-style', content: 'default'},
             ],
         },
     },
@@ -85,5 +91,13 @@ export default defineNuxtConfig({
         '/payments': {redirect: '/archive'},
         '/kanban': {redirect: '/board'},
         '/feedback': {redirect: '/help'},
-    }
+    },
+
+    nitro: {
+        prerender: {
+            // Иначе краулер принимает статический manifest.json (PWA) за
+            // SPA-маршрут (ссылка на него есть в <head>) и затирает его HTML.
+            ignore: [/manifest\.json$/],
+        },
+    },
 })

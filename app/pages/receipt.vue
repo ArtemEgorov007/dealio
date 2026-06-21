@@ -15,7 +15,11 @@ const sessionStore = useCrmSessionStore()
 const router = useRouter()
 const {showSuccess, showError} = useAppToast()
 
-const isSaving = ref(true)
+type Phase = 'confirm' | 'saving' | 'done' | 'error'
+
+// Если бирка уже была выдана в этой сессии (например, вернулись на
+// экран кнопкой «вперёд» в браузере) — повторно в журнал не пишем.
+const phase = ref<Phase>(sessionStore.issued ? 'done' : 'confirm')
 const saveError = ref('')
 const saveWarning = ref('')
 
@@ -24,10 +28,10 @@ const workshopTitle = computed(() =>
     employeeStore.workshopId ? workshopLabel(employeeStore.workshopId) : '',
 )
 
-const writeJournalEntry = async () => {
+const confirmIssue = async () => {
     if (!employeeStore.workshopId) return
 
-    isSaving.value = true
+    phase.value = 'saving'
     saveError.value = ''
     saveWarning.value = ''
 
@@ -41,11 +45,18 @@ const writeJournalEntry = async () => {
         if (result === 'skipped') {
             saveWarning.value = 'Журнал не подключён. Настройте Web App на странице /crm-setup'
         }
+
+        sessionStore.markIssued()
+        phase.value = 'done'
     } catch (error) {
         saveError.value = error instanceof Error ? error.message : 'Не удалось записать в журнал'
-    } finally {
-        isSaving.value = false
+        phase.value = 'error'
     }
+}
+
+const rejectBadge = () => {
+    sessionStore.clearSelectedBadge()
+    router.push('/badges')
 }
 
 const copyBadge = async () => {
@@ -66,29 +77,45 @@ const changeWorkshop = () => {
     sessionStore.clearSelectedBadge()
     router.push('/workshop')
 }
-
-onMounted(writeJournalEntry)
 </script>
 
 <template>
   <CrmScreen title="Получение бирки">
-    <div v-if="isSaving" class="receipt-state">
+    <div v-if="phase === 'saving'" class="receipt-state">
       <div class="spinner"></div>
       <span>Запись в журнал…</span>
     </div>
 
     <template v-else>
-      <p v-if="saveError" class="receipt-error">{{ saveError }}</p>
+      <p v-if="phase === 'error'" class="receipt-error">{{ saveError }}</p>
       <p v-if="saveWarning" class="receipt-warning">{{ saveWarning }}</p>
 
       <article class="badge-card">
-        <p class="badge-card__label">Ваша бирка</p>
+        <p class="badge-card__label">{{ phase === 'confirm' ? 'Выдать бирку' : 'Ваша бирка' }}</p>
         <p class="badge-card__content">{{ formatBadgeDisplay(badgeContent) }}</p>
         <p class="badge-card__meta">{{ employeeStore.fio }} · {{ workshopTitle }}</p>
       </article>
     </template>
 
-    <template v-if="!isSaving" #footer>
+    <template v-if="phase === 'confirm'" #footer>
+      <UiButton block @click="confirmIssue">
+        Подтвердить выдачу
+      </UiButton>
+      <UiButton block variant="outline" @click="rejectBadge">
+        Это не та бирка
+      </UiButton>
+    </template>
+
+    <template v-else-if="phase === 'error'" #footer>
+      <UiButton block @click="confirmIssue">
+        Повторить
+      </UiButton>
+      <UiButton block variant="outline" @click="changeWorkshop">
+        Сменить цех
+      </UiButton>
+    </template>
+
+    <template v-else-if="phase === 'done'" #footer>
       <UiButton block @click="copyBadge">
         Скопировать
       </UiButton>

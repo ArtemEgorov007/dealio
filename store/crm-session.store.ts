@@ -3,6 +3,7 @@ import {defineStore} from 'pinia'
 export const useCrmSessionStore = defineStore('crm-session', {
     state: () => ({
         selectedBadge: '' as string,
+        issued: false,
     }),
 
     getters: {
@@ -12,10 +13,16 @@ export const useCrmSessionStore = defineStore('crm-session', {
     actions: {
         selectBadge(content: string) {
             this.selectedBadge = content.trim()
+            this.issued = false
+        },
+
+        markIssued() {
+            this.issued = true
         },
 
         clearSelectedBadge() {
             this.selectedBadge = ''
+            this.issued = false
         },
     },
 })
