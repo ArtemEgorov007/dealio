@@ -1,3 +1,5 @@
+const baseURL = process.env.NUXT_APP_BASE_URL || '/'
+
 export default defineNuxtConfig({
     compatibilityDate: '2025-07-15',
 
@@ -17,7 +19,7 @@ export default defineNuxtConfig({
         head: {
             htmlAttrs: {lang: 'ru'},
             title: 'CRM — выдача бирок',
-            link: [{rel: 'icon', type: 'image/svg+xml', href: 'logo.svg'}],
+            link: [{rel: 'icon', type: 'image/svg+xml', href: `${baseURL}favicon-mt.svg`}],
             meta: [
                 {name: 'description', content: 'CRM — регистрация, выбор цеха и выдача бирок'},
                 {name: 'theme-color', content: '#000000'},
@@ -68,6 +70,7 @@ export default defineNuxtConfig({
         '@/assets/css/variables.css',
         '@/assets/css/kanban-effects.css',
         '@/assets/css/toast-overrides.css',
+        '@/assets/css/crm-theme.css',
     ],
 
     pinia: {

@@ -61,8 +61,8 @@ const selectWorkshop = (workshopId: WorkshopId) => {
     background-color: var(--color-bg-tertiary)
 
   &--active
-    border-color: var(--color-white)
-    background-color: rgba(255, 255, 255, 0.04)
+    border-color: var(--color-primary)
+    background-color: var(--color-primary-light)
 
 .workshop-card__label
   font-size: var(--font-size-lg)

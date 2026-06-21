@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {fetchWorkshopBadges} from '~/utils/crm-sheets'
+import {formatBadgeDisplay} from '~/utils/crm-csv'
 import {workshopLabel} from '~~/types/crm.types'
 import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
 import {useCrmSessionStore} from '~~/store/crm-session.store'
@@ -117,7 +118,7 @@ onMounted(loadBadges)
           class="badge-item"
           @click="selectBadge(badge)"
       >
-        <span class="badge-item__text">{{ badge }}</span>
+        <span class="badge-item__text">{{ formatBadgeDisplay(badge) }}</span>
         <Icon name="heroicons:chevron-right" size="16"/>
       </button>
     </div>
@@ -162,7 +163,7 @@ onMounted(loadBadges)
   &:focus-visible
     outline: none
     border-color: var(--color-input-border-focus)
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12)
+    box-shadow: 0 0 0 3px var(--color-primary-muted)
 
 .badges-search__clear
   position: absolute

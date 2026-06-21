@@ -3,11 +3,19 @@ defineProps<{
   title: string
   subtitle?: string
 }>()
+
+const logoSrc = useRuntimeConfig().app.baseURL + 'logo-mt.svg'
+
+useSeoMeta({themeColor: '#FBFBFB'})
+useHead({meta: [{name: 'color-scheme', content: 'light'}]})
 </script>
 
 <template>
   <section class="crm-screen">
     <header class="crm-screen__head">
+      <div class="crm-screen__brand">
+        <img :src="logoSrc" alt="Морфлот Технология" class="crm-screen__brand-mark">
+      </div>
       <h1 class="crm-screen__title">{{ title }}</h1>
       <p v-if="subtitle" class="crm-screen__subtitle">{{ subtitle }}</p>
       <div v-if="$slots.search" class="crm-screen__search">
@@ -42,6 +50,14 @@ defineProps<{
 .crm-screen__head
   flex-shrink: 0
   margin-bottom: var(--spacing-4)
+
+.crm-screen__brand
+  margin-bottom: var(--spacing-4)
+
+.crm-screen__brand-mark
+  height: 28px
+  width: auto
+  display: block
 
 .crm-screen__title
   font-size: var(--font-size-3xl)

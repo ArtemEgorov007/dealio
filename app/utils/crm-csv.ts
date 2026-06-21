@@ -44,3 +44,12 @@ export function parseCsv(text: string): string[][] {
 
     return rows
 }
+
+/**
+ * В исходной таблице часть бирок набрана без пробела между словами
+ * (например «Не краситьВес:1,57») — это только для отображения,
+ * сама строка бирки (для поиска/выдачи) остаётся нетронутой.
+ */
+export function formatBadgeDisplay(badge: string): string {
+    return badge.replace(/([a-zа-яё])([A-ZА-ЯЁ])/g, '$1 $2')
+}

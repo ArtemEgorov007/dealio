@@ -157,6 +157,10 @@ function appendJournalRow_(fio, badgeContent, workshopLabel) {
     const now = new Date()
     // A=День, B=Инженер, C=Проект, D=Раздел, E=Марка, F=Бирка, G=Дата, H=С индексом, I=Цех
     sheet.appendRow([now, fio, '', '', '', badgeContent, now, '', workshopLabel])
+
+    // appendRow не наследует формат столбца G у новых строк — без этого
+    // дата приходит со временем вместо "21.06.2026" как у остальных строк.
+    sheet.getRange(sheet.getLastRow(), 7).setNumberFormat('dd.mm.yyyy')
 }
 
 function normalizeCell_(value) {

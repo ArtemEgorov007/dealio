@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {appendBadgeJournalEntry} from '~/utils/crm-sheets'
+import {formatBadgeDisplay} from '~/utils/crm-csv'
 import {workshopLabel} from '~~/types/crm.types'
 import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
 import {useCrmSessionStore} from '~~/store/crm-session.store'
@@ -82,7 +83,7 @@ onMounted(writeJournalEntry)
 
       <article class="badge-card">
         <p class="badge-card__label">Ваша бирка</p>
-        <p class="badge-card__content">{{ badgeContent }}</p>
+        <p class="badge-card__content">{{ formatBadgeDisplay(badgeContent) }}</p>
         <p class="badge-card__meta">{{ employeeStore.fio }} · {{ workshopTitle }}</p>
       </article>
     </template>
