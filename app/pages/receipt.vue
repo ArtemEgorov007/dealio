@@ -85,18 +85,18 @@ onMounted(writeJournalEntry)
         <p class="badge-card__content">{{ badgeContent }}</p>
         <p class="badge-card__meta">{{ employeeStore.fio }} · {{ workshopTitle }}</p>
       </article>
+    </template>
 
-      <div class="receipt-actions">
-        <UiButton block @click="copyBadge">
-          Скопировать
-        </UiButton>
-        <UiButton block variant="secondary" @click="continueFlow">
-          Продолжить
-        </UiButton>
-        <UiButton block variant="outline" @click="changeWorkshop">
-          Сменить цех
-        </UiButton>
-      </div>
+    <template v-if="!isSaving" #footer>
+      <UiButton block @click="copyBadge">
+        Скопировать
+      </UiButton>
+      <UiButton block variant="secondary" @click="continueFlow">
+        Продолжить
+      </UiButton>
+      <UiButton block variant="outline" @click="changeWorkshop">
+        Сменить цех
+      </UiButton>
     </template>
   </CrmScreen>
 </template>
@@ -151,12 +151,6 @@ onMounted(writeJournalEntry)
   margin: 0
   font-size: var(--font-size-sm)
   color: var(--color-text-secondary)
-
-.receipt-actions
-  display: flex
-  flex-direction: column
-  gap: var(--spacing-3)
-  margin-top: auto
 
 .spinner
   width: 28px

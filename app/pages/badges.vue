@@ -15,10 +15,19 @@ const router = useRouter()
 const badges = ref<string[]>([])
 const isLoading = ref(true)
 const error = ref('')
+const query = ref('')
 
 const workshopTitle = computed(() =>
     employeeStore.workshopId ? workshopLabel(employeeStore.workshopId) : '',
 )
+
+const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim()
+
+const filteredBadges = computed(() => {
+    const needle = normalize(query.value)
+    if (!needle) return badges.value
+    return badges.value.filter(badge => normalize(badge).includes(needle))
+})
 
 const loadBadges = async () => {
     if (!employeeStore.workshopId) return
@@ -44,6 +53,10 @@ const changeWorkshop = () => {
     router.push('/workshop')
 }
 
+const clearQuery = () => {
+    query.value = ''
+}
+
 onMounted(loadBadges)
 </script>
 
@@ -52,6 +65,31 @@ onMounted(loadBadges)
       title="Выбор бирки"
       :subtitle="`Цех: ${workshopTitle}`"
   >
+    <template v-if="!isLoading && !error && badges.length > 0" #search>
+      <div class="badges-search">
+        <Icon name="heroicons:magnifying-glass" size="18" class="badges-search__icon"/>
+        <input
+            v-model="query"
+            type="search"
+            inputmode="search"
+            class="badges-search__field"
+            placeholder="Поиск по бирке…"
+        >
+        <button
+            v-if="query"
+            type="button"
+            class="badges-search__clear"
+            aria-label="Очистить поиск"
+            @click="clearQuery"
+        >
+          <Icon name="heroicons:x-mark" size="16"/>
+        </button>
+      </div>
+      <p class="badges-search__count">
+        Найдено {{ filteredBadges.length }} из {{ badges.length }}
+      </p>
+    </template>
+
     <div v-if="isLoading" class="badges-state">
       <div class="spinner"></div>
       <span>Загрузка списка…</span>
@@ -64,12 +102,16 @@ onMounted(loadBadges)
 
     <div v-else-if="badges.length === 0" class="badges-state">
       <p>Для цеха «{{ workshopTitle }}» бирки не найдены</p>
-      <UiButton variant="outline" @click="changeWorkshop">Сменить цех</UiButton>
+    </div>
+
+    <div v-else-if="filteredBadges.length === 0" class="badges-state">
+      <p>Ничего не найдено по запросу «{{ query }}»</p>
+      <UiButton variant="outline" @click="clearQuery">Очистить поиск</UiButton>
     </div>
 
     <div v-else class="badge-list">
       <button
-          v-for="badge in badges"
+          v-for="badge in filteredBadges"
           :key="badge"
           type="button"
           class="badge-item"
@@ -80,13 +122,71 @@ onMounted(loadBadges)
       </button>
     </div>
 
-    <UiButton variant="ghost" block @click="changeWorkshop">
-      Сменить цех
-    </UiButton>
+    <template #footer>
+      <UiButton variant="ghost" block @click="changeWorkshop">
+        Сменить цех
+      </UiButton>
+    </template>
   </CrmScreen>
 </template>
 
 <style scoped lang="sass">
+.badges-search
+  position: relative
+  display: flex
+  align-items: center
+
+.badges-search__icon
+  position: absolute
+  left: 12px
+  color: var(--color-text-muted)
+  pointer-events: none
+
+.badges-search__field
+  width: 100%
+  height: 38px
+  padding: 0 36px 0 38px
+  border: var(--border-width) solid var(--color-input-border)
+  border-radius: var(--radius-md)
+  background-color: var(--color-input-bg)
+  color: var(--color-input-text)
+  font-size: var(--font-size-sm)
+  appearance: none
+
+  &::-webkit-search-cancel-button
+    display: none
+
+  &::placeholder
+    color: var(--color-input-placeholder)
+
+  &:focus-visible
+    outline: none
+    border-color: var(--color-input-border-focus)
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12)
+
+.badges-search__clear
+  position: absolute
+  right: 8px
+  display: flex
+  align-items: center
+  justify-content: center
+  width: 28px
+  height: 28px
+  border: none
+  border-radius: var(--radius-sm)
+  background: none
+  color: var(--color-text-muted)
+  cursor: pointer
+
+  &:hover
+    color: var(--color-text)
+    background-color: var(--color-bg-secondary)
+
+.badges-search__count
+  margin: var(--spacing-2) 0 0
+  font-size: var(--font-size-xs)
+  color: var(--color-text-muted)
+
 .badges-state
   display: flex
   flex-direction: column
