@@ -1,4 +1,4 @@
-import type {CrmBadgeIssue, WorkshopId} from '~~/types/crm.types'
+import type {CrmBadgeIssue, CrmIssuedBadgeEntry, WorkshopId} from '~~/types/crm.types'
 import {workshopById} from '~~/types/crm.types'
 import {parseCsv} from '~/utils/crm-csv'
 
@@ -33,6 +33,7 @@ interface SheetsRuntimeConfig {
 interface GasResponse {
     ok?: boolean
     badges?: string[]
+    entries?: CrmIssuedBadgeEntry[]
     error?: string
 }
 
@@ -195,6 +196,26 @@ async function issueBadgeViaGas(
     if (!result.ok) {
         throw new Error(result.error || 'Ошибка записи в журнал')
     }
+}
+
+export async function fetchIssuedBadgesToday(fio: string, workshopId: WorkshopId | null): Promise<CrmIssuedBadgeEntry[]> {
+    const config = getConfig()
+
+    if (!isGasConfigured(config)) {
+        return []
+    }
+
+    const result = await requestGas(config, {
+        action: 'issuedToday',
+        fio,
+        ...(workshopId ? {workshop: workshopId} : {}),
+    })
+
+    if (!result.ok) {
+        throw new Error(result.error || 'Не удалось загрузить бирки за смену')
+    }
+
+    return result.entries ?? []
 }
 
 export type JournalWriteResult = 'ok' | 'skipped'

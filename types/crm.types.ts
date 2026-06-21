@@ -22,6 +22,11 @@ export interface CrmBadgeIssue {
     badgeContent: string
 }
 
+export interface CrmIssuedBadgeEntry {
+    badge: string
+    time: string
+}
+
 export function workshopById(id: WorkshopId): WorkshopOption {
     const found = CRM_WORKSHOPS.find(item => item.id === id)
     if (!found) throw new Error(`Unknown workshop: ${id}`)

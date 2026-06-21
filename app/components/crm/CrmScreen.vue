@@ -1,10 +1,18 @@
 <script setup lang="ts">
+import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+
 defineProps<{
   title: string
   subtitle?: string
 }>()
 
 const logoSrc = useRuntimeConfig().app.baseURL + 'logo-mt.svg'
+const employeeStore = useCrmEmployeeStore()
+const route = useRoute()
+
+const showShiftLink = computed(() =>
+    employeeStore.hasFio && route.path !== '/shift' && route.path !== '/register',
+)
 
 useSeoMeta({themeColor: '#FBFBFB'})
 useHead({meta: [{name: 'color-scheme', content: 'light'}]})
@@ -13,8 +21,14 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
 <template>
   <section class="crm-screen">
     <header class="crm-screen__head">
-      <div class="crm-screen__brand">
-        <img :src="logoSrc" alt="Морфлот Технология" class="crm-screen__brand-mark">
+      <div class="crm-screen__head-row">
+        <div class="crm-screen__brand">
+          <img :src="logoSrc" alt="Морфлот Технология" class="crm-screen__brand-mark">
+        </div>
+        <NuxtLink v-if="showShiftLink" to="/shift" class="crm-screen__shift-link">
+          <Icon name="heroicons:clipboard-document-list" size="16"/>
+          Бирки за смену
+        </NuxtLink>
       </div>
       <h1 class="crm-screen__title">{{ title }}</h1>
       <p v-if="subtitle" class="crm-screen__subtitle">{{ subtitle }}</p>
@@ -51,13 +65,35 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   flex-shrink: 0
   margin-bottom: var(--spacing-4)
 
-.crm-screen__brand
+.crm-screen__head-row
+  display: flex
+  align-items: center
+  justify-content: space-between
+  gap: var(--spacing-3)
   margin-bottom: var(--spacing-4)
+
+.crm-screen__brand
+  display: flex
 
 .crm-screen__brand-mark
   height: 28px
   width: auto
   display: block
+
+.crm-screen__shift-link
+  flex-shrink: 0
+  display: flex
+  align-items: center
+  gap: 6px
+  padding: 6px 10px
+  border: var(--border-width) solid var(--color-border)
+  border-radius: var(--radius-full)
+  background-color: var(--color-card-bg)
+  color: var(--color-text-secondary)
+  font-size: var(--font-size-xs)
+  font-weight: 600
+  white-space: nowrap
+  text-decoration: none
 
 .crm-screen__title
   font-size: var(--font-size-3xl)

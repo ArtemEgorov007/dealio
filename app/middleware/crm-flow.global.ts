@@ -6,6 +6,7 @@ const CRM_ROUTES = new Set([
     '/workshop',
     '/badges',
     '/receipt',
+    '/shift',
 ])
 
 const DEALIO_PREFIXES = ['/board', '/login', '/archive', '/settings', '/dashboard', '/ideas', '/tasks', '/wishlist', '/help']
@@ -44,7 +45,9 @@ export default defineNuxtRouteMiddleware((to) => {
         return navigateTo('/register')
     }
 
-    if (path === '/workshop') {
+    if (path === '/workshop' || path === '/shift') {
+        // /shift доступен с любого экрана сразу после регистрации,
+        // цех для него не обязателен — список можно смотреть по всем цехам.
         return
     }
 

@@ -9,6 +9,7 @@
  * 4. URL → NUXT_PUBLIC_CRM_GAS_URL
  *
  * GET ?action=badges&workshop=kolpino|volkhonka
+ * GET ?action=issuedToday&fio=...&workshop=kolpino|volkhonka (workshop опционален)
  * POST { action: 'issueBadge', workshop, fio, badgeContent }
  */
 const SPREADSHEET_ID = '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
@@ -33,6 +34,11 @@ function doGet(e) {
         if (action === 'issueBadge') {
             issueBadge_(e.parameter.workshop, e.parameter.fio || '', e.parameter.badgeContent || '')
             return jsonResponse_({ok: true})
+        }
+
+        if (action === 'issuedToday') {
+            const entries = getIssuedBadgesToday_(e.parameter.fio || '', e.parameter.workshop || '')
+            return jsonResponse_({ok: true, entries: entries})
         }
 
         return jsonResponse_({ok: false, error: 'Unknown action'})
@@ -128,6 +134,44 @@ function appendJournalRow_(fio, badgeContent, workshopLabel) {
     // appendRow не наследует формат столбца G у новых строк — без этого
     // дата приходит со временем вместо "21.06.2026" как у остальных строк.
     sheet.getRange(sheet.getLastRow(), 7).setNumberFormat('dd.mm.yyyy')
+}
+
+/**
+ * Бирки, выданные сотрудником сегодня — для экрана «Бирки за смену».
+ * workshop опционален: без него отдаёт бирки по всем цехам.
+ */
+function getIssuedBadgesToday_(fio, workshop) {
+    const sheet = getSpreadsheet_().getSheetByName(JOURNAL_SHEET)
+    if (!sheet) {
+        throw new Error('Sheet not found: ' + JOURNAL_SHEET)
+    }
+
+    const workshopLabelFilter = workshop ? getWorkshopSheetName_(workshop) : ''
+    const fioNormalized = normalizeCell_(fio)
+    const todayKey = formatDateKey_(new Date())
+
+    const values = sheet.getDataRange().getValues()
+    const entries = []
+
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        const rowDate = row[0]
+
+        if (normalizeCell_(row[1]) !== fioNormalized) continue
+        if (workshopLabelFilter && normalizeCell_(row[8]) !== workshopLabelFilter) continue
+        if (!(rowDate instanceof Date) || formatDateKey_(rowDate) !== todayKey) continue
+
+        entries.push({
+            badge: normalizeCell_(row[5]),
+            time: Utilities.formatDate(rowDate, Session.getScriptTimeZone(), 'HH:mm'),
+        })
+    }
+
+    return entries
+}
+
+function formatDateKey_(date) {
+    return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd')
 }
 
 function normalizeCell_(value) {
