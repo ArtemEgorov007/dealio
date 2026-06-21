@@ -28,6 +28,12 @@ const workshopTitle = computed(() =>
     employeeStore.workshopId ? workshopLabel(employeeStore.workshopId) : '',
 )
 
+// Поддерживается в Android Chrome/Firefox, в Safari/iOS — нет;
+// просто молча ничего не делает там, где API недоступен.
+const vibrate = (pattern: number | number[]) => {
+    navigator.vibrate?.(pattern)
+}
+
 const confirmIssue = async () => {
     if (!employeeStore.workshopId) return
 
@@ -48,9 +54,11 @@ const confirmIssue = async () => {
 
         sessionStore.markIssued()
         phase.value = 'done'
+        vibrate(200)
     } catch (error) {
         saveError.value = error instanceof Error ? error.message : 'Не удалось записать в журнал'
         phase.value = 'error'
+        vibrate([100, 50, 100])
     }
 }
 
