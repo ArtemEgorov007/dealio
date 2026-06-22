@@ -15,6 +15,7 @@ const router = useRouter()
 const entries = ref<CrmIssuedBadgeEntry[]>([])
 const isLoading = ref(true)
 const error = ref('')
+const pendingDelete = ref<CrmIssuedBadgeEntry | null>(null)
 
 const workshopTitle = computed(() =>
     employeeStore.workshopId ? workshopLabel(employeeStore.workshopId) : '',
@@ -35,6 +36,19 @@ const load = async () => {
 
 const goBack = () => {
     router.back()
+}
+
+const requestDelete = (entry: CrmIssuedBadgeEntry) => {
+    pendingDelete.value = entry
+}
+
+const cancelDelete = () => {
+    pendingDelete.value = null
+}
+
+const onDeleted = (entry: CrmIssuedBadgeEntry) => {
+    entries.value = entries.value.filter(item => item.row !== entry.row)
+    pendingDelete.value = null
 }
 
 onMounted(load)
@@ -63,9 +77,17 @@ onMounted(load)
       <p class="shift-count">Выдано сегодня: {{ entries.length }}</p>
 
       <div class="shift-list">
-        <article v-for="(entry, index) in entries" :key="`${entry.badge}-${index}`" class="shift-item">
+        <article v-for="entry in entries" :key="entry.row" class="shift-item">
           <span class="shift-item__time">{{ entry.time }}</span>
           <span class="shift-item__badge">{{ formatBadgeDisplay(entry.badge) }}</span>
+          <button
+              type="button"
+              class="shift-item__delete"
+              aria-label="Удалить бирку"
+              @click="requestDelete(entry)"
+          >
+            <Icon name="heroicons:x-mark" size="16"/>
+          </button>
         </article>
       </div>
     </template>
@@ -76,6 +98,12 @@ onMounted(load)
       </UiButton>
     </template>
   </CrmScreen>
+
+  <CrmDeleteBadgeSheet
+      :entry="pendingDelete"
+      @deleted="onDeleted"
+      @cancel="cancelDelete"
+  />
 </template>
 
 <style scoped lang="sass">
@@ -107,7 +135,7 @@ onMounted(load)
 
 .shift-item
   display: flex
-  align-items: baseline
+  align-items: center
   gap: var(--spacing-3)
   padding: 14px 16px
   border: var(--border-width) solid var(--color-border)
@@ -116,6 +144,7 @@ onMounted(load)
 
 .shift-item__time
   flex-shrink: 0
+  align-self: baseline
   font-size: var(--font-size-xs)
   font-weight: 600
   color: var(--color-text-muted)
@@ -127,6 +156,23 @@ onMounted(load)
   font-weight: 500
   line-height: 1.4
   white-space: pre-line
+
+.shift-item__delete
+  flex-shrink: 0
+  display: flex
+  align-items: center
+  justify-content: center
+  width: 28px
+  height: 28px
+  border: none
+  border-radius: var(--radius-sm)
+  background: none
+  color: var(--color-text-muted)
+  cursor: pointer
+
+  &:hover
+    color: var(--color-danger)
+    background-color: rgba(239, 68, 68, 0.1)
 
 .spinner
   width: 28px

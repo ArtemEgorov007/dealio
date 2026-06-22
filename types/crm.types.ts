@@ -23,6 +23,7 @@ export interface CrmBadgeIssue {
 }
 
 export interface CrmIssuedBadgeEntry {
+    row: number
     badge: string
     time: string
 }

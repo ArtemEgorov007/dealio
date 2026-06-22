@@ -218,6 +218,25 @@ export async function fetchIssuedBadgesToday(fio: string, workshopId: WorkshopId
     return result.entries ?? []
 }
 
+export async function deleteIssuedBadge(entry: CrmIssuedBadgeEntry, fio: string): Promise<void> {
+    const config = getConfig()
+
+    if (!isGasConfigured(config)) {
+        throw new Error('Журнал не подключён')
+    }
+
+    const result = await requestGasPost(config, {
+        action: 'deleteIssuedBadge',
+        row: String(entry.row),
+        fio,
+        badgeContent: entry.badge,
+    })
+
+    if (!result.ok) {
+        throw new Error(result.error || 'Не удалось удалить бирку')
+    }
+}
+
 export type JournalWriteResult = 'ok' | 'skipped'
 
 export async function appendBadgeJournalEntry(entry: CrmBadgeIssue): Promise<JournalWriteResult> {

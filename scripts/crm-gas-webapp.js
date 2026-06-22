@@ -11,6 +11,7 @@
  * GET ?action=badges&workshop=kolpino|volkhonka
  * GET ?action=issuedToday&fio=...&workshop=kolpino|volkhonka (workshop опционален)
  * POST { action: 'issueBadge', workshop, fio, badgeContent }
+ * POST { action: 'deleteIssuedBadge', row, fio, badgeContent }
  */
 const SPREADSHEET_ID = '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
 const ISSUE_SHEET = 'Выдача'
@@ -53,6 +54,11 @@ function doPost(e) {
 
         if (payload.action === 'issueBadge') {
             issueBadge_(payload.workshop, payload.fio || '', payload.badgeContent || '')
+            return jsonResponse_({ok: true})
+        }
+
+        if (payload.action === 'deleteIssuedBadge') {
+            deleteIssuedBadge_(payload.row, payload.fio || '', payload.badgeContent || '')
             return jsonResponse_({ok: true})
         }
 
@@ -162,12 +168,50 @@ function getIssuedBadgesToday_(fio, workshop) {
         if (!(rowDate instanceof Date) || formatDateKey_(rowDate) !== todayKey) continue
 
         entries.push({
+            row: rowIndex + 1,
             badge: normalizeCell_(row[5]),
             time: Utilities.formatDate(rowDate, Session.getScriptTimeZone(), 'HH:mm'),
         })
     }
 
     return entries
+}
+
+/**
+ * Удаляет выданную бирку из журнала — кнопка-крестик на экране «Бирки за смену».
+ * row пришёл с фронта вместе со списком; fio/badgeContent — проверка,
+ * что строка не сдвинулась и удаляем именно то, что показывали сотруднику.
+ */
+function deleteIssuedBadge_(row, fio, badgeContent) {
+    const rowNumber = Number(row)
+
+    const lock = LockService.getScriptLock()
+    if (!lock.tryLock(5000)) {
+        throw new Error('busy')
+    }
+
+    try {
+        const sheet = getSpreadsheet_().getSheetByName(JOURNAL_SHEET)
+        if (!sheet) {
+            throw new Error('Sheet not found: ' + JOURNAL_SHEET)
+        }
+
+        if (!rowNumber || rowNumber < 2 || rowNumber > sheet.getLastRow()) {
+            throw new Error('Строка не найдена — обновите список и попробуйте снова')
+        }
+
+        const rowValues = sheet.getRange(rowNumber, 1, 1, 9).getValues()[0]
+        const rowMatches = normalizeCell_(rowValues[1]) === normalizeCell_(fio)
+            && normalizeCell_(rowValues[5]) === normalizeCell_(badgeContent)
+
+        if (!rowMatches) {
+            throw new Error('Строка изменилась — обновите список и попробуйте снова')
+        }
+
+        sheet.deleteRow(rowNumber)
+    } finally {
+        lock.releaseLock()
+    }
 }
 
 function formatDateKey_(date) {
