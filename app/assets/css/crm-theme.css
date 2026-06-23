@@ -59,3 +59,16 @@
 .crm-layout .ui-input__field:focus-visible {
     box-shadow: 0 0 0 3px rgba(1, 110, 215, 0.14) !important;
 }
+
+/*
+ * iOS Safari зумирует страницу при фокусе на input с font-size < 16px,
+ * и после зума страница не возвращается в исходный масштаб — кнопка
+ * в футере (например «Продолжить») уезжает за пределы экрана.
+ * --font-size-sm на этих полях — 13px, поэтому держим минимум 16px
+ * именно для CRM-инпутов (поиск бирок, ФИО, URL в crm-setup).
+ */
+.crm-layout .ui-input__field,
+.crm-layout .badges-search__field,
+.crm-layout .setup-field input {
+    font-size: 16px !important;
+}
