@@ -9,17 +9,20 @@ useSeoMeta({title: 'Выбор цеха | CRM'})
 
 const employeeStore = useCrmEmployeeStore()
 const router = useRouter()
+const route = useRoute()
+
+const isPacking = computed(() => route.query.flow === 'packing')
 
 const selectWorkshop = (workshopId: WorkshopId) => {
     employeeStore.setWorkshop(workshopId)
-    router.push('/badges')
+    router.push(isPacking.value ? '/scan-qr' : '/badges')
 }
 </script>
 
 <template>
   <CrmScreen
       title="Выбор цеха"
-      :subtitle="employeeStore.hasFio ? `Сотрудник: ${employeeStore.fio}` : undefined"
+      :subtitle="isPacking ? 'Упаковка — выберите цех' : (employeeStore.hasFio ? `Сотрудник: ${employeeStore.fio}` : undefined)"
   >
     <div class="workshop-list">
       <button

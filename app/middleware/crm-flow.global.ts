@@ -7,6 +7,7 @@ const CRM_ROUTES = new Set([
     '/badges',
     '/receipt',
     '/shift',
+    '/scan-qr',
 ])
 
 const DEALIO_PREFIXES = ['/board', '/login', '/archive', '/settings', '/dashboard', '/ideas', '/tasks', '/wishlist', '/help']
@@ -28,16 +29,16 @@ export default defineNuxtRouteMiddleware((to) => {
     }
 
     if (path === '/') {
-        if (!employeeStore.hasFio) return navigateTo('/register')
-        return navigateTo('/workshop')
+        return navigateTo('/register')
     }
 
     if (!CRM_ROUTES.has(path)) {
         return
     }
 
+    // /register — общий хаб: ФИО уже подставлено из профиля, а кнопки
+    // «Бирки»/«Упаковки» ведут в разные потоки, поэтому редиректа отсюда нет.
     if (path === '/register') {
-        if (employeeStore.hasFio) return navigateTo('/workshop')
         return
     }
 
@@ -52,7 +53,7 @@ export default defineNuxtRouteMiddleware((to) => {
     }
 
     if (!employeeStore.hasWorkshop) {
-        return navigateTo('/workshop')
+        return navigateTo(path === '/scan-qr' ? '/workshop?flow=packing' : '/workshop')
     }
 
     if (path === '/receipt' && !sessionStore.hasSelectedBadge) {

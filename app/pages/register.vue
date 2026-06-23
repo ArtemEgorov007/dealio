@@ -11,7 +11,7 @@ const router = useRouter()
 const fio = ref(employeeStore.fio)
 const error = ref('')
 
-const submit = () => {
+const proceed = (path: string) => {
     const value = fio.value.trim()
 
     if (value.length < 3) {
@@ -20,8 +20,11 @@ const submit = () => {
     }
 
     employeeStore.setFio(value)
-    router.push('/workshop')
+    router.push(path)
 }
+
+const goToBadges = () => proceed('/workshop')
+const goToPacking = () => proceed('/workshop?flow=packing')
 </script>
 
 <template>
@@ -37,11 +40,23 @@ const submit = () => {
         autocomplete="name"
         required
         :error="error"
-        @keyup.enter="submit"
+        @keyup.enter="goToBadges"
     />
 
-    <UiButton block @click="submit">
-      Продолжить
-    </UiButton>
+    <div class="register-actions">
+      <UiButton block @click="goToBadges">
+        Бирки
+      </UiButton>
+      <UiButton block variant="outline" @click="goToPacking">
+        Упаковки
+      </UiButton>
+    </div>
   </CrmScreen>
 </template>
+
+<style scoped lang="sass">
+.register-actions
+  display: flex
+  flex-direction: column
+  gap: var(--spacing-3)
+</style>

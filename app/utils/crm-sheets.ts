@@ -237,6 +237,24 @@ export async function deleteIssuedBadge(entry: CrmIssuedBadgeEntry, fio: string)
     }
 }
 
+export async function recordPackingEntry(workshopId: WorkshopId, qrText: string): Promise<void> {
+    const config = getConfig()
+
+    if (!isGasConfigured(config)) {
+        throw new Error('Журнал не подключён')
+    }
+
+    const result = await requestGasPost(config, {
+        action: 'recordPacking',
+        workshop: workshopId,
+        qrText,
+    })
+
+    if (!result.ok) {
+        throw new Error(result.error || 'Не удалось записать упаковку')
+    }
+}
+
 export type JournalWriteResult = 'ok' | 'skipped'
 
 export async function appendBadgeJournalEntry(entry: CrmBadgeIssue): Promise<JournalWriteResult> {

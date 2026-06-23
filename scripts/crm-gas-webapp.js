@@ -12,10 +12,12 @@
  * GET ?action=issuedToday&fio=...&workshop=kolpino|volkhonka (workshop опционален)
  * POST { action: 'issueBadge', workshop, fio, badgeContent }
  * POST { action: 'deleteIssuedBadge', row, fio, badgeContent }
+ * POST { action: 'recordPacking', workshop, qrText }
  */
 const SPREADSHEET_ID = '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
 const ISSUE_SHEET = 'Выдача'
 const JOURNAL_SHEET = 'Журнал выдачи бирок'
+const LOGIST_SHEET = 'Логисты'
 
 // Имя цеха = имя колонки на листе «Выдача» = имя исходного листа с бирками.
 const WORKSHOP_SHEETS = {
@@ -59,6 +61,11 @@ function doPost(e) {
 
         if (payload.action === 'deleteIssuedBadge') {
             deleteIssuedBadge_(payload.row, payload.fio || '', payload.badgeContent || '')
+            return jsonResponse_({ok: true})
+        }
+
+        if (payload.action === 'recordPacking') {
+            recordPacking_(payload.workshop, payload.qrText || '')
             return jsonResponse_({ok: true})
         }
 
@@ -212,6 +219,65 @@ function deleteIssuedBadge_(row, fio, badgeContent) {
     } finally {
         lock.releaseLock()
     }
+}
+
+/**
+ * Записывает считанный QR упаковки на лист «Логисты». Лист создаётся
+ * автоматически при первом вызове, если его ещё нет в таблице.
+ */
+function recordPacking_(workshop, qrText) {
+    const lock = LockService.getScriptLock()
+    if (!lock.tryLock(5000)) {
+        throw new Error('busy')
+    }
+
+    try {
+        const workshopLabel = getWorkshopSheetName_(workshop)
+        appendLogistRow_(workshopLabel, qrText)
+    } finally {
+        lock.releaseLock()
+    }
+}
+
+/**
+ * Лист «Логисты» — заполняем только Дата/Цех/Бирка, остальные столбцы
+ * (ФИО, Накладная, Вес и т.п.) трогаем не трогаем. Ищем нужные столбцы
+ * по заголовку, а не по фиксированному индексу — на листе уже есть
+ * своя схема с дополнительными колонками.
+ */
+function appendLogistRow_(workshopLabel, qrText) {
+    const sheet = getOrCreateLogistSheet_()
+    const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(normalizeCell_)
+
+    const dateIndex = header.indexOf('Дата')
+    const workshopIndex = header.indexOf('Цех')
+    const badgeIndex = header.indexOf('Бирка')
+
+    if (dateIndex < 0 || workshopIndex < 0 || badgeIndex < 0) {
+        throw new Error('Не найдены столбцы Дата/Цех/Бирка на листе «' + LOGIST_SHEET + '»')
+    }
+
+    const row = new Array(header.length).fill('')
+    row[dateIndex] = new Date()
+    row[workshopIndex] = workshopLabel
+    row[badgeIndex] = qrText
+
+    // Явный setNumberFormat здесь конфликтует с уже настроенным форматом
+    // столбца «Дата» на этом листе (готовая ошибка Sheets API при flush) —
+    // не трогаем формат, ячейка наследует то, что уже задано на колонке.
+    sheet.appendRow(row)
+}
+
+function getOrCreateLogistSheet_() {
+    const spreadsheet = getSpreadsheet_()
+    let sheet = spreadsheet.getSheetByName(LOGIST_SHEET)
+
+    if (!sheet) {
+        sheet = spreadsheet.insertSheet(LOGIST_SHEET)
+        sheet.appendRow(['Дата', 'Цех', 'ФИО', 'Накладная', 'Бирка', 'Вес'])
+    }
+
+    return sheet
 }
 
 function formatDateKey_(date) {
