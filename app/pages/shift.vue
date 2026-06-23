@@ -4,6 +4,7 @@ import {formatBadgeDisplay} from '~/utils/crm-csv'
 import {workshopLabel} from '~~/types/crm.types'
 import type {CrmIssuedBadgeEntry} from '~~/types/crm.types'
 import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {useAppToast} from '~/composables/useAppToast'
 
 definePageMeta({layout: 'crm'})
 
@@ -11,6 +12,7 @@ useSeoMeta({title: 'Бирки за смену | CRM'})
 
 const employeeStore = useCrmEmployeeStore()
 const router = useRouter()
+const {showSuccess, showError} = useAppToast()
 
 const entries = ref<CrmIssuedBadgeEntry[]>([])
 const isLoading = ref(true)
@@ -36,6 +38,15 @@ const load = async () => {
 
 const goBack = () => {
     router.back()
+}
+
+const copyBadge = async (entry: CrmIssuedBadgeEntry) => {
+    try {
+        await navigator.clipboard.writeText(entry.badge)
+        showSuccess('Скопировано в буфер обмена')
+    } catch {
+        showError('Не удалось скопировать')
+    }
 }
 
 const requestDelete = (entry: CrmIssuedBadgeEntry) => {
@@ -82,7 +93,15 @@ onMounted(load)
           <span class="shift-item__badge">{{ formatBadgeDisplay(entry.badge) }}</span>
           <button
               type="button"
-              class="shift-item__delete"
+              class="shift-item__action"
+              aria-label="Скопировать бирку"
+              @click="copyBadge(entry)"
+          >
+            <Icon name="heroicons:clipboard-document" size="16"/>
+          </button>
+          <button
+              type="button"
+              class="shift-item__action shift-item__action--delete"
               aria-label="Удалить бирку"
               @click="requestDelete(entry)"
           >
@@ -157,7 +176,7 @@ onMounted(load)
   line-height: 1.4
   white-space: pre-line
 
-.shift-item__delete
+.shift-item__action
   flex-shrink: 0
   display: flex
   align-items: center
@@ -171,6 +190,10 @@ onMounted(load)
   cursor: pointer
 
   &:hover
+    color: var(--color-primary)
+    background-color: var(--color-primary-light)
+
+  &--delete:hover
     color: var(--color-danger)
     background-color: rgba(239, 68, 68, 0.1)
 
