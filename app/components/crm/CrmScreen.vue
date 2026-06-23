@@ -53,7 +53,8 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   max-width: 480px
   margin: 0 auto
   padding: var(--spacing-6) var(--spacing-4) 0
-  height: 100dvh
+  flex: 1
+  min-height: 0
   display: flex
   flex-direction: column
   box-sizing: border-box

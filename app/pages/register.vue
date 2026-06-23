@@ -11,6 +11,16 @@ const router = useRouter()
 const fio = ref(employeeStore.fio)
 const error = ref('')
 
+// Сохраняем в стор по мере набора — иначе переход через нижний tab bar
+// (а не через кнопки на этом экране) терял введённое, но не отправленное
+// ФИО, и middleware возвращал назад на /register.
+watch(fio, (value) => {
+    const trimmed = value.trim()
+    if (trimmed.length >= 3) {
+        employeeStore.setFio(trimmed)
+    }
+})
+
 const proceed = (path: string) => {
     const value = fio.value.trim()
 
