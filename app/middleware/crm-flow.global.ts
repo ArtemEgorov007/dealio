@@ -56,6 +56,14 @@ export default defineNuxtRouteMiddleware((to) => {
         return navigateTo(path === '/scan-qr' ? '/workshop?flow=packing' : '/workshop')
     }
 
+    // hasWorkshop — общее персистентное поле для обоих потоков, поэтому
+    // для /scan-qr дополнительно требуем явное подтверждение цеха именно
+    // для упаковки за эту сессию — иначе цех, выбранный для бирок,
+    // открывал бы сканер без повторного выбора (по прямой ссылке, back/forward).
+    if (path === '/scan-qr' && !sessionStore.packingWorkshopConfirmed) {
+        return navigateTo('/workshop?flow=packing')
+    }
+
     if (path === '/receipt' && !sessionStore.hasSelectedBadge) {
         return navigateTo('/badges')
     }

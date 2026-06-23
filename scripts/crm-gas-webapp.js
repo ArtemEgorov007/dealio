@@ -226,14 +226,25 @@ function deleteIssuedBadge_(row, fio, badgeContent) {
  * автоматически при первом вызове, если его ещё нет в таблице.
  */
 function recordPacking_(workshop, qrText) {
+    const workshopLabel = getWorkshopSheetName_(workshop)
+    const sheet = getOrCreateLogistSheet_()
+
+    // Заголовок читаем ДО лока — это лишь поиск нужных столбцов, не запись.
+    // Лок держим только вокруг самого appendRow, иначе он продлевается на
+    // время сетевого Sheets-чтения и под нагрузкой чаще ловит timeout/busy
+    // у параллельных сканов с других устройств.
+    const row = buildLogistRow_(sheet, workshopLabel, qrText)
+
     const lock = LockService.getScriptLock()
     if (!lock.tryLock(5000)) {
         throw new Error('busy')
     }
 
     try {
-        const workshopLabel = getWorkshopSheetName_(workshop)
-        appendLogistRow_(workshopLabel, qrText)
+        // Явный setNumberFormat здесь конфликтует с уже настроенным форматом
+        // столбца «Дата» на этом листе (готовая ошибка Sheets API при flush) —
+        // не трогаем формат, ячейка наследует то, что уже задано на колонке.
+        sheet.appendRow(row)
     } finally {
         lock.releaseLock()
     }
@@ -245,8 +256,7 @@ function recordPacking_(workshop, qrText) {
  * по заголовку, а не по фиксированному индексу — на листе уже есть
  * своя схема с дополнительными колонками.
  */
-function appendLogistRow_(workshopLabel, qrText) {
-    const sheet = getOrCreateLogistSheet_()
+function buildLogistRow_(sheet, workshopLabel, qrText) {
     const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(normalizeCell_)
 
     const dateIndex = header.indexOf('Дата')
@@ -262,10 +272,7 @@ function appendLogistRow_(workshopLabel, qrText) {
     row[workshopIndex] = workshopLabel
     row[badgeIndex] = qrText
 
-    // Явный setNumberFormat здесь конфликтует с уже настроенным форматом
-    // столбца «Дата» на этом листе (готовая ошибка Sheets API при flush) —
-    // не трогаем формат, ячейка наследует то, что уже задано на колонке.
-    sheet.appendRow(row)
+    return row
 }
 
 function getOrCreateLogistSheet_() {

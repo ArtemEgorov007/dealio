@@ -3,6 +3,7 @@ import {deleteIssuedBadge} from '~/utils/crm-sheets'
 import {formatBadgeDisplay} from '~/utils/crm-csv'
 import type {CrmIssuedBadgeEntry} from '~~/types/crm.types'
 import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {useHaptics} from '~/composables/useHaptics'
 
 const props = defineProps<{
   entry: CrmIssuedBadgeEntry | null
@@ -14,15 +15,12 @@ const emit = defineEmits<{
 }>()
 
 const employeeStore = useCrmEmployeeStore()
+const {vibrate} = useHaptics()
 
 type Phase = 'confirm' | 'deleting' | 'error'
 
 const phase = ref<Phase>('confirm')
 const error = ref('')
-
-const vibrate = (pattern: number | number[]) => {
-    navigator.vibrate?.(pattern)
-}
 
 watch(() => props.entry, (value) => {
     if (value) {

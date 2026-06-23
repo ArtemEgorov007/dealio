@@ -4,6 +4,7 @@ import {recordPackingEntry} from '~/utils/crm-sheets'
 import {workshopLabel} from '~~/types/crm.types'
 import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
 import {useAppToast} from '~/composables/useAppToast'
+import {useHaptics} from '~/composables/useHaptics'
 
 definePageMeta({layout: 'crm'})
 
@@ -12,6 +13,7 @@ useSeoMeta({title: 'Считывание QR | CRM'})
 const employeeStore = useCrmEmployeeStore()
 const router = useRouter()
 const {showSuccess, showError} = useAppToast()
+const {vibrate} = useHaptics()
 
 const workshopTitle = computed(() =>
     employeeStore.workshopId ? workshopLabel(employeeStore.workshopId) : '',
@@ -27,12 +29,14 @@ let lastCode = ''
 let lastScannedAt = 0
 const DEDUPE_WINDOW_MS = 4000
 
-const vibrate = (pattern: number | number[]) => {
-    navigator.vibrate?.(pattern)
-}
-
 const onDecode = async (qrText: string) => {
-    if (!employeeStore.workshopId) return
+    if (!employeeStore.workshopId || !qrText) return
+
+    // Проверка status — основная защита от дублей: камера продолжает
+    // декодировать кадры пока бирка в кадре, и если запрос идёт дольше
+    // DEDUPE_WINDOW_MS (например, GAS busy под нагрузкой), таймер-дедуп
+    // сам по себе не спасёт от повторной отправки той же бирки.
+    if (status.value === 'saving') return
 
     const now = Date.now()
     if (qrText === lastCode && now - lastScannedAt < DEDUPE_WINDOW_MS) return

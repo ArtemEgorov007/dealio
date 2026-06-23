@@ -2,12 +2,14 @@
 import {CRM_WORKSHOPS} from '~~/types/crm.types'
 import type {WorkshopId} from '~~/types/crm.types'
 import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {useCrmSessionStore} from '~~/store/crm-session.store'
 
 definePageMeta({layout: 'crm'})
 
 useSeoMeta({title: 'Выбор цеха | CRM'})
 
 const employeeStore = useCrmEmployeeStore()
+const sessionStore = useCrmSessionStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -15,6 +17,10 @@ const isPacking = computed(() => route.query.flow === 'packing')
 
 const selectWorkshop = (workshopId: WorkshopId) => {
     employeeStore.setWorkshop(workshopId)
+    // Цех — общее персистентное поле для обоих потоков. Подтверждение
+    // для упаковки фиксируем отдельно (транзиентно), иначе старый цех,
+    // выбранный для бирок, мог бы «утечь» в сканер без повторного выбора.
+    sessionStore.setPackingWorkshopConfirmed(isPacking.value)
     router.push(isPacking.value ? '/scan-qr' : '/badges')
 }
 </script>

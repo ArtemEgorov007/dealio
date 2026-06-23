@@ -3,6 +3,7 @@ import {appendBadgeJournalEntry} from '~/utils/crm-sheets'
 import {formatBadgeDisplay} from '~/utils/crm-csv'
 import {workshopLabel} from '~~/types/crm.types'
 import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {useHaptics} from '~/composables/useHaptics'
 
 const props = defineProps<{
   badge: string | null
@@ -14,6 +15,7 @@ const emit = defineEmits<{
 }>()
 
 const employeeStore = useCrmEmployeeStore()
+const {vibrate} = useHaptics()
 
 type Phase = 'confirm' | 'saving' | 'error'
 
@@ -23,11 +25,6 @@ const error = ref('')
 const workshopTitle = computed(() =>
     employeeStore.workshopId ? workshopLabel(employeeStore.workshopId) : '',
 )
-
-// Поддерживается в Android Chrome/Firefox, в Safari/iOS — нет.
-const vibrate = (pattern: number | number[]) => {
-    navigator.vibrate?.(pattern)
-}
 
 watch(() => props.badge, (value) => {
     if (value) {
