@@ -134,19 +134,40 @@ function issueBadge_(workshop, fio, badgeContent) {
     }
 }
 
+/**
+ * Заказчик переставил/переименовал столбцы на «Журнал выдачи бирок» —
+ * пишем по заголовку, а не по фиксированному индексу. Заполняем только
+ * День (дата+время), Дата (только дата), Цех, Инженер, Бирка — остальные
+ * столбцы (Титул, «Титул и марка», Фото, Старт, ОГЗ, Финиш, Оценка,
+ * Дата отгрузки) не трогаем.
+ */
 function appendJournalRow_(fio, badgeContent, workshopLabel) {
-    const sheet = getSpreadsheet_().getSheetByName(JOURNAL_SHEET)
-    if (!sheet) {
-        throw new Error('Sheet not found: ' + JOURNAL_SHEET)
-    }
+    const sheet = getJournalSheet_()
+    const header = getSheetHeader_(sheet)
+
+    const dayIndex = requireColumn_(header, 'День', JOURNAL_SHEET)
+    const dateIndex = requireColumn_(header, 'Дата', JOURNAL_SHEET)
+    const workshopIndex = requireColumn_(header, 'Цех', JOURNAL_SHEET)
+    const engineerIndex = requireColumn_(header, 'Инженер', JOURNAL_SHEET)
+    const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
 
     const now = new Date()
-    // A=День, B=Инженер, C=Проект, D=Раздел, E=Марка, F=Бирка, G=Дата, H=С индексом, I=Цех
-    sheet.appendRow([now, fio, '', '', '', badgeContent, now, '', workshopLabel])
+    const row = new Array(header.length).fill('')
+    row[dayIndex] = now
+    row[dateIndex] = now
+    row[workshopIndex] = workshopLabel
+    row[engineerIndex] = fio
+    row[badgeIndex] = badgeContent
 
-    // appendRow не наследует формат столбца G у новых строк — без этого
-    // дата приходит со временем вместо "21.06.2026" как у остальных строк.
-    sheet.getRange(sheet.getLastRow(), 7).setNumberFormat('dd.mm.yyyy')
+    sheet.appendRow(row)
+
+    // appendRow не наследует формат столбца «Дата» у новых строк — без
+    // этого дата приходит со временем вместо "21.06.2026" как у остальных.
+    try {
+        sheet.getRange(sheet.getLastRow(), dateIndex + 1).setNumberFormat('dd.mm.yyyy')
+    } catch {
+        // ignore — формат некритичен для самой записи
+    }
 }
 
 /**
@@ -154,10 +175,13 @@ function appendJournalRow_(fio, badgeContent, workshopLabel) {
  * workshop опционален: без него отдаёт бирки по всем цехам.
  */
 function getIssuedBadgesToday_(fio, workshop) {
-    const sheet = getSpreadsheet_().getSheetByName(JOURNAL_SHEET)
-    if (!sheet) {
-        throw new Error('Sheet not found: ' + JOURNAL_SHEET)
-    }
+    const sheet = getJournalSheet_()
+    const header = getSheetHeader_(sheet)
+
+    const dayIndex = requireColumn_(header, 'День', JOURNAL_SHEET)
+    const workshopIndex = requireColumn_(header, 'Цех', JOURNAL_SHEET)
+    const engineerIndex = requireColumn_(header, 'Инженер', JOURNAL_SHEET)
+    const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
 
     const workshopLabelFilter = workshop ? getWorkshopSheetName_(workshop) : ''
     const fioNormalized = normalizeCell_(fio)
@@ -168,15 +192,15 @@ function getIssuedBadgesToday_(fio, workshop) {
 
     for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
         const row = values[rowIndex]
-        const rowDate = row[0]
+        const rowDate = row[dayIndex]
 
-        if (normalizeCell_(row[1]) !== fioNormalized) continue
-        if (workshopLabelFilter && normalizeCell_(row[8]) !== workshopLabelFilter) continue
+        if (normalizeCell_(row[engineerIndex]) !== fioNormalized) continue
+        if (workshopLabelFilter && normalizeCell_(row[workshopIndex]) !== workshopLabelFilter) continue
         if (!(rowDate instanceof Date) || formatDateKey_(rowDate) !== todayKey) continue
 
         entries.push({
             row: rowIndex + 1,
-            badge: normalizeCell_(row[5]),
+            badge: normalizeCell_(row[badgeIndex]),
             time: Utilities.formatDate(rowDate, Session.getScriptTimeZone(), 'HH:mm'),
         })
     }
@@ -198,18 +222,18 @@ function deleteIssuedBadge_(row, fio, badgeContent) {
     }
 
     try {
-        const sheet = getSpreadsheet_().getSheetByName(JOURNAL_SHEET)
-        if (!sheet) {
-            throw new Error('Sheet not found: ' + JOURNAL_SHEET)
-        }
+        const sheet = getJournalSheet_()
+        const header = getSheetHeader_(sheet)
+        const engineerIndex = requireColumn_(header, 'Инженер', JOURNAL_SHEET)
+        const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
 
         if (!rowNumber || rowNumber < 2 || rowNumber > sheet.getLastRow()) {
             throw new Error('Строка не найдена — обновите список и попробуйте снова')
         }
 
-        const rowValues = sheet.getRange(rowNumber, 1, 1, 9).getValues()[0]
-        const rowMatches = normalizeCell_(rowValues[1]) === normalizeCell_(fio)
-            && normalizeCell_(rowValues[5]) === normalizeCell_(badgeContent)
+        const rowValues = sheet.getRange(rowNumber, 1, 1, header.length).getValues()[0]
+        const rowMatches = normalizeCell_(rowValues[engineerIndex]) === normalizeCell_(fio)
+            && normalizeCell_(rowValues[badgeIndex]) === normalizeCell_(badgeContent)
 
         if (!rowMatches) {
             throw new Error('Строка изменилась — обновите список и попробуйте снова')
@@ -219,6 +243,26 @@ function deleteIssuedBadge_(row, fio, badgeContent) {
     } finally {
         lock.releaseLock()
     }
+}
+
+function getJournalSheet_() {
+    const sheet = getSpreadsheet_().getSheetByName(JOURNAL_SHEET)
+    if (!sheet) {
+        throw new Error('Sheet not found: ' + JOURNAL_SHEET)
+    }
+    return sheet
+}
+
+function getSheetHeader_(sheet) {
+    return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(normalizeCell_)
+}
+
+function requireColumn_(header, columnName, sheetName) {
+    const index = header.indexOf(columnName)
+    if (index < 0) {
+        throw new Error('Не найден столбец «' + columnName + '» на листе «' + sheetName + '»')
+    }
+    return index
 }
 
 /**
