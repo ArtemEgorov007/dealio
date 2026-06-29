@@ -11,30 +11,35 @@ const router = useRouter()
 const fio = ref(employeeStore.fio)
 const error = ref('')
 
-// Сохраняем в стор по мере набора — иначе переход через нижний tab bar
-// (а не через кнопки на этом экране) терял введённое, но не отправленное
-// ФИО, и middleware возвращал назад на /register.
-watch(fio, (value) => {
-    const trimmed = value.trim()
-    if (trimmed.length >= 3) {
-        employeeStore.setFio(trimmed)
-    }
-})
-
-const proceed = (path: string) => {
+// Валидирует и сохраняет ФИО в стор. Не вызываем это на каждый ввод —
+// иначе недописанное имя ("Ива" вместо "Иванов") навсегда уходит в стор,
+// если уйти со страницы до того, как допечатать (например, по нижнему
+// tab bar). Коммитим только в момент реального перехода — см. ниже.
+const validateAndCommit = (): boolean => {
     const value = fio.value.trim()
 
     if (value.length < 3) {
         error.value = 'Введите ФИО полностью (минимум 3 символа)'
-        return
+        return false
     }
 
+    error.value = ''
     employeeStore.setFio(value)
-    router.push(path)
+    return true
+}
+
+const proceed = (path: string) => {
+    if (validateAndCommit()) router.push(path)
 }
 
 const goToBadges = () => proceed('/workshop')
 const goToPacking = () => proceed('/workshop?flow=packing')
+
+// Переход через нижний tab bar (Бирки/Упаковка/любой другой раздел) не
+// проходит через goToBadges/goToPacking — это та же навигация, что и
+// клик по кнопкам, поэтому валидируем и сохраняем здесь же. Если ФИО
+// не набрано, блокируем переход и показываем ту же ошибку.
+onBeforeRouteLeave(() => validateAndCommit())
 </script>
 
 <template>

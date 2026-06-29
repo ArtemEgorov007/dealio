@@ -44,8 +44,11 @@ const copyBadge = async (entry: CrmIssuedBadgeEntry) => {
     try {
         await navigator.clipboard.writeText(entry.badge)
         showSuccess('Скопировано в буфер обмена')
-    } catch {
-        showError('Не удалось скопировать')
+    } catch (copyError) {
+        // showError ждёт error/fallback, а не готовую строку — иначе
+        // instanceof Error проверка внутри не срабатывает и тост
+        // показывает общее «Что-то пошло не так» вместо нужного текста.
+        showError(copyError, 'Не удалось скопировать')
     }
 }
 

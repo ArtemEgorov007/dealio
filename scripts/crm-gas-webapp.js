@@ -119,29 +119,21 @@ function getWorkshopBadges_(workshop) {
  * Пишет строку в журнал. По прямому указанию заказчика — больше НЕ
  * трогает листы цехов (Колпино/Волхонка), только «Журнал выдачи бирок».
  * Бирка из листа «Выдача» сама после этого не пропадает.
- */
-function issueBadge_(workshop, fio, badgeContent) {
-    const lock = LockService.getScriptLock()
-    if (!lock.tryLock(5000)) {
-        throw new Error('busy')
-    }
-
-    try {
-        const workshopLabel = getWorkshopSheetName_(workshop)
-        appendJournalRow_(fio, badgeContent, workshopLabel)
-    } finally {
-        lock.releaseLock()
-    }
-}
-
-/**
+ *
  * Заказчик переставил/переименовал столбцы на «Журнал выдачи бирок» —
  * пишем по заголовку, а не по фиксированному индексу. Заполняем только
  * День (дата+время), Дата (только дата), Цех, Инженер, Бирка — остальные
  * столбцы (Титул, «Титул и марка», Фото, Старт, ОГЗ, Финиш, Оценка,
  * Дата отгрузки) не трогаем.
+ *
+ * Поиск столбцов делаем ДО лока — это лишь чтение заголовка, не запись.
+ * Лок держим только вокруг самого appendRow, иначе он продлевается на
+ * время сетевого Sheets-чтения и под нагрузкой чаще ловит timeout/busy
+ * у параллельных выдач с других устройств (тот же принцип, что и в
+ * recordPacking_ для листа «Логисты»).
  */
-function appendJournalRow_(fio, badgeContent, workshopLabel) {
+function issueBadge_(workshop, fio, badgeContent) {
+    const workshopLabel = getWorkshopSheetName_(workshop)
     const sheet = getJournalSheet_()
     const header = getSheetHeader_(sheet)
 
@@ -159,14 +151,23 @@ function appendJournalRow_(fio, badgeContent, workshopLabel) {
     row[engineerIndex] = fio
     row[badgeIndex] = badgeContent
 
-    sheet.appendRow(row)
+    const lock = LockService.getScriptLock()
+    if (!lock.tryLock(5000)) {
+        throw new Error('busy')
+    }
 
-    // appendRow не наследует формат столбца «Дата» у новых строк — без
-    // этого дата приходит со временем вместо "21.06.2026" как у остальных.
     try {
-        sheet.getRange(sheet.getLastRow(), dateIndex + 1).setNumberFormat('dd.mm.yyyy')
-    } catch {
-        // ignore — формат некритичен для самой записи
+        sheet.appendRow(row)
+
+        // appendRow не наследует формат столбца «Дата» у новых строк — без
+        // этого дата приходит со временем вместо "21.06.2026" как у остальных.
+        try {
+            sheet.getRange(sheet.getLastRow(), dateIndex + 1).setNumberFormat('dd.mm.yyyy')
+        } catch {
+            // ignore — формат некритичен для самой записи
+        }
+    } finally {
+        lock.releaseLock()
     }
 }
 
@@ -212,9 +213,18 @@ function getIssuedBadgesToday_(fio, workshop) {
  * Удаляет выданную бирку из журнала — кнопка-крестик на экране «Бирки за смену».
  * row пришёл с фронта вместе со списком; fio/badgeContent — проверка,
  * что строка не сдвинулась и удаляем именно то, что показывали сотруднику.
+ *
+ * Поиск столбцов (метаданные, не зависят от состояния строк) делаем ДО
+ * лока. А вот проверку «строка не сдвинулась» и сам deleteRow держим
+ * строго внутри одного лока — между чтением и удалением не должно
+ * влезать чужое изменение листа, иначе удалим не ту строку.
  */
 function deleteIssuedBadge_(row, fio, badgeContent) {
     const rowNumber = Number(row)
+    const sheet = getJournalSheet_()
+    const header = getSheetHeader_(sheet)
+    const engineerIndex = requireColumn_(header, 'Инженер', JOURNAL_SHEET)
+    const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
 
     const lock = LockService.getScriptLock()
     if (!lock.tryLock(5000)) {
@@ -222,11 +232,6 @@ function deleteIssuedBadge_(row, fio, badgeContent) {
     }
 
     try {
-        const sheet = getJournalSheet_()
-        const header = getSheetHeader_(sheet)
-        const engineerIndex = requireColumn_(header, 'Инженер', JOURNAL_SHEET)
-        const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
-
         if (!rowNumber || rowNumber < 2 || rowNumber > sheet.getLastRow()) {
             throw new Error('Строка не найдена — обновите список и попробуйте снова')
         }
@@ -301,15 +306,11 @@ function recordPacking_(workshop, qrText) {
  * своя схема с дополнительными колонками.
  */
 function buildLogistRow_(sheet, workshopLabel, qrText) {
-    const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(normalizeCell_)
+    const header = getSheetHeader_(sheet)
 
-    const dateIndex = header.indexOf('Дата')
-    const workshopIndex = header.indexOf('Цех')
-    const badgeIndex = header.indexOf('Бирка')
-
-    if (dateIndex < 0 || workshopIndex < 0 || badgeIndex < 0) {
-        throw new Error('Не найдены столбцы Дата/Цех/Бирка на листе «' + LOGIST_SHEET + '»')
-    }
+    const dateIndex = requireColumn_(header, 'Дата', LOGIST_SHEET)
+    const workshopIndex = requireColumn_(header, 'Цех', LOGIST_SHEET)
+    const badgeIndex = requireColumn_(header, 'Бирка', LOGIST_SHEET)
 
     const row = new Array(header.length).fill('')
     row[dateIndex] = new Date()
