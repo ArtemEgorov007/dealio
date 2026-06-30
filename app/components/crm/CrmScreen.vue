@@ -1,18 +1,11 @@
 <script setup lang="ts">
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
-
 defineProps<{
   title: string
   subtitle?: string
+  shiftLink?: { to: string; label: string }
 }>()
 
 const logoSrc = useRuntimeConfig().app.baseURL + 'logo-mt.svg'
-const employeeStore = useCrmEmployeeStore()
-const route = useRoute()
-
-const showShiftLink = computed(() =>
-    employeeStore.hasFio && route.path !== '/shift' && route.path !== '/register',
-)
 
 useSeoMeta({themeColor: '#FBFBFB'})
 useHead({meta: [{name: 'color-scheme', content: 'light'}]})
@@ -25,9 +18,9 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
         <div class="crm-screen__brand">
           <img :src="logoSrc" alt="Морфлот Технология" class="crm-screen__brand-mark">
         </div>
-        <NuxtLink v-if="showShiftLink" to="/shift" class="crm-screen__shift-link">
+        <NuxtLink v-if="shiftLink" :to="shiftLink.to" class="crm-screen__shift-link">
           <Icon name="heroicons:clipboard-document-list" size="16"/>
-          Бирки за смену
+          {{ shiftLink.label }}
         </NuxtLink>
       </div>
       <h1 class="crm-screen__title">{{ title }}</h1>

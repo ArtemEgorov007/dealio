@@ -19,6 +19,49 @@ const isLoading = ref(true)
 const error = ref('')
 const pendingDelete = ref<CrmIssuedBadgeEntry | null>(null)
 
+// Чек-боксы «обработано» — храним по дате, чтобы автоматически сбрасывались
+// на следующий день (не нужно отдельной очистки/крон-задачи). Ключ — текст
+// бирки, а не row: row сдвигается при удалении других строк журнала.
+const CHECKED_STORAGE_KEY = 'crm-shift-checked'
+
+const todayDateKey = (): string => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
+const loadCheckedBadges = (): Set<string> => {
+    if (!import.meta.client) return new Set()
+
+    try {
+        const raw = localStorage.getItem(CHECKED_STORAGE_KEY)
+        if (!raw) return new Set()
+
+        const parsed = JSON.parse(raw) as { date: string; badges: string[] }
+        if (parsed.date !== todayDateKey()) return new Set()
+
+        return new Set(parsed.badges)
+    } catch {
+        return new Set()
+    }
+}
+
+const saveCheckedBadges = (badges: Set<string>) => {
+    if (!import.meta.client) return
+    localStorage.setItem(CHECKED_STORAGE_KEY, JSON.stringify({date: todayDateKey(), badges: [...badges]}))
+}
+
+const checkedBadges = ref<Set<string>>(loadCheckedBadges())
+
+const isChecked = (badge: string) => checkedBadges.value.has(badge)
+
+const toggleChecked = (badge: string) => {
+    const next = new Set(checkedBadges.value)
+    if (next.has(badge)) next.delete(badge)
+    else next.add(badge)
+    checkedBadges.value = next
+    saveCheckedBadges(next)
+}
+
 const workshopTitle = computed(() =>
     employeeStore.workshopId ? workshopLabel(employeeStore.workshopId) : '',
 )
@@ -92,6 +135,13 @@ onMounted(load)
 
       <div class="shift-list">
         <article v-for="entry in entries" :key="entry.row" class="shift-item">
+          <input
+              type="checkbox"
+              class="shift-item__checkbox"
+              :checked="isChecked(entry.badge)"
+              aria-label="Отметить как обработано"
+              @change="toggleChecked(entry.badge)"
+          >
           <span class="shift-item__time">{{ entry.time }}</span>
           <span class="shift-item__badge">{{ formatBadgeDisplay(entry.badge) }}</span>
           <button
@@ -163,6 +213,13 @@ onMounted(load)
   border: var(--border-width) solid var(--color-border)
   border-radius: var(--radius-md)
   background-color: var(--color-card-bg)
+
+.shift-item__checkbox
+  flex-shrink: 0
+  width: 20px
+  height: 20px
+  accent-color: var(--color-primary)
+  cursor: pointer
 
 .shift-item__time
   flex-shrink: 0

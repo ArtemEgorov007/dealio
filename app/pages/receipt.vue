@@ -40,7 +40,7 @@ const changeWorkshop = () => {
 </script>
 
 <template>
-  <CrmScreen title="Получение бирки">
+  <CrmScreen title="Получение бирки" :shift-link="{ to: '/shift', label: 'Бирки за смену' }">
     <p v-if="sessionStore.journalSkipped" class="receipt-warning">
       Журнал не подключён. Настройте Web App на странице /crm-setup
     </p>

@@ -242,6 +242,62 @@ export async function deleteIssuedBadge(entry: CrmIssuedBadgeEntry, fio: string)
     }
 }
 
+export async function fetchHandedOverBadgesToday(fio: string): Promise<CrmIssuedBadgeEntry[]> {
+    const config = getConfig()
+
+    if (!isGasConfigured(config)) {
+        return []
+    }
+
+    const result = await requestGas(config, {
+        action: 'handedOverToday',
+        fio,
+    })
+
+    if (!result.ok) {
+        throw new Error(result.error || 'Не удалось загрузить сданные бирки')
+    }
+
+    return result.entries ?? []
+}
+
+export async function recordHandoverEntry(fio: string, badgeContent: string): Promise<void> {
+    const config = getConfig()
+
+    if (!isGasConfigured(config)) {
+        throw new Error('Журнал не подключён')
+    }
+
+    const result = await requestGasPost(config, {
+        action: 'recordHandover',
+        fio,
+        badgeContent,
+    })
+
+    if (!result.ok) {
+        throw new Error(result.error || 'Не удалось записать сдачу')
+    }
+}
+
+export async function undoHandover(entry: CrmIssuedBadgeEntry, fio: string): Promise<void> {
+    const config = getConfig()
+
+    if (!isGasConfigured(config)) {
+        throw new Error('Журнал не подключён')
+    }
+
+    const result = await requestGasPost(config, {
+        action: 'undoHandover',
+        row: String(entry.row),
+        fio,
+        badgeContent: entry.badge,
+    })
+
+    if (!result.ok) {
+        throw new Error(result.error || 'Не удалось отменить сдачу')
+    }
+}
+
 export async function recordPackingEntry(workshopId: WorkshopId, qrText: string): Promise<void> {
     const config = getConfig()
 

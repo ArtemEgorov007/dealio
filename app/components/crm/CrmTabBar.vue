@@ -6,8 +6,13 @@ const isPackingSection = computed(() =>
     route.path === '/scan-qr' || (route.path === '/workshop' && route.query.flow === 'packing'),
 )
 
+const isHandoverSection = computed(() =>
+    ['/scan-handover', '/handover-shift'].includes(route.path),
+)
+
 const isBadgesSection = computed(() =>
-    !isPackingSection.value && ['/workshop', '/badges', '/receipt', '/shift'].includes(route.path),
+    !isPackingSection.value && !isHandoverSection.value
+    && ['/workshop', '/badges', '/receipt', '/shift'].includes(route.path),
 )
 
 const isProfileSection = computed(() => route.path === '/register')
@@ -15,6 +20,7 @@ const isProfileSection = computed(() => route.path === '/register')
 const goProfile = () => router.push('/register')
 const goBadges = () => router.push('/workshop')
 const goPacking = () => router.push('/workshop?flow=packing')
+const goHandover = () => router.push('/scan-handover')
 </script>
 
 <template>
@@ -45,6 +51,15 @@ const goPacking = () => router.push('/workshop?flow=packing')
     >
       <Icon name="heroicons:qr-code" size="22"/>
       <span>Упаковка</span>
+    </button>
+    <button
+        type="button"
+        class="crm-tabbar__item"
+        :class="{ 'crm-tabbar__item--active': isHandoverSection }"
+        @click="goHandover"
+    >
+      <Icon name="heroicons:check-badge" size="22"/>
+      <span>Сдача</span>
     </button>
   </nav>
 </template>

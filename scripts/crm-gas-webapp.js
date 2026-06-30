@@ -10,9 +10,12 @@
  *
  * GET ?action=badges&workshop=kolpino|volkhonka
  * GET ?action=issuedToday&fio=...&workshop=kolpino|volkhonka (workshop опционален)
+ * GET ?action=handedOverToday&fio=...
  * POST { action: 'issueBadge', workshop, fio, badgeContent }
  * POST { action: 'deleteIssuedBadge', row, fio, badgeContent }
  * POST { action: 'recordPacking', workshop, qrText }
+ * POST { action: 'recordHandover', fio, badgeContent }
+ * POST { action: 'undoHandover', row, fio, badgeContent }
  */
 const SPREADSHEET_ID = '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
 const ISSUE_SHEET = 'Выдача'
@@ -44,6 +47,11 @@ function doGet(e) {
             return jsonResponse_({ok: true, entries: entries})
         }
 
+        if (action === 'handedOverToday') {
+            const entries = getHandedOverBadgesToday_(e.parameter.fio || '')
+            return jsonResponse_({ok: true, entries: entries})
+        }
+
         return jsonResponse_({ok: false, error: 'Unknown action'})
     } catch (error) {
         return jsonResponse_({ok: false, error: String(error.message || error)})
@@ -66,6 +74,16 @@ function doPost(e) {
 
         if (payload.action === 'recordPacking') {
             recordPacking_(payload.workshop, payload.qrText || '')
+            return jsonResponse_({ok: true})
+        }
+
+        if (payload.action === 'recordHandover') {
+            recordHandover_(payload.fio || '', payload.badgeContent || '')
+            return jsonResponse_({ok: true})
+        }
+
+        if (payload.action === 'undoHandover') {
+            undoHandover_(payload.row, payload.fio || '', payload.badgeContent || '')
             return jsonResponse_({ok: true})
         }
 
@@ -157,15 +175,12 @@ function issueBadge_(workshop, fio, badgeContent) {
     }
 
     try {
+        // setNumberFormat на «Дата» здесь не делаем: Sheets откладывает
+        // фактическое применение операции и конфликт с заданным типом
+        // данных столбца всплывает не здесь, а при следующем чтении
+        // листа (мимо любого try/catch вокруг самого вызова) — тот же
+        // эффект, что уже учтён для «Логисты» в recordPacking_.
         sheet.appendRow(row)
-
-        // appendRow не наследует формат столбца «Дата» у новых строк — без
-        // этого дата приходит со временем вместо "21.06.2026" как у остальных.
-        try {
-            sheet.getRange(sheet.getLastRow(), dateIndex + 1).setNumberFormat('dd.mm.yyyy')
-        } catch {
-            // ignore — формат некритичен для самой записи
-        }
     } finally {
         lock.releaseLock()
     }
@@ -250,6 +265,127 @@ function deleteIssuedBadge_(row, fio, badgeContent) {
     }
 }
 
+/**
+ * Сдача работ ОКК — сканирование QR на «Журнал выдачи бирок»: находим
+ * строку по столбцу «Бирка» (без привязки к цеху — Журнал общий) и
+ * заполняем «Сдача ОГЗ» (дата) и «Инженер ОКК» (ФИО). Саму строку не
+ * трогаем больше нигде — это не новая запись, а обновление существующей,
+ * созданной при выдаче бирки.
+ *
+ * Если бирок с одинаковым текстом несколько (дубли), берём последнюю
+ * НЕ сданную — иначе повторное сканирование того же текста просто
+ * перезаписывало бы уже сданную запись вместо первой подходящей.
+ */
+function recordHandover_(fio, badgeContent) {
+    const sheet = getJournalSheet_()
+    const header = getSheetHeader_(sheet)
+    const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
+    const handoverDateIndex = requireColumn_(header, 'Сдача ОГЗ', JOURNAL_SHEET)
+    const okkEngineerIndex = requireColumn_(header, 'Инженер ОКК', JOURNAL_SHEET)
+    const badgeNormalized = normalizeCell_(badgeContent)
+
+    const findTargetRow = () => {
+        const values = sheet.getDataRange().getValues()
+        for (let rowIndex = values.length - 1; rowIndex >= 1; rowIndex -= 1) {
+            if (normalizeCell_(values[rowIndex][badgeIndex]) !== badgeNormalized) continue
+            if (normalizeCell_(values[rowIndex][handoverDateIndex])) continue
+            return rowIndex + 1
+        }
+        return -1
+    }
+
+    const lock = LockService.getScriptLock()
+    if (!lock.tryLock(5000)) {
+        throw new Error('busy')
+    }
+
+    try {
+        const targetRow = findTargetRow()
+        if (targetRow < 0) {
+            throw new Error('Бирка не найдена в журнале или уже сдана')
+        }
+
+        // setNumberFormat не делаем — у «Сдача ОГЗ» заданный тип данных,
+        // конфликт с ним всплывает не здесь, а при следующем чтении листа
+        // (тот же эффект, что и для «Дата» в issueBadge_/«Логисты»).
+        sheet.getRange(targetRow, handoverDateIndex + 1).setValue(new Date())
+        sheet.getRange(targetRow, okkEngineerIndex + 1).setValue(fio)
+    } finally {
+        lock.releaseLock()
+    }
+}
+
+/**
+ * Бирки, сданные сотрудником ОКК сегодня — для экрана «Сдачи».
+ */
+function getHandedOverBadgesToday_(fio) {
+    const sheet = getJournalSheet_()
+    const header = getSheetHeader_(sheet)
+    const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
+    const handoverDateIndex = requireColumn_(header, 'Сдача ОГЗ', JOURNAL_SHEET)
+    const okkEngineerIndex = requireColumn_(header, 'Инженер ОКК', JOURNAL_SHEET)
+
+    const fioNormalized = normalizeCell_(fio)
+    const todayKey = formatDateKey_(new Date())
+
+    const values = sheet.getDataRange().getValues()
+    const entries = []
+
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        const handoverDate = row[handoverDateIndex]
+
+        if (normalizeCell_(row[okkEngineerIndex]) !== fioNormalized) continue
+        if (!(handoverDate instanceof Date) || formatDateKey_(handoverDate) !== todayKey) continue
+
+        entries.push({
+            row: rowIndex + 1,
+            badge: normalizeCell_(row[badgeIndex]),
+            time: Utilities.formatDate(handoverDate, Session.getScriptTimeZone(), 'HH:mm'),
+        })
+    }
+
+    return entries
+}
+
+/**
+ * Отменяет сдачу — кнопка-крестик на экране «Сдачи». В отличие от
+ * deleteIssuedBadge_ строку НЕ удаляет (это исходная запись о выдаче
+ * бирки), только очищает «Сдача ОГЗ»/«Инженер ОКК» обратно.
+ */
+function undoHandover_(row, fio, badgeContent) {
+    const rowNumber = Number(row)
+    const sheet = getJournalSheet_()
+    const header = getSheetHeader_(sheet)
+    const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
+    const handoverDateIndex = requireColumn_(header, 'Сдача ОГЗ', JOURNAL_SHEET)
+    const okkEngineerIndex = requireColumn_(header, 'Инженер ОКК', JOURNAL_SHEET)
+
+    const lock = LockService.getScriptLock()
+    if (!lock.tryLock(5000)) {
+        throw new Error('busy')
+    }
+
+    try {
+        if (!rowNumber || rowNumber < 2 || rowNumber > sheet.getLastRow()) {
+            throw new Error('Строка не найдена — обновите список и попробуйте снова')
+        }
+
+        const rowValues = sheet.getRange(rowNumber, 1, 1, header.length).getValues()[0]
+        const rowMatches = normalizeCell_(rowValues[okkEngineerIndex]) === normalizeCell_(fio)
+            && normalizeCell_(rowValues[badgeIndex]) === normalizeCell_(badgeContent)
+
+        if (!rowMatches) {
+            throw new Error('Строка изменилась — обновите список и попробуйте снова')
+        }
+
+        sheet.getRange(rowNumber, handoverDateIndex + 1).clearContent()
+        sheet.getRange(rowNumber, okkEngineerIndex + 1).clearContent()
+    } finally {
+        lock.releaseLock()
+    }
+}
+
 function getJournalSheet_() {
     const sheet = getSpreadsheet_().getSheetByName(JOURNAL_SHEET)
     if (!sheet) {
@@ -267,7 +403,7 @@ function getJournalSheet_() {
  */
 function getSheetHeader_(sheet) {
     const cache = CacheService.getScriptCache()
-    const cacheKey = 'header:' + sheet.getName()
+    const cacheKey = 'header:' + sheet.getParent().getId() + ':' + sheet.getName()
     const cached = cache.get(cacheKey)
     if (cached) return JSON.parse(cached)
 

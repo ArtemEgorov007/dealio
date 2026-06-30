@@ -77,6 +77,7 @@ onMounted(loadBadges)
   <CrmScreen
       title="Выбор бирки"
       :subtitle="`Цех: ${workshopTitle}`"
+      :shift-link="{ to: '/shift', label: 'Бирки за смену' }"
   >
     <template v-if="!isLoading && !error && badges.length > 0" #search>
       <div class="badges-search">

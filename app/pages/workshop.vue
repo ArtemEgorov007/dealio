@@ -29,6 +29,7 @@ const selectWorkshop = (workshopId: WorkshopId) => {
   <CrmScreen
       title="Выбор цеха"
       :subtitle="isPacking ? 'Упаковка — выберите цех' : (employeeStore.hasFio ? `Сотрудник: ${employeeStore.fio}` : undefined)"
+      :shift-link="isPacking ? undefined : { to: '/shift', label: 'Бирки за смену' }"
   >
     <div class="workshop-list">
       <button
