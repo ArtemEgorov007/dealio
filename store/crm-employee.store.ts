@@ -1,6 +1,6 @@
 import {defineStore} from 'pinia'
 
-import type {CrmEmployeeProfile, WorkshopId} from '../types/crm.types'
+import {isValidFio, type CrmEmployeeProfile, type WorkshopId} from '../types/crm.types'
 
 const STORAGE_KEY = 'crm-employee-profile'
 
@@ -28,9 +28,8 @@ export const useCrmEmployeeStore = defineStore('crm-employee', {
     }),
 
     getters: {
-        hasFio: (state): boolean => state.fio.trim().length >= 3,
+        hasFio: (state): boolean => isValidFio(state.fio),
         hasWorkshop: (state): boolean => state.workshopId !== null,
-        isRegistered: (state): boolean => state.fio.trim().length >= 3,
     },
 
     actions: {

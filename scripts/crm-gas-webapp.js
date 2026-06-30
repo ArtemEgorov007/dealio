@@ -258,8 +258,22 @@ function getJournalSheet_() {
     return sheet
 }
 
+/**
+ * Заголовок листа почти никогда не меняется — кешируем на 5 минут вместо
+ * сетевого Sheets-чтения на каждую выдачу/упаковку/удаление. Если столбцы
+ * только что переставили вручную, ошибка «столбец не найден» может на
+ * несколько минут отставать от факта — это приемлемо для редкой ручной
+ * правки структуры листа.
+ */
 function getSheetHeader_(sheet) {
-    return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(normalizeCell_)
+    const cache = CacheService.getScriptCache()
+    const cacheKey = 'header:' + sheet.getName()
+    const cached = cache.get(cacheKey)
+    if (cached) return JSON.parse(cached)
+
+    const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(normalizeCell_)
+    cache.put(cacheKey, JSON.stringify(header), 300)
+    return header
 }
 
 function requireColumn_(header, columnName, sheetName) {

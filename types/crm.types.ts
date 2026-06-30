@@ -37,3 +37,9 @@ export function workshopById(id: WorkshopId): WorkshopOption {
 export function workshopLabel(id: WorkshopId): string {
     return workshopById(id).label
 }
+
+const MIN_FIO_LENGTH = 3
+
+export function isValidFio(fio: string): boolean {
+    return fio.trim().length >= MIN_FIO_LENGTH
+}

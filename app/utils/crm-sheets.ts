@@ -156,12 +156,16 @@ async function fetchBadgesViaApi(config: SheetsRuntimeConfig, workshopId: Worksh
 
 export async function fetchWorkshopBadges(workshopId: WorkshopId): Promise<string[]> {
     const config = getConfig()
+    let gasError: unknown
 
     if (isGasConfigured(config)) {
         try {
             return await fetchBadgesViaGas(config, workshopId)
-        } catch {
-            // fallback если GAS ещё не задеплоен, а таблица уже публична
+        } catch (error) {
+            // fallback если GAS ещё не задеплоен, а таблица уже публична —
+            // но если ни один способ не сработает, это и есть реальная
+            // причина сбоя, её и покажем вызывающему коду.
+            gasError = error
         }
     }
 
@@ -175,9 +179,10 @@ export async function fetchWorkshopBadges(workshopId: WorkshopId): Promise<strin
         return fetchBadgesViaApi(config, workshopId)
     }
 
-    if (isGasConfigured(config)) {
-        return fetchBadgesViaGas(config, workshopId)
-    }
+    // Моки — только когда вообще ничего не настроено (первый запуск без
+    // конфигурации). Если GAS настроен, но недоступен, это поломка,
+    // которую нужно показать пользователю, а не подменять тестовыми данными.
+    if (gasError) throw gasError
 
     return MOCK_BADGES[workshopId]
 }

@@ -36,7 +36,12 @@ const onDecode = async (qrText: string) => {
     // декодировать кадры пока бирка в кадре, и если запрос идёт дольше
     // DEDUPE_WINDOW_MS (например, GAS busy под нагрузкой), таймер-дедуп
     // сам по себе не спасёт от повторной отправки той же бирки.
-    if (status.value === 'saving') return
+    // Если это другая бирка (а не повтор той же) — сообщаем, что её
+    // пропустили, иначе работник решит, что упаковка записалась.
+    if (status.value === 'saving') {
+        if (qrText !== lastCode) showError(null, 'Идёт запись предыдущей бирки — поднесите эту ещё раз')
+        return
+    }
 
     const now = Date.now()
     if (qrText === lastCode && now - lastScannedAt < DEDUPE_WINDOW_MS) return

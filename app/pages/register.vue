@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {isValidFio} from '~~/types/crm.types'
 
 definePageMeta({layout: 'crm'})
 
@@ -18,7 +19,7 @@ const error = ref('')
 const validateAndCommit = (): boolean => {
     const value = fio.value.trim()
 
-    if (value.length < 3) {
+    if (!isValidFio(value)) {
         error.value = 'Введите ФИО полностью (минимум 3 символа)'
         return false
     }

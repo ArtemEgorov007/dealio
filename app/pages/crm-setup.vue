@@ -20,7 +20,12 @@ const GAS_CODE_FILE = 'scripts/crm-gas-webapp.js'
 const FINDTAG_PROJECT_URL = 'https://script.google.com/home/projects/1m7e2q7A6IxEaf6xT10US-AATUyms3BgEbInPCVg_fWOr3-dztQrYY76s/edit'
 
 const saveUrl = () => {
-    saveCrmGasUrl(gasUrl.value)
+    if (!gasUrl.value.trim()) {
+        testResult.value = 'Вставьте URL Web App перед сохранением'
+        return
+    }
+
+    saveCrmGasUrl(gasUrl.value.trim())
     testResult.value = 'URL сохранён в localStorage'
 }
 

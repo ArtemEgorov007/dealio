@@ -23,8 +23,8 @@ const copyBadge = async () => {
     try {
         await navigator.clipboard.writeText(badgeContent.value)
         showSuccess('Скопировано в буфер обмена')
-    } catch {
-        showError('Не удалось скопировать')
+    } catch (copyError) {
+        showError(copyError, 'Не удалось скопировать')
     }
 }
 
