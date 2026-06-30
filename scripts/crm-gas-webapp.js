@@ -16,6 +16,7 @@
  * POST { action: 'recordPacking', workshop, qrText }
  * POST { action: 'recordHandover', fio, badgeContent }
  * POST { action: 'undoHandover', row, fio, badgeContent }
+ * POST { action: 'login', login, password }
  */
 const SPREADSHEET_ID = '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
 const ISSUE_SHEET = 'Выдача'
@@ -27,6 +28,11 @@ const WORKSHOP_SHEETS = {
     kolpino: 'Колпино',
     volkhonka: 'Волхонка',
 }
+
+// Отдельная таблица доступа сотрудников (логины/пароли/статусы) — НЕ «Ведомости».
+const ACCESS_SPREADSHEET_ID = '12TAfi2p6hMBG_MnP4LEROnZ6BaJp0bTFHd93jq06Qz8'
+const STAFF_SHEET = 'Сотрудники'
+const ACTIVE_STATUS = 'Работает'
 
 function doGet(e) {
     try {
@@ -85,6 +91,11 @@ function doPost(e) {
         if (payload.action === 'undoHandover') {
             undoHandover_(payload.row, payload.fio || '', payload.badgeContent || '')
             return jsonResponse_({ok: true})
+        }
+
+        if (payload.action === 'login') {
+            const profile = login_(payload.login || '', payload.password || '')
+            return jsonResponse_({ok: true, fio: profile.fio, department: profile.department, position: profile.position})
         }
 
         return jsonResponse_({ok: false, error: 'Unknown action'})
@@ -384,6 +395,51 @@ function undoHandover_(row, fio, badgeContent) {
     } finally {
         lock.releaseLock()
     }
+}
+
+/**
+ * Вход по логину/паролю — сверяем с листом «Сотрудники» в отдельной
+ * таблице «Доступ к серверу» (не «Ведомости»). ФИО для журнала теперь
+ * приходит из этой проверки, а не вводится сотрудником вручную — иначе
+ * кто угодно мог вписать любое имя.
+ *
+ * Сообщение об ошибке намеренно одинаковое и для неверного логина, и
+ * для неверного пароля — не подсказываем, что именно из двух неверно.
+ */
+function login_(loginValue, password) {
+    const sheet = SpreadsheetApp.openById(ACCESS_SPREADSHEET_ID).getSheetByName(STAFF_SHEET)
+    if (!sheet) {
+        throw new Error('Не найден лист «' + STAFF_SHEET + '»')
+    }
+
+    const header = getSheetHeader_(sheet)
+    const fioIndex = requireColumn_(header, 'ФИО', STAFF_SHEET)
+    const loginIndex = requireColumn_(header, 'Логин', STAFF_SHEET)
+    const passwordIndex = requireColumn_(header, 'Пароль', STAFF_SHEET)
+    const statusIndex = requireColumn_(header, 'Статус', STAFF_SHEET)
+    const departmentIndex = requireColumn_(header, 'Отдел', STAFF_SHEET)
+    const positionIndex = requireColumn_(header, 'Должность', STAFF_SHEET)
+
+    const loginNormalized = normalizeCell_(loginValue).toLowerCase()
+    const values = sheet.getDataRange().getValues()
+
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        if (normalizeCell_(row[loginIndex]).toLowerCase() !== loginNormalized) continue
+        if (normalizeCell_(row[passwordIndex]) !== password) continue
+
+        if (normalizeCell_(row[statusIndex]) !== ACTIVE_STATUS) {
+            throw new Error('Учётная запись отключена — обратитесь к руководителю')
+        }
+
+        return {
+            fio: normalizeCell_(row[fioIndex]),
+            department: normalizeCell_(row[departmentIndex]),
+            position: normalizeCell_(row[positionIndex]),
+        }
+    }
+
+    throw new Error('Неверный логин или пароль')
 }
 
 function getJournalSheet_() {

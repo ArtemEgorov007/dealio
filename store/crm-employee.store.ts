@@ -21,6 +21,11 @@ function saveProfile(profile: CrmEmployeeProfile): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
 }
 
+function clearProfile(): void {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem(STORAGE_KEY)
+}
+
 export const useCrmEmployeeStore = defineStore('crm-employee', {
     state: (): CrmEmployeeProfile => ({
         fio: '',
@@ -53,6 +58,12 @@ export const useCrmEmployeeStore = defineStore('crm-employee', {
         clearWorkshop() {
             this.workshopId = null
             saveProfile({fio: this.fio, workshopId: null})
+        },
+
+        logout() {
+            this.fio = ''
+            this.workshopId = null
+            clearProfile()
         },
     },
 })

@@ -35,6 +35,15 @@ interface GasResponse {
     badges?: string[]
     entries?: CrmIssuedBadgeEntry[]
     error?: string
+    fio?: string
+    department?: string
+    position?: string
+}
+
+export interface CrmLoginProfile {
+    fio: string
+    department: string
+    position: string
 }
 
 function getConfig(): SheetsRuntimeConfig {
@@ -295,6 +304,26 @@ export async function undoHandover(entry: CrmIssuedBadgeEntry, fio: string): Pro
 
     if (!result.ok) {
         throw new Error(result.error || 'Не удалось отменить сдачу')
+    }
+}
+
+export async function loginCrmEmployee(login: string, password: string): Promise<CrmLoginProfile> {
+    const config = getConfig()
+
+    if (!isGasConfigured(config)) {
+        throw new Error('Журнал не подключён')
+    }
+
+    const result = await requestGasPost(config, {action: 'login', login, password})
+
+    if (!result.ok || !result.fio) {
+        throw new Error(result.error || 'Не удалось войти')
+    }
+
+    return {
+        fio: result.fio,
+        department: result.department ?? '',
+        position: result.position ?? '',
     }
 }
 
