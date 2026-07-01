@@ -5,9 +5,13 @@ import {useAppToast} from '~/composables/useAppToast'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Вход | CRM'})
-
 const employeeStore = useCrmEmployeeStore()
+
+const pageTitle = ref(employeeStore.hasFio ? 'Профиль | CRM' : 'Вход | CRM')
+watch(() => employeeStore.hasFio, (hasFio) => {
+    pageTitle.value = hasFio ? 'Профиль | CRM' : 'Вход | CRM'
+})
+useSeoMeta({title: pageTitle})
 const router = useRouter()
 const {showSuccess} = useAppToast()
 
@@ -60,6 +64,7 @@ const goToPacking = () => router.push('/workshop?flow=packing')
       v-if="employeeStore.hasFio"
       title="Профиль"
       icon="heroicons:user-circle"
+      :subtitle="employeeStore.fio"
   >
     <template #actions>
       <button type="button" class="logout-btn" aria-label="Выйти" @click="logout">
