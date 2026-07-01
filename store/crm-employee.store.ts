@@ -1,6 +1,12 @@
 import {defineStore} from 'pinia'
 
-import {isValidFio, type CrmEmployeeProfile, type WorkshopId} from '../types/crm.types'
+import {
+    isValidFio,
+    type CrmAccessFlags,
+    type CrmEmployeeProfile,
+    type WorkshopId,
+    DEFAULT_ACCESS_FLAGS,
+} from '../types/crm.types'
 
 const STORAGE_KEY = 'crm-employee-profile'
 
@@ -26,10 +32,27 @@ function clearProfile(): void {
     localStorage.removeItem(STORAGE_KEY)
 }
 
+interface EmployeeState {
+    fio: string
+    workshopId: WorkshopId | null
+    department: string
+    position: string
+    platform: string
+    login: string
+    password: string
+    access: CrmAccessFlags
+}
+
 export const useCrmEmployeeStore = defineStore('crm-employee', {
-    state: (): CrmEmployeeProfile => ({
+    state: (): EmployeeState => ({
         fio: '',
         workshopId: null,
+        department: '',
+        position: '',
+        platform: '',
+        login: '',
+        password: '',
+        access: {...DEFAULT_ACCESS_FLAGS},
     }),
 
     getters: {
@@ -43,26 +66,57 @@ export const useCrmEmployeeStore = defineStore('crm-employee', {
             if (!stored) return
             this.fio = stored.fio
             this.workshopId = stored.workshopId
+            this.department = stored.department ?? ''
+            this.position = stored.position ?? ''
+            this.platform = stored.platform ?? ''
+            this.login = stored.login ?? ''
+            this.password = stored.password ?? ''
+            this.access = stored.access ?? {...DEFAULT_ACCESS_FLAGS}
         },
 
         setFio(fio: string) {
             this.fio = fio.trim()
-            saveProfile({fio: this.fio, workshopId: this.workshopId})
+            saveProfile(this.$state as CrmEmployeeProfile)
+        },
+
+        setProfile(profile: {
+            fio: string
+            department: string
+            position: string
+            platform: string
+            login: string
+            password: string
+            access: CrmAccessFlags
+        }) {
+            this.fio = profile.fio
+            this.department = profile.department
+            this.position = profile.position
+            this.platform = profile.platform
+            this.login = profile.login
+            this.password = profile.password
+            this.access = profile.access
+            saveProfile(this.$state as CrmEmployeeProfile)
         },
 
         setWorkshop(workshopId: WorkshopId) {
             this.workshopId = workshopId
-            saveProfile({fio: this.fio, workshopId: this.workshopId})
+            saveProfile(this.$state as CrmEmployeeProfile)
         },
 
         clearWorkshop() {
             this.workshopId = null
-            saveProfile({fio: this.fio, workshopId: null})
+            saveProfile(this.$state as CrmEmployeeProfile)
         },
 
         logout() {
             this.fio = ''
             this.workshopId = null
+            this.department = ''
+            this.position = ''
+            this.platform = ''
+            this.login = ''
+            this.password = ''
+            this.access = {...DEFAULT_ACCESS_FLAGS}
             clearProfile()
         },
     },

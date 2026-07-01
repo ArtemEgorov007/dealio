@@ -107,6 +107,7 @@ const changeWorkshop = () => {
   <CrmScreen
       title="Считывание QR"
       :subtitle="`Упаковка · Цех: ${workshopTitle}`"
+      icon="heroicons:qr-code"
   >
     <div class="scan-viewport">
       <video ref="videoEl" class="scan-video" muted playsinline/>

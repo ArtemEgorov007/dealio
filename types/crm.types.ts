@@ -11,9 +11,37 @@ export const CRM_WORKSHOPS: WorkshopOption[] = [
     {id: 'volkhonka', label: 'Волхонка', sheetColumn: 'Волхонка'},
 ]
 
+export interface CrmAccessFlags {
+    badges: boolean
+    measurements: boolean
+    packing: boolean
+    reports: boolean
+    approvals: boolean
+    supply: boolean
+    orders: boolean
+    warehouse: boolean
+}
+
+export const DEFAULT_ACCESS_FLAGS: CrmAccessFlags = {
+    badges: true,
+    measurements: true,
+    packing: true,
+    reports: true,
+    approvals: true,
+    supply: true,
+    orders: true,
+    warehouse: true,
+}
+
 export interface CrmEmployeeProfile {
     fio: string
     workshopId: WorkshopId | null
+    department?: string
+    position?: string
+    platform?: string
+    login?: string
+    password?: string
+    access?: CrmAccessFlags
 }
 
 export interface CrmBadgeIssue {

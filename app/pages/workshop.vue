@@ -30,6 +30,7 @@ const selectWorkshop = (workshopId: WorkshopId) => {
       title="Выбор цеха"
       :subtitle="isPacking ? 'Упаковка — выберите цех' : (employeeStore.hasFio ? `Сотрудник: ${employeeStore.fio}` : undefined)"
       :shift-link="isPacking ? undefined : { to: '/shift', label: 'Бирки за смену' }"
+      :icon="isPacking ? 'heroicons:qr-code' : 'heroicons:tag'"
   >
     <div class="workshop-list">
       <button

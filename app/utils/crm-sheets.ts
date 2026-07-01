@@ -1,4 +1,4 @@
-import type {CrmBadgeIssue, CrmIssuedBadgeEntry, WorkshopId} from '~~/types/crm.types'
+import type {CrmAccessFlags, CrmBadgeIssue, CrmIssuedBadgeEntry, WorkshopId} from '~~/types/crm.types'
 import {workshopById} from '~~/types/crm.types'
 import {parseCsv} from '~/utils/crm-csv'
 
@@ -38,12 +38,20 @@ interface GasResponse {
     fio?: string
     department?: string
     position?: string
+    platform?: string
+    login?: string
+    password?: string
+    access?: CrmAccessFlags
 }
 
 export interface CrmLoginProfile {
     fio: string
     department: string
     position: string
+    platform: string
+    login: string
+    password: string
+    access: CrmAccessFlags
 }
 
 function getConfig(): SheetsRuntimeConfig {
@@ -324,6 +332,50 @@ export async function loginCrmEmployee(login: string, password: string): Promise
         fio: result.fio,
         department: result.department ?? '',
         position: result.position ?? '',
+        platform: result.platform ?? '',
+        login: result.login ?? login,
+        password: result.password ?? '',
+        access: result.access ?? {
+            badges: true,
+            measurements: true,
+            packing: true,
+            reports: true,
+            approvals: true,
+            supply: true,
+            orders: true,
+            warehouse: true,
+        },
+    }
+}
+
+export async function recordMeasurement(
+    fio: string,
+    badge: string,
+    coverage: string,
+    zones: (number | null)[],
+): Promise<void> {
+    const config = getConfig()
+
+    if (!isGasConfigured(config)) {
+        throw new Error('Журнал не подключён')
+    }
+
+    const [z1, z2, z3, z4, z5] = zones
+
+    const result = await requestGasPost(config, {
+        action: 'recordMeasurement',
+        fio,
+        badge,
+        coverage,
+        zone1: z1 != null ? String(z1) : '',
+        zone2: z2 != null ? String(z2) : '',
+        zone3: z3 != null ? String(z3) : '',
+        zone4: z4 != null ? String(z4) : '',
+        zone5: z5 != null ? String(z5) : '',
+    })
+
+    if (!result.ok) {
+        throw new Error(result.error || 'Не удалось записать промер')
     }
 }
 

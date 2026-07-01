@@ -10,6 +10,13 @@ const CRM_ROUTES = new Set([
     '/scan-qr',
     '/scan-handover',
     '/handover-shift',
+    '/scan-measurement',
+    '/measurement',
+    '/reports',
+    '/approvals',
+    '/supply',
+    '/orders',
+    '/warehouse',
 ])
 
 const DEALIO_PREFIXES = ['/board', '/login', '/archive', '/settings', '/dashboard', '/ideas', '/tasks', '/wishlist', '/help']
@@ -48,11 +55,14 @@ export default defineNuxtRouteMiddleware((to) => {
         return navigateTo('/register')
     }
 
-    if (path === '/workshop' || path === '/shift' || path === '/scan-handover' || path === '/handover-shift') {
-        // /shift доступен с любого экрана сразу после регистрации, цех для
-        // него не обязателен — список можно смотреть по всем цехам.
-        // /scan-handover и /handover-shift вообще не завязаны на цех — сдача
-        // ищет бирку по журналу напрямую, без выбора цеха.
+    const NO_WORKSHOP_PATHS = new Set([
+        '/workshop', '/shift',
+        '/scan-handover', '/handover-shift',
+        '/scan-measurement', '/measurement',
+        '/reports', '/approvals', '/supply', '/orders', '/warehouse',
+    ])
+
+    if (NO_WORKSHOP_PATHS.has(path)) {
         return
     }
 

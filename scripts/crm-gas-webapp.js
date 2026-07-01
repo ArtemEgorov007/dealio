@@ -8,20 +8,23 @@
  * 3. Execute as: Me · Who has access: Anyone
  * 4. URL → NUXT_PUBLIC_CRM_GAS_URL
  *
- * GET ?action=badges&workshop=kolpino|volkhonka
- * GET ?action=issuedToday&fio=...&workshop=kolpino|volkhonka (workshop опционален)
- * GET ?action=handedOverToday&fio=...
- * POST { action: 'issueBadge', workshop, fio, badgeContent }
+ * GET  ?action=badges&workshop=kolpino|volkhonka
+ * GET  ?action=issuedToday&fio=...&workshop=kolpino|volkhonka  (workshop опционален)
+ * GET  ?action=handedOverToday&fio=...
+ * POST { action: 'issueBadge',       workshop, fio, badgeContent }
  * POST { action: 'deleteIssuedBadge', row, fio, badgeContent }
- * POST { action: 'recordPacking', workshop, qrText }
- * POST { action: 'recordHandover', fio, badgeContent }
- * POST { action: 'undoHandover', row, fio, badgeContent }
- * POST { action: 'login', login, password }
+ * POST { action: 'recordPacking',    workshop, qrText }
+ * POST { action: 'recordHandover',   fio, badgeContent }
+ * POST { action: 'undoHandover',     row, fio, badgeContent }
+ * POST { action: 'recordMeasurement', fio, badge, coverage, zone1..zone5 }
+ * POST { action: 'login',            login, password }
  */
 const SPREADSHEET_ID = '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
 const ISSUE_SHEET = 'Выдача'
 const JOURNAL_SHEET = 'Журнал выдачи бирок'
 const LOGIST_SHEET = 'Логисты'
+const HANDOVER_SHEET = 'Сдача'
+const MEASUREMENT_SHEET = 'Промеры'
 
 // Имя цеха = имя колонки на листе «Выдача» = имя исходного листа с бирками.
 const WORKSHOP_SHEETS = {
@@ -41,11 +44,6 @@ function doGet(e) {
         if (action === 'badges') {
             const badges = getWorkshopBadges_(e.parameter.workshop)
             return jsonResponse_({ok: true, badges: badges})
-        }
-
-        if (action === 'issueBadge') {
-            issueBadge_(e.parameter.workshop, e.parameter.fio || '', e.parameter.badgeContent || '')
-            return jsonResponse_({ok: true})
         }
 
         if (action === 'issuedToday') {
@@ -93,9 +91,32 @@ function doPost(e) {
             return jsonResponse_({ok: true})
         }
 
+        if (payload.action === 'recordMeasurement') {
+            recordMeasurement_(
+                payload.fio || '',
+                payload.badge || '',
+                payload.coverage || '',
+                payload.zone1 || '',
+                payload.zone2 || '',
+                payload.zone3 || '',
+                payload.zone4 || '',
+                payload.zone5 || '',
+            )
+            return jsonResponse_({ok: true})
+        }
+
         if (payload.action === 'login') {
             const profile = login_(payload.login || '', payload.password || '')
-            return jsonResponse_({ok: true, fio: profile.fio, department: profile.department, position: profile.position})
+            return jsonResponse_({
+                ok: true,
+                fio: profile.fio,
+                department: profile.department,
+                position: profile.position,
+                platform: profile.platform,
+                login: profile.login,
+                password: profile.password,
+                access: profile.access,
+            })
         }
 
         return jsonResponse_({ok: false, error: 'Unknown action'})
@@ -152,14 +173,7 @@ function getWorkshopBadges_(workshop) {
  * Заказчик переставил/переименовал столбцы на «Журнал выдачи бирок» —
  * пишем по заголовку, а не по фиксированному индексу. Заполняем только
  * День (дата+время), Дата (только дата), Цех, Инженер, Бирка — остальные
- * столбцы (Титул, «Титул и марка», Фото, Старт, ОГЗ, Финиш, Оценка,
- * Дата отгрузки) не трогаем.
- *
- * Поиск столбцов делаем ДО лока — это лишь чтение заголовка, не запись.
- * Лок держим только вокруг самого appendRow, иначе он продлевается на
- * время сетевого Sheets-чтения и под нагрузкой чаще ловит timeout/busy
- * у параллельных выдач с других устройств (тот же принцип, что и в
- * recordPacking_ для листа «Логисты»).
+ * столбцы не трогаем.
  */
 function issueBadge_(workshop, fio, badgeContent) {
     const workshopLabel = getWorkshopSheetName_(workshop)
@@ -186,11 +200,6 @@ function issueBadge_(workshop, fio, badgeContent) {
     }
 
     try {
-        // setNumberFormat на «Дата» здесь не делаем: Sheets откладывает
-        // фактическое применение операции и конфликт с заданным типом
-        // данных столбца всплывает не здесь, а при следующем чтении
-        // листа (мимо любого try/catch вокруг самого вызова) — тот же
-        // эффект, что уже учтён для «Логисты» в recordPacking_.
         sheet.appendRow(row)
     } finally {
         lock.releaseLock()
@@ -237,13 +246,6 @@ function getIssuedBadgesToday_(fio, workshop) {
 
 /**
  * Удаляет выданную бирку из журнала — кнопка-крестик на экране «Бирки за смену».
- * row пришёл с фронта вместе со списком; fio/badgeContent — проверка,
- * что строка не сдвинулась и удаляем именно то, что показывали сотруднику.
- *
- * Поиск столбцов (метаданные, не зависят от состояния строк) делаем ДО
- * лока. А вот проверку «строка не сдвинулась» и сам deleteRow держим
- * строго внутри одного лока — между чтением и удалением не должно
- * влезать чужое изменение листа, иначе удалим не ту строку.
  */
 function deleteIssuedBadge_(row, fio, badgeContent) {
     const rowNumber = Number(row)
@@ -277,33 +279,21 @@ function deleteIssuedBadge_(row, fio, badgeContent) {
 }
 
 /**
- * Сдача работ ОКК — сканирование QR на «Журнал выдачи бирок»: находим
- * строку по столбцу «Бирка» (без привязки к цеху — Журнал общий) и
- * заполняем «Сдача ОГЗ» (дата) и «Инженер ОКК» (ФИО). Саму строку не
- * трогаем больше нигде — это не новая запись, а обновление существующей,
- * созданной при выдаче бирки.
- *
- * Если бирок с одинаковым текстом несколько (дубли), берём последнюю
- * НЕ сданную — иначе повторное сканирование того же текста просто
- * перезаписывало бы уже сданную запись вместо первой подходящей.
+ * Сдача работ — создаёт новую строку в листе «Сдача».
+ * Столбцы: Дата, Инженер, Бирка.
  */
 function recordHandover_(fio, badgeContent) {
-    const sheet = getJournalSheet_()
+    const sheet = getOrCreateHandoverSheet_()
     const header = getSheetHeader_(sheet)
-    const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
-    const handoverDateIndex = requireColumn_(header, 'Сдача ОГЗ', JOURNAL_SHEET)
-    const okkEngineerIndex = requireColumn_(header, 'Инженер ОКК', JOURNAL_SHEET)
-    const badgeNormalized = normalizeCell_(badgeContent)
 
-    const findTargetRow = () => {
-        const values = sheet.getDataRange().getValues()
-        for (let rowIndex = values.length - 1; rowIndex >= 1; rowIndex -= 1) {
-            if (normalizeCell_(values[rowIndex][badgeIndex]) !== badgeNormalized) continue
-            if (normalizeCell_(values[rowIndex][handoverDateIndex])) continue
-            return rowIndex + 1
-        }
-        return -1
-    }
+    const dateIndex = requireColumn_(header, 'Дата', HANDOVER_SHEET)
+    const engineerIndex = requireColumn_(header, 'Инженер', HANDOVER_SHEET)
+    const badgeIndex = requireColumn_(header, 'Бирка', HANDOVER_SHEET)
+
+    const row = new Array(header.length).fill('')
+    row[dateIndex] = new Date()
+    row[engineerIndex] = fio
+    row[badgeIndex] = badgeContent
 
     const lock = LockService.getScriptLock()
     if (!lock.tryLock(5000)) {
@@ -311,16 +301,7 @@ function recordHandover_(fio, badgeContent) {
     }
 
     try {
-        const targetRow = findTargetRow()
-        if (targetRow < 0) {
-            throw new Error('Бирка не найдена в журнале или уже сдана')
-        }
-
-        // setNumberFormat не делаем — у «Сдача ОГЗ» заданный тип данных,
-        // конфликт с ним всплывает не здесь, а при следующем чтении листа
-        // (тот же эффект, что и для «Дата» в issueBadge_/«Логисты»).
-        sheet.getRange(targetRow, handoverDateIndex + 1).setValue(new Date())
-        sheet.getRange(targetRow, okkEngineerIndex + 1).setValue(fio)
+        sheet.appendRow(row)
     } finally {
         lock.releaseLock()
     }
@@ -328,13 +309,15 @@ function recordHandover_(fio, badgeContent) {
 
 /**
  * Бирки, сданные сотрудником ОКК сегодня — для экрана «Сдачи».
+ * Читает лист «Сдача».
  */
 function getHandedOverBadgesToday_(fio) {
-    const sheet = getJournalSheet_()
+    const sheet = getOrCreateHandoverSheet_()
     const header = getSheetHeader_(sheet)
-    const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
-    const handoverDateIndex = requireColumn_(header, 'Сдача ОГЗ', JOURNAL_SHEET)
-    const okkEngineerIndex = requireColumn_(header, 'Инженер ОКК', JOURNAL_SHEET)
+
+    const dateIndex = requireColumn_(header, 'Дата', HANDOVER_SHEET)
+    const engineerIndex = requireColumn_(header, 'Инженер', HANDOVER_SHEET)
+    const badgeIndex = requireColumn_(header, 'Бирка', HANDOVER_SHEET)
 
     const fioNormalized = normalizeCell_(fio)
     const todayKey = formatDateKey_(new Date())
@@ -344,15 +327,15 @@ function getHandedOverBadgesToday_(fio) {
 
     for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
         const row = values[rowIndex]
-        const handoverDate = row[handoverDateIndex]
+        const dateVal = row[dateIndex]
 
-        if (normalizeCell_(row[okkEngineerIndex]) !== fioNormalized) continue
-        if (!(handoverDate instanceof Date) || formatDateKey_(handoverDate) !== todayKey) continue
+        if (normalizeCell_(row[engineerIndex]) !== fioNormalized) continue
+        if (!(dateVal instanceof Date) || formatDateKey_(dateVal) !== todayKey) continue
 
         entries.push({
             row: rowIndex + 1,
             badge: normalizeCell_(row[badgeIndex]),
-            time: Utilities.formatDate(handoverDate, Session.getScriptTimeZone(), 'HH:mm'),
+            time: Utilities.formatDate(dateVal, Session.getScriptTimeZone(), 'HH:mm'),
         })
     }
 
@@ -360,17 +343,15 @@ function getHandedOverBadgesToday_(fio) {
 }
 
 /**
- * Отменяет сдачу — кнопка-крестик на экране «Сдачи». В отличие от
- * deleteIssuedBadge_ строку НЕ удаляет (это исходная запись о выдаче
- * бирки), только очищает «Сдача ОГЗ»/«Инженер ОКК» обратно.
+ * Отменяет сдачу — удаляет строку из листа «Сдача».
+ * TOCTOU-safe: перед удалением проверяем, что строка не сдвинулась.
  */
 function undoHandover_(row, fio, badgeContent) {
     const rowNumber = Number(row)
-    const sheet = getJournalSheet_()
+    const sheet = getOrCreateHandoverSheet_()
     const header = getSheetHeader_(sheet)
-    const badgeIndex = requireColumn_(header, 'Бирка', JOURNAL_SHEET)
-    const handoverDateIndex = requireColumn_(header, 'Сдача ОГЗ', JOURNAL_SHEET)
-    const okkEngineerIndex = requireColumn_(header, 'Инженер ОКК', JOURNAL_SHEET)
+    const engineerIndex = requireColumn_(header, 'Инженер', HANDOVER_SHEET)
+    const badgeIndex = requireColumn_(header, 'Бирка', HANDOVER_SHEET)
 
     const lock = LockService.getScriptLock()
     if (!lock.tryLock(5000)) {
@@ -383,15 +364,73 @@ function undoHandover_(row, fio, badgeContent) {
         }
 
         const rowValues = sheet.getRange(rowNumber, 1, 1, header.length).getValues()[0]
-        const rowMatches = normalizeCell_(rowValues[okkEngineerIndex]) === normalizeCell_(fio)
+        const rowMatches = normalizeCell_(rowValues[engineerIndex]) === normalizeCell_(fio)
             && normalizeCell_(rowValues[badgeIndex]) === normalizeCell_(badgeContent)
 
         if (!rowMatches) {
             throw new Error('Строка изменилась — обновите список и попробуйте снова')
         }
 
-        sheet.getRange(rowNumber, handoverDateIndex + 1).clearContent()
-        sheet.getRange(rowNumber, okkEngineerIndex + 1).clearContent()
+        sheet.deleteRow(rowNumber)
+    } finally {
+        lock.releaseLock()
+    }
+}
+
+/**
+ * Записывает промер в лист «Промеры».
+ * Столбцы: Дата, Бирка, Покрытие, Зона 1..5, Оценка, Контролер.
+ * zone* — строки; пустая строка → оставить ячейку пустой.
+ */
+function recordMeasurement_(fio, badge, coverage, zone1, zone2, zone3, zone4, zone5) {
+    const sheet = getOrCreateMeasurementSheet_()
+    const header = getSheetHeader_(sheet)
+
+    const dateIdx = requireColumn_(header, 'Дата', MEASUREMENT_SHEET)
+    const badgeIdx = requireColumn_(header, 'Бирка', MEASUREMENT_SHEET)
+    const coverageIdx = requireColumn_(header, 'Покрытие', MEASUREMENT_SHEET)
+    const zone1Idx = requireColumn_(header, 'Зона 1', MEASUREMENT_SHEET)
+    const zone2Idx = requireColumn_(header, 'Зона 2', MEASUREMENT_SHEET)
+    const zone3Idx = requireColumn_(header, 'Зона 3', MEASUREMENT_SHEET)
+    const zone4Idx = requireColumn_(header, 'Зона 4', MEASUREMENT_SHEET)
+    const zone5Idx = requireColumn_(header, 'Зона 5', MEASUREMENT_SHEET)
+    const ratingIdx = requireColumn_(header, 'Оценка', MEASUREMENT_SHEET)
+    const controllerIdx = requireColumn_(header, 'Контролер', MEASUREMENT_SHEET)
+
+    const toNum = (v) => {
+        const s = String(v || '').trim()
+        if (!s) return ''
+        const n = parseInt(s, 10)
+        return isNaN(n) ? '' : n
+    }
+
+    const z1 = toNum(zone1)
+    const z2 = toNum(zone2)
+    const z3 = toNum(zone3)
+    const z4 = toNum(zone4)
+    const z5 = toNum(zone5)
+
+    const rating = coverage + ': ' + [z1, z2, z3, z4, z5].join('/')
+
+    const row = new Array(header.length).fill('')
+    row[dateIdx] = new Date()
+    row[badgeIdx] = badge
+    row[coverageIdx] = coverage
+    row[zone1Idx] = z1
+    row[zone2Idx] = z2
+    row[zone3Idx] = z3
+    row[zone4Idx] = z4
+    row[zone5Idx] = z5
+    row[ratingIdx] = rating
+    row[controllerIdx] = fio
+
+    const lock = LockService.getScriptLock()
+    if (!lock.tryLock(5000)) {
+        throw new Error('busy')
+    }
+
+    try {
+        sheet.appendRow(row)
     } finally {
         lock.releaseLock()
     }
@@ -399,12 +438,11 @@ function undoHandover_(row, fio, badgeContent) {
 
 /**
  * Вход по логину/паролю — сверяем с листом «Сотрудники» в отдельной
- * таблице «Доступ к серверу» (не «Ведомости»). ФИО для журнала теперь
- * приходит из этой проверки, а не вводится сотрудником вручную — иначе
- * кто угодно мог вписать любое имя.
+ * таблице «Доступ к серверу». Возвращает профиль сотрудника и флаги доступа.
  *
- * Сообщение об ошибке намеренно одинаковое и для неверного логина, и
- * для неверного пароля — не подсказываем, что именно из двух неверно.
+ * Новые столбцы (Площадка, доступы) опциональны — берём indexOf, при -1
+ * используем дефолт «true» для флагов доступа (показываем всё, пока
+ * администратор не выставил ограничения).
  */
 function login_(loginValue, password) {
     const sheet = SpreadsheetApp.openById(ACCESS_SPREADSHEET_ID).getSheetByName(STAFF_SHEET)
@@ -420,6 +458,17 @@ function login_(loginValue, password) {
     const departmentIndex = requireColumn_(header, 'Отдел', STAFF_SHEET)
     const positionIndex = requireColumn_(header, 'Должность', STAFF_SHEET)
 
+    // Необязательные столбцы — если отсутствуют, используем дефолты.
+    const platformIndex = header.indexOf('Площадка')
+    const accessBadgesIndex = header.indexOf('Доступ к биркам')
+    const accessMeasurementsIndex = header.indexOf('Доступ к промерам')
+    const accessPackingIndex = header.indexOf('Доступ к упаковкам')
+    const accessReportsIndex = header.indexOf('Доступ к отчетам')
+    const accessApprovalsIndex = header.indexOf('Право на согласования')
+    const accessSupplyIndex = header.indexOf('Заказ снабжения')
+    const accessOrdersIndex = header.indexOf('Работа со снабжением')
+    const accessWarehouseIndex = header.indexOf('Доступ к складу')
+
     const loginNormalized = normalizeCell_(loginValue).toLowerCase()
     const values = sheet.getDataRange().getValues()
 
@@ -432,10 +481,26 @@ function login_(loginValue, password) {
             throw new Error('Учётная запись отключена — обратитесь к руководителю')
         }
 
+        const isYes = (idx) => idx < 0 ? true : normalizeCell_(row[idx]).toLowerCase() === 'да'
+        const strAt = (idx) => idx >= 0 ? normalizeCell_(row[idx]) : ''
+
         return {
             fio: normalizeCell_(row[fioIndex]),
             department: normalizeCell_(row[departmentIndex]),
             position: normalizeCell_(row[positionIndex]),
+            platform: strAt(platformIndex),
+            login: normalizeCell_(row[loginIndex]),
+            password: normalizeCell_(row[passwordIndex]),
+            access: {
+                badges: isYes(accessBadgesIndex),
+                measurements: isYes(accessMeasurementsIndex),
+                packing: isYes(accessPackingIndex),
+                reports: isYes(accessReportsIndex),
+                approvals: isYes(accessApprovalsIndex),
+                supply: isYes(accessSupplyIndex),
+                orders: isYes(accessOrdersIndex),
+                warehouse: isYes(accessWarehouseIndex),
+            },
         }
     }
 
@@ -447,6 +512,30 @@ function getJournalSheet_() {
     if (!sheet) {
         throw new Error('Sheet not found: ' + JOURNAL_SHEET)
     }
+    return sheet
+}
+
+function getOrCreateHandoverSheet_() {
+    const spreadsheet = getSpreadsheet_()
+    let sheet = spreadsheet.getSheetByName(HANDOVER_SHEET)
+
+    if (!sheet) {
+        sheet = spreadsheet.insertSheet(HANDOVER_SHEET)
+        sheet.appendRow(['Дата', 'Инженер', 'Бирка'])
+    }
+
+    return sheet
+}
+
+function getOrCreateMeasurementSheet_() {
+    const spreadsheet = getSpreadsheet_()
+    let sheet = spreadsheet.getSheetByName(MEASUREMENT_SHEET)
+
+    if (!sheet) {
+        sheet = spreadsheet.insertSheet(MEASUREMENT_SHEET)
+        sheet.appendRow(['Дата', 'Бирка', 'Покрытие', 'Зона 1', 'Зона 2', 'Зона 3', 'Зона 4', 'Зона 5', 'Оценка', 'Контролер'])
+    }
+
     return sheet
 }
 
@@ -484,10 +573,6 @@ function recordPacking_(workshop, qrText) {
     const workshopLabel = getWorkshopSheetName_(workshop)
     const sheet = getOrCreateLogistSheet_()
 
-    // Заголовок читаем ДО лока — это лишь поиск нужных столбцов, не запись.
-    // Лок держим только вокруг самого appendRow, иначе он продлевается на
-    // время сетевого Sheets-чтения и под нагрузкой чаще ловит timeout/busy
-    // у параллельных сканов с других устройств.
     const row = buildLogistRow_(sheet, workshopLabel, qrText)
 
     const lock = LockService.getScriptLock()
@@ -496,21 +581,12 @@ function recordPacking_(workshop, qrText) {
     }
 
     try {
-        // Явный setNumberFormat здесь конфликтует с уже настроенным форматом
-        // столбца «Дата» на этом листе (готовая ошибка Sheets API при flush) —
-        // не трогаем формат, ячейка наследует то, что уже задано на колонке.
         sheet.appendRow(row)
     } finally {
         lock.releaseLock()
     }
 }
 
-/**
- * Лист «Логисты» — заполняем только Дата/Цех/Бирка, остальные столбцы
- * (ФИО, Накладная, Вес и т.п.) трогаем не трогаем. Ищем нужные столбцы
- * по заголовку, а не по фиксированному индексу — на листе уже есть
- * своя схема с дополнительными колонками.
- */
 function buildLogistRow_(sheet, workshopLabel, qrText) {
     const header = getSheetHeader_(sheet)
 

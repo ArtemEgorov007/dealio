@@ -115,6 +115,7 @@ onMounted(load)
   <CrmScreen
       title="Бирки за смену"
       :subtitle="workshopTitle ? `${employeeStore.fio} · ${workshopTitle}` : employeeStore.fio"
+      icon="heroicons:tag"
   >
     <div v-if="isLoading" class="shift-state">
       <div class="spinner"/>

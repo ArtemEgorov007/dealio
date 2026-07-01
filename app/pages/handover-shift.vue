@@ -53,6 +53,7 @@ onMounted(load)
   <CrmScreen
       title="Сдачи"
       :subtitle="employeeStore.fio"
+      icon="heroicons:check-badge"
   >
     <div v-if="isLoading" class="shift-state">
       <div class="spinner"/>

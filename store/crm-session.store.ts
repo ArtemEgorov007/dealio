@@ -6,10 +6,12 @@ export const useCrmSessionStore = defineStore('crm-session', {
         issued: false,
         journalSkipped: false,
         packingWorkshopConfirmed: false,
+        measurementBadge: '' as string,
     }),
 
     getters: {
         hasSelectedBadge: (state): boolean => state.selectedBadge.trim().length > 0,
+        hasMeasurementBadge: (state): boolean => state.measurementBadge.trim().length > 0,
     },
 
     actions: {
@@ -35,6 +37,14 @@ export const useCrmSessionStore = defineStore('crm-session', {
             this.selectedBadge = ''
             this.issued = false
             this.journalSkipped = false
+        },
+
+        setMeasurementBadge(badge: string) {
+            this.measurementBadge = badge.trim()
+        },
+
+        clearMeasurementBadge() {
+            this.measurementBadge = ''
         },
     },
 })

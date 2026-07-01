@@ -3,6 +3,7 @@ defineProps<{
   title: string
   subtitle?: string
   shiftLink?: { to: string; label: string }
+  icon?: string
 }>()
 
 const logoSrc = useRuntimeConfig().app.baseURL + 'logo-mt.svg'
@@ -18,12 +19,18 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
         <div class="crm-screen__brand">
           <img :src="logoSrc" alt="Морфлот Технология" class="crm-screen__brand-mark">
         </div>
-        <NuxtLink v-if="shiftLink" :to="shiftLink.to" class="crm-screen__shift-link">
-          <Icon name="heroicons:clipboard-document-list" size="16"/>
-          {{ shiftLink.label }}
-        </NuxtLink>
+        <div class="crm-screen__head-actions">
+          <NuxtLink v-if="shiftLink" :to="shiftLink.to" class="crm-screen__shift-link">
+            <Icon name="heroicons:clipboard-document-list" size="16"/>
+            {{ shiftLink.label }}
+          </NuxtLink>
+          <slot name="actions"/>
+        </div>
       </div>
-      <h1 class="crm-screen__title">{{ title }}</h1>
+      <h1 class="crm-screen__title">
+        <Icon v-if="icon" :name="icon" size="24" class="crm-screen__title-icon"/>
+        {{ title }}
+      </h1>
       <p v-if="subtitle" class="crm-screen__subtitle">{{ subtitle }}</p>
       <div v-if="$slots.search" class="crm-screen__search">
         <slot name="search"/>
@@ -73,6 +80,20 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   height: 28px
   width: auto
   display: block
+
+.crm-screen__head-actions
+  display: flex
+  align-items: center
+  gap: var(--spacing-2)
+
+.crm-screen__title
+  display: flex
+  align-items: center
+  gap: var(--spacing-2)
+
+.crm-screen__title-icon
+  flex-shrink: 0
+  color: var(--color-primary)
 
 .crm-screen__shift-link
   flex-shrink: 0

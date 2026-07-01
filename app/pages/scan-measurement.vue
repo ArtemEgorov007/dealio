@@ -1,19 +1,17 @@
 <script setup lang="ts">
 import type QrScanner from 'qr-scanner'
-import {recordHandoverEntry} from '~/utils/crm-sheets'
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
-import {useAppToast} from '~/composables/useAppToast'
+import {useCrmSessionStore} from '~~/store/crm-session.store'
 import {useHaptics} from '~/composables/useHaptics'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Сдача работ | CRM'})
+useSeoMeta({title: 'Промеры — считывание | CRM'})
 
-const employeeStore = useCrmEmployeeStore()
-const {showSuccess, showError} = useAppToast()
+const sessionStore = useCrmSessionStore()
+const router = useRouter()
 const {vibrate} = useHaptics()
 
-type Status = 'starting' | 'scanning' | 'saving' | 'unsupported' | 'denied'
+type Status = 'starting' | 'scanning' | 'unsupported' | 'denied'
 
 const status = ref<Status>('starting')
 const videoEl = ref<HTMLVideoElement | null>(null)
@@ -23,13 +21,8 @@ let lastCode = ''
 let lastScannedAt = 0
 const DEDUPE_WINDOW_MS = 4000
 
-const onDecode = async (qrText: string) => {
+const onDecode = (qrText: string) => {
     if (!qrText) return
-
-    if (status.value === 'saving') {
-        if (qrText !== lastCode) showError(null, 'Идёт запись предыдущей бирки — поднесите эту ещё раз')
-        return
-    }
 
     const now = Date.now()
     if (qrText === lastCode && now - lastScannedAt < DEDUPE_WINDOW_MS) return
@@ -38,18 +31,8 @@ const onDecode = async (qrText: string) => {
     lastScannedAt = now
 
     vibrate(15)
-    status.value = 'saving'
-
-    try {
-        await recordHandoverEntry(employeeStore.fio, qrText)
-        vibrate(200)
-        showSuccess('Сдача записана', qrText)
-    } catch (error) {
-        vibrate([100, 50, 100])
-        showError(error, 'Не удалось записать сдачу')
-    } finally {
-        status.value = 'scanning'
-    }
+    sessionStore.setMeasurementBadge(qrText)
+    router.push('/measurement')
 }
 
 onMounted(async () => {
@@ -89,18 +72,12 @@ onBeforeUnmount(() => {
 
 <template>
   <CrmScreen
-      title="Сдача работ"
-      subtitle="Считайте QR бирки для записи сдачи"
-      :shift-link="{ to: '/handover-shift', label: 'Сдачи' }"
-      icon="heroicons:check-badge"
+      title="Промеры"
+      subtitle="Считайте QR бирки для ввода промеров"
+      icon="heroicons:beaker"
   >
     <div class="scan-viewport">
       <video ref="videoEl" class="scan-video" muted playsinline/>
-
-      <div v-if="status === 'saving'" class="scan-overlay">
-        <div class="spinner"/>
-        <span>Записываем…</span>
-      </div>
 
       <div v-if="status === 'unsupported'" class="scan-overlay scan-overlay--error">
         <p>Камера не найдена на этом устройстве</p>
@@ -150,16 +127,4 @@ onBeforeUnmount(() => {
   font-size: var(--font-size-sm)
   color: var(--color-text-secondary)
   text-align: center
-
-.spinner
-  width: 28px
-  height: 28px
-  border: 2px solid rgba(255, 255, 255, 0.35)
-  border-top-color: #fff
-  border-radius: 50%
-  animation: spin 0.8s linear infinite
-
-@keyframes spin
-  to
-    transform: rotate(360deg)
 </style>
