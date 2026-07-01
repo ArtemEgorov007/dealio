@@ -33,10 +33,6 @@ export default defineNuxtRouteMiddleware((to) => {
     const employeeStore = useCrmEmployeeStore()
     const sessionStore = useCrmSessionStore()
 
-    if (import.meta.client) {
-        employeeStore.init()
-    }
-
     if (path === '/') {
         return navigateTo('/register')
     }
