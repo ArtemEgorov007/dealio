@@ -85,7 +85,6 @@ export default defineNuxtConfig({
 
     routeRules: {
         '/products': {redirect: '/ideas'},
-        '/orders': {redirect: '/tasks'},
         '/customers': {redirect: '/wishlist'},
         '/customers/**': {redirect: '/wishlist'},
         '/payments': {redirect: '/archive'},

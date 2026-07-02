@@ -6,7 +6,7 @@ import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Сдачи | CRM'})
+useSeoMeta({title: 'Сдача работ | CRM'})
 
 const employeeStore = useCrmEmployeeStore()
 const router = useRouter()
@@ -51,7 +51,7 @@ onMounted(load)
 
 <template>
   <CrmScreen
-      title="Сдачи"
+      title="Сдача работ"
       :subtitle="employeeStore.fio"
       icon="heroicons:check-badge"
   >
