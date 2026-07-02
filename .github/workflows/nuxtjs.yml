@@ -46,12 +46,13 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v2
         with:
           path: ./.output/public
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v3
         with:
-          timeout: 1200000
+          # Максимум GitHub Pages — 600000 мс (10 мин); большие значения обрезаются.
+          timeout: 600000
