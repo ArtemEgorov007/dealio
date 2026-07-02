@@ -51,14 +51,27 @@ export default defineNuxtRouteMiddleware((to) => {
         return navigateTo('/register')
     }
 
-    const NO_WORKSHOP_PATHS = new Set([
-        '/workshop', '/shift',
-        '/scan-handover', '/handover-shift',
-        '/scan-measurement', '/measurement',
-        '/reports', '/approvals', '/supply', '/orders', '/warehouse',
-    ])
+    const ACCESS_GUARDED: Record<string, keyof typeof employeeStore.access> = {
+        '/scan-measurement': 'measurements',
+        '/measurement': 'measurements',
+        '/scan-handover': 'handover',
+        '/handover-shift': 'handover',
+        '/reports': 'reports',
+        '/approvals': 'approvals',
+        '/supply': 'supply',
+        '/orders': 'orders',
+        '/warehouse': 'warehouse',
+    }
 
-    if (NO_WORKSHOP_PATHS.has(path)) {
+    const guardedFlag = ACCESS_GUARDED[path]
+    if (guardedFlag !== undefined) {
+        if (!employeeStore.access[guardedFlag]) {
+            return navigateTo('/register')
+        }
+        return
+    }
+
+    if (path === '/workshop' || path === '/shift') {
         return
     }
 

@@ -71,7 +71,7 @@ export const useCrmEmployeeStore = defineStore('crm-employee', {
             this.platform = stored.platform ?? ''
             this.login = stored.login ?? ''
             this.password = stored.password ?? ''
-            this.access = stored.access ?? {...DEFAULT_ACCESS_FLAGS}
+            this.access = {...DEFAULT_ACCESS_FLAGS, ...(stored.access ?? {})}
         },
 
         setFio(fio: string) {

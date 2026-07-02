@@ -22,15 +22,26 @@ const coverage = ref<Coverage | null>(null)
 const zones = ref<string[]>(['', '', '', '', ''])
 const isLoading = ref(false)
 
-const zone1Error = computed(() => {
-    if (zones.value[0] && !/^\d+$/.test(zones.value[0].trim())) return 'Только целые числа'
-    return ''
-})
+const zoneError = (value: string | undefined) => {
+    const v = (value ?? '').trim()
+    return v && !/^\d+$/.test(v) ? 'Только целые числа' : ''
+}
+
+const zone1Error = computed(() => zoneError(zones.value[0]))
+const zone2Error = computed(() => zoneError(zones.value[1]))
+const zone3Error = computed(() => zoneError(zones.value[2]))
+const zone4Error = computed(() => zoneError(zones.value[3]))
+const zone5Error = computed(() => zoneError(zones.value[4]))
 
 const canSubmit = computed(() =>
-    coverage.value !== null
-    && zones.value[0].trim() !== ''
-    && !zone1Error.value,
+    !isLoading.value
+    && coverage.value !== null
+    && (zones.value[0] ?? '').trim() !== ''
+    && !zone1Error.value
+    && !zone2Error.value
+    && !zone3Error.value
+    && !zone4Error.value
+    && !zone5Error.value,
 )
 
 const submit = async () => {
@@ -108,24 +119,28 @@ onMounted(() => {
             v-model="zones[1]"
             label="Зона 2"
             inputmode="numeric"
+            :error="zone2Error"
         />
         <UiInput
             id="zone-3"
             v-model="zones[2]"
             label="Зона 3"
             inputmode="numeric"
+            :error="zone3Error"
         />
         <UiInput
             id="zone-4"
             v-model="zones[3]"
             label="Зона 4"
             inputmode="numeric"
+            :error="zone4Error"
         />
         <UiInput
             id="zone-5"
             v-model="zones[4]"
             label="Зона 5"
             inputmode="numeric"
+            :error="zone5Error"
         />
       </div>
     </div>

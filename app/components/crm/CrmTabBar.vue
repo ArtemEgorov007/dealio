@@ -90,6 +90,7 @@ const goWarehouse = () => router.push('/warehouse')
     </button>
 
     <button
+        v-if="!employeeStore.hasFio || access.handover"
         type="button"
         class="crm-tabbar__item"
         :class="{ 'crm-tabbar__item--active': isHandoverSection }"

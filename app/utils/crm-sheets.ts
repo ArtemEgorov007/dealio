@@ -1,5 +1,5 @@
 import type {CrmAccessFlags, CrmBadgeIssue, CrmIssuedBadgeEntry, WorkshopId} from '~~/types/crm.types'
-import {workshopById} from '~~/types/crm.types'
+import {DEFAULT_ACCESS_FLAGS, workshopById} from '~~/types/crm.types'
 import {parseCsv} from '~/utils/crm-csv'
 
 const ISSUE_SHEET = 'Выдача'
@@ -335,16 +335,9 @@ export async function loginCrmEmployee(login: string, password: string): Promise
         platform: result.platform ?? '',
         login: result.login ?? login,
         password: result.password ?? '',
-        access: result.access ?? {
-            badges: true,
-            measurements: true,
-            packing: true,
-            reports: true,
-            approvals: true,
-            supply: true,
-            orders: true,
-            warehouse: true,
-        },
+        access: result.access
+            ? {...DEFAULT_ACCESS_FLAGS, ...result.access}
+            : {...DEFAULT_ACCESS_FLAGS},
     }
 }
 

@@ -30,7 +30,7 @@ const load = async () => {
 }
 
 const goBack = () => {
-    router.back()
+    router.push('/scan-handover')
 }
 
 const requestUndo = (entry: CrmIssuedBadgeEntry) => {

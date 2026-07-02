@@ -15,6 +15,7 @@ export interface CrmAccessFlags {
     badges: boolean
     measurements: boolean
     packing: boolean
+    handover: boolean
     reports: boolean
     approvals: boolean
     supply: boolean
@@ -26,6 +27,7 @@ export const DEFAULT_ACCESS_FLAGS: CrmAccessFlags = {
     badges: true,
     measurements: true,
     packing: true,
+    handover: true,
     reports: true,
     approvals: true,
     supply: true,
