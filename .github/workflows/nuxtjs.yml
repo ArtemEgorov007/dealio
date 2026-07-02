@@ -17,12 +17,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,6 +39,12 @@ jobs:
           NUXT_PUBLIC_CRM_GAS_URL: ${{ secrets.NUXT_PUBLIC_CRM_GAS_URL }}
         run: npm run generate
 
+      - name: Verify static output
+        run: |
+          test -f .output/public/index.html
+          test "$(find .output/public -type l | wc -l)" -eq 0
+          du -sh .output/public
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
@@ -50,9 +53,30 @@ jobs:
         with:
           path: ./.output/public
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
-        with:
-          # Максимум GitHub Pages — 600000 мс (10 мин); большие значения обрезаются.
-          timeout: 600000
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+
+      - name: Wait before retry
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 60
+
+      - name: Retry deploy to GitHub Pages
+        if: steps.deployment.outcome == 'failure'
+        id: deployment_retry
+        uses: actions/deploy-pages@v5
+
+      - name: Fail if all deploy attempts failed
+        if: steps.deployment.outcome == 'failure' && steps.deployment_retry.outcome == 'failure'
+        run: |
+          echo "GitHub Pages deployment failed after 2 attempts."
+          exit 1
