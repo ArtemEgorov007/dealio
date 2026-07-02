@@ -138,33 +138,32 @@ const goToPacking = () => router.push('/workshop?flow=packing')
   display: flex
   align-items: center
   justify-content: center
-  width: 36px
-  height: 36px
+  width: 34px
+  height: 34px
   border: none
-  border-radius: var(--radius-md)
-  background: none
-  color: var(--color-text-muted)
+  border-radius: var(--radius-full)
+  background: rgba(118, 118, 128, 0.12)
+  color: var(--color-text-secondary)
   cursor: pointer
-  transition: color var(--transition-normal) ease, background-color var(--transition-normal) ease
+  transition: opacity 0.15s ease
 
   &:hover
-    color: var(--color-danger)
-    background-color: rgba(239, 68, 68, 0.08)
+    opacity: 0.7
 
 .profile-card
   display: flex
   flex-direction: column
-  border: var(--border-width) solid var(--color-border)
-  border-radius: var(--radius-lg)
+  border-radius: 13px
   overflow: hidden
   background-color: var(--color-card-bg)
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04)
 
 .profile-row
   display: flex
   align-items: center
   gap: var(--spacing-3)
-  padding: 14px 16px
-  border-bottom: var(--border-width) solid var(--color-border)
+  padding: 12px 16px
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.15)
 
   &:last-child
     border-bottom: none
@@ -172,46 +171,44 @@ const goToPacking = () => router.push('/workshop?flow=packing')
   &--copy
     cursor: pointer
     user-select: none
+    transition: background-color 0.15s ease
 
-    &:hover
-      background-color: var(--color-primary-light)
-
-      .profile-row__copy-icon
-        color: var(--color-primary)
+    &:active
+      background-color: rgba(60, 60, 67, 0.06)
 
 .profile-row__label
   flex-shrink: 0
-  width: 90px
-  font-size: var(--font-size-xs)
-  font-weight: 600
-  text-transform: uppercase
-  letter-spacing: 0.4px
-  color: var(--color-text-muted)
+  width: 80px
+  font-size: 13px
+  font-weight: 400
+  color: var(--color-text-secondary)
 
 .profile-row__value
   flex: 1
   min-width: 0
-  font-size: var(--font-size-sm)
-  font-weight: 500
+  font-size: 15px
+  font-weight: 400
   overflow: hidden
   text-overflow: ellipsis
   white-space: nowrap
+  color: var(--color-text)
 
   &--password
     font-family: monospace
+    font-size: 14px
 
 .profile-row__copy-icon
   flex-shrink: 0
-  color: var(--color-text-muted)
+  color: rgba(60, 60, 67, 0.30)
 
 .register-form
   display: flex
   flex-direction: column
-  gap: var(--spacing-3)
-  margin-bottom: var(--spacing-4)
+  gap: var(--spacing-2)
+  margin-bottom: var(--spacing-3)
 
 .register-actions
   display: flex
   flex-direction: column
-  gap: var(--spacing-3)
+  gap: var(--spacing-2)
 </style>

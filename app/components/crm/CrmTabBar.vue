@@ -163,8 +163,10 @@ const goWarehouse = () => router.push('/warehouse')
   display: flex
   overflow-x: auto
   scrollbar-width: none
-  border-top: var(--border-width) solid var(--color-border)
-  background-color: var(--color-bg)
+  border-top: 0.5px solid rgba(60, 60, 67, 0.29)
+  background: rgba(242, 242, 247, 0.85)
+  backdrop-filter: blur(20px) saturate(180%)
+  -webkit-backdrop-filter: blur(20px) saturate(180%)
   padding-bottom: env(safe-area-inset-bottom)
 
   &::-webkit-scrollbar
@@ -172,20 +174,22 @@ const goWarehouse = () => router.push('/warehouse')
 
 .crm-tabbar__item
   flex: 0 0 auto
-  min-width: 64px
+  min-width: 60px
   display: flex
   flex-direction: column
   align-items: center
   gap: 2px
-  padding: 8px 10px 6px
+  padding: 8px 8px 5px
   border: none
   background: none
-  color: var(--color-text-muted)
-  font-size: var(--font-size-xs)
-  font-weight: 600
+  color: rgba(60, 60, 67, 0.55)
+  font-size: 10px
+  font-weight: 500
   cursor: pointer
   white-space: nowrap
+  transition: color 0.15s ease
 
   &--active
     color: var(--color-primary)
+    font-weight: 600
 </style>

@@ -1,74 +1,128 @@
 /*
- * Светлая фирменная палитра «Морфлот Технология» — только для экранов
- * выдачи бирок (.crm-layout: register/workshop/badges/receipt/crm-setup).
- * Kanban-трекер Dealio (/board и т.д.) переменные variables.css не трогает.
+ * iOS 18 палитра для CRM «Морфлот Технология».
+ * Применяется только внутри .crm-layout — kanban-трекер не затронут.
  */
 .crm-layout {
-    --color-bg: #FBFBFB;
-    --color-bg-secondary: #D8FAFF;
-    --color-bg-tertiary: #D8FAFF;
-    --color-bg-surface: #FBFBFB;
-    --color-bg-alt: #D8FAFF;
+    /* iOS System Grouped Backgrounds */
+    --color-bg:           #F2F2F7;   /* systemGroupedBackground */
+    --color-bg-secondary: #FFFFFF;   /* secondarySystemGroupedBackground */
+    --color-bg-tertiary:  #F2F2F7;
+    --color-bg-surface:   #FFFFFF;
+    --color-bg-alt:       #FFFFFF;
 
-    --color-text: #016ED7;
-    --color-text-secondary: #3897ED;
-    --color-text-tertiary: #3897ED;
-    --color-text-muted: #3897ED;
-    --color-text-inverse: #FBFBFB;
+    /* iOS Labels */
+    --color-text:          #000000;                  /* label */
+    --color-text-secondary: rgba(60, 60, 67, 0.60); /* secondaryLabel */
+    --color-text-tertiary:  rgba(60, 60, 67, 0.30); /* tertiaryLabel */
+    --color-text-muted:     rgba(60, 60, 67, 0.60);
+    --color-text-inverse:   #FFFFFF;
 
-    --color-border: #016ED7;
-    --color-border-hover: #016ED7;
+    /* iOS Separators */
+    --color-border:       rgba(60, 60, 67, 0.29);
+    --color-border-hover: rgba(60, 60, 67, 0.45);
     --color-border-focus: #016ED7;
 
-    --color-card-bg: #D8FAFF;
-    --color-card-border: #016ED7;
+    /* Cards */
+    --color-card-bg:     #FFFFFF;
+    --color-card-border: transparent;
 
-    --color-primary: #016ED7;
+    /* Brand blue (Морфлот) */
+    --color-primary:       #016ED7;
     --color-primary-hover: #0260BD;
-    --color-primary-active: #014F9C;
-    --color-primary-light: rgba(1, 110, 215, 0.08);
-    --color-primary-muted: rgba(1, 110, 215, 0.14);
-    --color-secondary: #3897ED;
-    --color-secondary-hover: #016ED7;
+    --color-primary-active:#014F9C;
+    --color-primary-light: rgba(1, 110, 215, 0.10);
+    --color-primary-muted: rgba(1, 110, 215, 0.06);
+    --color-secondary:       #016ED7;
+    --color-secondary-hover: #0260BD;
 
-    --color-button-primary-bg: #016ED7;
+    /* Buttons */
+    --color-button-primary-bg:       #016ED7;
     --color-button-primary-bg-hover: #0260BD;
-    --color-button-primary-text: #FBFBFB;
-    --color-button-secondary-bg: #D8FAFF;
-    --color-button-secondary-bg-hover: #c2f0fa;
-    --color-button-secondary-text: #016ED7;
-    --color-button-outline-border: #016ED7;
-    --color-button-outline-text: #016ED7;
+    --color-button-primary-text:     #FFFFFF;
+    --color-button-secondary-bg:       rgba(1, 110, 215, 0.10);
+    --color-button-secondary-bg-hover: rgba(1, 110, 215, 0.16);
+    --color-button-secondary-text:     #016ED7;
+    --color-button-outline-border:     rgba(1, 110, 215, 0.35);
+    --color-button-outline-text:       #016ED7;
     --color-button-outline-text-hover: #014F9C;
-    --color-button-ghost-text: #3897ED;
-    --color-button-ghost-text-hover: #016ED7;
-    --color-button-disabled-bg: #D8FAFF;
-    --color-button-disabled-text: #93c9f2;
+    --color-button-ghost-text:       #016ED7;
+    --color-button-ghost-text-hover: #014F9C;
+    --color-button-disabled-bg:   rgba(118, 118, 128, 0.12);
+    --color-button-disabled-text: rgba(60, 60, 67, 0.30);
 
-    --color-input-bg: #FBFBFB;
-    --color-input-border: #016ED7;
-    --color-input-border-hover: #014F9C;
+    /* Inputs */
+    --color-input-bg:           #FFFFFF;
+    --color-input-border:       rgba(60, 60, 67, 0.18);
+    --color-input-border-hover: rgba(60, 60, 67, 0.35);
     --color-input-border-focus: #016ED7;
-    --color-input-text: #016ED7;
-    --color-input-placeholder: #3897ED;
-    --color-input-disabled-bg: #D8FAFF;
-    --color-input-disabled-text: #93c9f2;
+    --color-input-text:         #000000;
+    --color-input-placeholder:  rgba(60, 60, 67, 0.30);
+    --color-input-disabled-bg:  rgba(118, 118, 128, 0.08);
+    --color-input-disabled-text:rgba(60, 60, 67, 0.30);
 }
 
-/* UiInput — общий компонент, фокус-тень захардкожена белой (для тёмной темы). */
+/* ─── Button: iOS pill shape, 50px primary tap target ─────────────────── */
+.crm-layout .ui-btn {
+    border-radius: 14px;
+    letter-spacing: -0.2px;
+}
+.crm-layout .ui-btn--md {
+    height: 44px;
+    font-size: 15px;
+    padding: 0 20px;
+}
+.crm-layout .ui-btn--primary,
+.crm-layout .ui-btn--secondary,
+.crm-layout .ui-btn--outline {
+    border-radius: 14px;
+}
+.crm-layout .ui-btn--primary:hover:enabled {
+    transform: none;
+}
+.crm-layout .ui-btn--ghost {
+    border-radius: 10px;
+}
+
+/* ─── Input: iOS grouped-inset style ──────────────────────────────────── */
+.crm-layout .ui-input__label {
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+    font-size: 13px;
+    color: rgba(60, 60, 67, 0.60);
+    margin-bottom: 5px;
+}
+.crm-layout .ui-input__field {
+    height: 44px;
+    border-radius: 10px;
+    border-color: rgba(60, 60, 67, 0.18);
+    font-size: 16px;
+    padding: 0 14px;
+}
 .crm-layout .ui-input__field:focus-visible {
-    box-shadow: 0 0 0 3px rgba(1, 110, 215, 0.14) !important;
+    border-color: #016ED7;
+    box-shadow: 0 0 0 3px rgba(1, 110, 215, 0.12) !important;
+}
+
+/* Внутри grouped-карточки (.zones) убираем отступ снизу у input */
+.crm-layout .zones .ui-input {
+    margin-bottom: 0;
+    padding: 4px 0;
+    border-bottom: 0.5px solid rgba(60, 60, 67, 0.15);
+}
+.crm-layout .zones .ui-input:last-child {
+    border-bottom: none;
+}
+.crm-layout .zones .ui-input__field {
+    background: transparent;
+    border-color: transparent;
+    border-radius: 0;
+    padding: 0 2px;
 }
 
 /*
- * iOS Safari зумирует страницу при фокусе на input с font-size < 16px,
- * и после зума страница не возвращается в исходный масштаб — кнопка
- * в футере (например «Продолжить») уезжает за пределы экрана.
- * --font-size-sm в этой теме — 13px, поэтому держим минимум 16px для
- * ЛЮБОГО поля ввода в CRM-разделе — не перечисляем классы по одному,
- * иначе каждое новое поле (как уже было трижды: поиск бирок, ФИО, URL
- * в crm-setup) тихо ловит зум, пока кто-то не заметит и не допишет
- * сюда ещё один селектор.
+ * iOS Safari зумирует страницу при фокусе на input с font-size < 16px.
+ * Держим минимум 16px для всех полей ввода в CRM.
  */
 .crm-layout input,
 .crm-layout textarea {

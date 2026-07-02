@@ -164,67 +164,75 @@ onMounted(() => {
 <style scoped lang="sass">
 .measurement-badge
   display: flex
-  align-items: baseline
+  align-items: center
   gap: var(--spacing-3)
   padding: 14px 16px
-  border: var(--border-width) solid var(--color-border)
-  border-radius: var(--radius-lg)
+  border-radius: 13px
   background-color: var(--color-card-bg)
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04)
 
 .measurement-badge__label
   flex-shrink: 0
-  font-size: var(--font-size-xs)
+  font-size: 11px
   font-weight: 600
   text-transform: uppercase
-  letter-spacing: 0.4px
-  color: var(--color-text-muted)
+  letter-spacing: 0.5px
+  color: var(--color-text-secondary)
 
 .measurement-badge__value
   flex: 1
   min-width: 0
-  font-size: var(--font-size-sm)
+  font-size: var(--font-size-base)
   font-weight: 500
   overflow: hidden
   text-overflow: ellipsis
   white-space: nowrap
+  color: var(--color-text)
 
 .measurement-section
   display: flex
   flex-direction: column
-  gap: var(--spacing-3)
+  gap: var(--spacing-2)
 
 .measurement-section__title
-  margin: 0
-  font-size: var(--font-size-sm)
-  font-weight: 600
+  margin: 0 0 0 4px
+  font-size: 13px
+  font-weight: 500
   color: var(--color-text-secondary)
+  text-transform: uppercase
+  letter-spacing: 0.3px
 
 .coverage-btns
   display: flex
-  gap: var(--spacing-2)
+  gap: 2px
+  background: rgba(118, 118, 128, 0.12)
+  border-radius: 9px
+  padding: 2px
 
 .coverage-btn
   flex: 1
-  padding: 10px 8px
-  border: var(--border-width) solid var(--color-border)
-  border-radius: var(--radius-md)
-  background-color: var(--color-card-bg)
+  padding: 7px 8px
+  border: none
+  border-radius: 7px
+  background: transparent
   color: var(--color-text)
   font-size: var(--font-size-sm)
-  font-weight: 600
+  font-weight: 500
   cursor: pointer
-  transition: border-color var(--transition-normal) ease, background-color var(--transition-normal) ease, color var(--transition-normal) ease
-
-  &:hover
-    border-color: var(--color-border-hover)
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, color 0.1s ease
 
   &--active
-    border-color: var(--color-primary)
-    background-color: var(--color-primary-light)
-    color: var(--color-primary)
+    background: #FFFFFF
+    color: var(--color-text)
+    font-weight: 600
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 0.5px 1px rgba(0, 0, 0, 0.06)
 
 .zones
   display: flex
   flex-direction: column
-  gap: var(--spacing-3)
+  gap: var(--spacing-2)
+  background: var(--color-card-bg)
+  border-radius: 13px
+  padding: 4px 16px
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04)
 </style>

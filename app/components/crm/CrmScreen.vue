@@ -52,34 +52,32 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   width: 100%
   max-width: 480px
   margin: 0 auto
-  padding: var(--spacing-6) var(--spacing-4) 0
+  padding: var(--spacing-5) var(--spacing-4) 0
   flex: 1
   min-height: 0
   display: flex
   flex-direction: column
   box-sizing: border-box
 
-  @media (max-width: 768px)
-    padding: var(--spacing-5) var(--spacing-4) 0
-
 .crm-screen__head
   flex-shrink: 0
-  margin-bottom: var(--spacing-4)
+  margin-bottom: var(--spacing-5)
 
 .crm-screen__head-row
   display: flex
   align-items: center
   justify-content: space-between
   gap: var(--spacing-3)
-  margin-bottom: var(--spacing-4)
+  margin-bottom: var(--spacing-5)
 
 .crm-screen__brand
   display: flex
 
 .crm-screen__brand-mark
-  height: 28px
+  height: 24px
   width: auto
   display: block
+  opacity: 0.85
 
 .crm-screen__head-actions
   display: flex
@@ -94,33 +92,35 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
 .crm-screen__title-icon
   flex-shrink: 0
   color: var(--color-primary)
+  opacity: 0.9
 
 .crm-screen__shift-link
   flex-shrink: 0
   display: flex
   align-items: center
-  gap: 6px
-  padding: 6px 10px
-  border: var(--border-width) solid var(--color-border)
+  gap: 5px
+  padding: 6px 12px
   border-radius: var(--radius-full)
-  background-color: var(--color-card-bg)
-  color: var(--color-text-secondary)
+  background-color: var(--color-primary-light)
+  color: var(--color-primary)
   font-size: var(--font-size-xs)
   font-weight: 600
   white-space: nowrap
   text-decoration: none
+  border: none
 
 .crm-screen__title
-  font-size: var(--font-size-3xl)
-  font-weight: 800
-  letter-spacing: -0.4px
-  line-height: 1.15
-  margin-bottom: var(--spacing-2)
+  font-size: var(--font-size-4xl)  /* 34px — iOS Large Title */
+  font-weight: 700
+  letter-spacing: -0.5px
+  line-height: 1.1
+  margin-bottom: var(--spacing-1)
+  color: var(--color-text)
 
 .crm-screen__subtitle
-  font-size: var(--font-size-sm)
-  color: var(--color-text-muted)
-  line-height: var(--line-height-relaxed)
+  font-size: var(--font-size-base)
+  color: var(--color-text-secondary)
+  line-height: 1.4
 
 .crm-screen__search
   margin-top: var(--spacing-4)
@@ -132,15 +132,15 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   -webkit-overflow-scrolling: touch
   display: flex
   flex-direction: column
-  gap: var(--spacing-4)
+  gap: var(--spacing-3)
   padding-bottom: var(--spacing-4)
 
 .crm-screen__footer
   flex-shrink: 0
   display: flex
   flex-direction: column
-  gap: var(--spacing-3)
-  padding: var(--spacing-4) 0 calc(var(--spacing-4) + env(safe-area-inset-bottom))
-  border-top: var(--border-width) solid var(--color-border)
+  gap: var(--spacing-2)
+  padding: var(--spacing-3) 0 calc(var(--spacing-4) + env(safe-area-inset-bottom))
+  border-top: 0.5px solid var(--color-border)
   background-color: var(--color-bg)
 </style>
