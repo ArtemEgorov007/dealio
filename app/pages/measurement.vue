@@ -184,9 +184,8 @@ onMounted(() => {
   min-width: 0
   font-size: var(--font-size-base)
   font-weight: 500
-  overflow: hidden
-  text-overflow: ellipsis
-  white-space: nowrap
+  white-space: pre-line
+  line-height: 1.4
   color: var(--color-text)
 
 .measurement-section

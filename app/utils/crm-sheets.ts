@@ -84,28 +84,48 @@ function buildGasUrl(config: SheetsRuntimeConfig, params: Record<string, string>
 }
 
 async function requestGas(config: SheetsRuntimeConfig, params: Record<string, string>): Promise<GasResponse> {
-    const response = await fetch(buildGasUrl(config, params))
+    let response: Response
+
+    try {
+        response = await fetch(buildGasUrl(config, params))
+    } catch {
+        throw new Error('Нет связи с сервером. Проверьте интернет и повторите.')
+    }
 
     if (!response.ok) {
         throw new Error('Ошибка связи с Google Таблицей')
     }
 
-    return await response.json() as GasResponse
+    try {
+        return await response.json() as GasResponse
+    } catch {
+        throw new Error('Неверный ответ от сервера.')
+    }
 }
 
 async function requestGasPost(config: SheetsRuntimeConfig, payload: Record<string, string>): Promise<GasResponse> {
-    const response = await fetch(config.gasUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'text/plain;charset=utf-8'},
-        body: JSON.stringify(payload),
-        redirect: 'follow',
-    })
+    let response: Response
+
+    try {
+        response = await fetch(config.gasUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'text/plain;charset=utf-8'},
+            body: JSON.stringify(payload),
+            redirect: 'follow',
+        })
+    } catch {
+        throw new Error('Нет связи с сервером. Проверьте интернет и повторите.')
+    }
 
     if (!response.ok) {
         throw new Error('Ошибка связи с Google Таблицей')
     }
 
-    return await response.json() as GasResponse
+    try {
+        return await response.json() as GasResponse
+    } catch {
+        throw new Error('Неверный ответ от сервера. Обновите страницу и попробуйте снова.')
+    }
 }
 
 function parseBadgeColumn(rows: string[][], workshopId: WorkshopId): string[] {

@@ -164,10 +164,13 @@ const goWarehouse = () => router.push('/warehouse')
   overflow-x: auto
   scrollbar-width: none
   border-top: 0.5px solid rgba(60, 60, 67, 0.29)
-  background: rgba(242, 242, 247, 0.85)
-  backdrop-filter: blur(20px) saturate(180%)
-  -webkit-backdrop-filter: blur(20px) saturate(180%)
+  background: #F2F2F7
   padding-bottom: env(safe-area-inset-bottom)
+
+  @supports (backdrop-filter: blur(1px))
+    background: rgba(242, 242, 247, 0.85)
+    backdrop-filter: blur(20px) saturate(180%)
+    -webkit-backdrop-filter: blur(20px) saturate(180%)
 
   &::-webkit-scrollbar
     display: none

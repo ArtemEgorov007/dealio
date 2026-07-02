@@ -70,6 +70,7 @@ onMounted(async () => {
             highlightScanRegion: true,
             highlightCodeOutline: true,
             preferredCamera: 'environment',
+            onDecodeError: () => {},
         },
     )
 
