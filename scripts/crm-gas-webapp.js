@@ -463,6 +463,7 @@ function login_(loginValue, password) {
     const accessBadgesIndex = header.indexOf('Доступ к биркам')
     const accessMeasurementsIndex = header.indexOf('Доступ к промерам')
     const accessPackingIndex = header.indexOf('Доступ к упаковкам')
+    const accessHandoverIndex = header.indexOf('Доступ к сдаче')
     const accessReportsIndex = header.indexOf('Доступ к отчетам')
     const accessApprovalsIndex = header.indexOf('Право на согласования')
     const accessSupplyIndex = header.indexOf('Заказ снабжения')
@@ -495,6 +496,7 @@ function login_(loginValue, password) {
                 badges: isYes(accessBadgesIndex),
                 measurements: isYes(accessMeasurementsIndex),
                 packing: isYes(accessPackingIndex),
+                handover: isYes(accessHandoverIndex),
                 reports: isYes(accessReportsIndex),
                 approvals: isYes(accessApprovalsIndex),
                 supply: isYes(accessSupplyIndex),
