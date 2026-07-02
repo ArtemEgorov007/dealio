@@ -8,7 +8,7 @@ defineProps<{
 
 const logoSrc = useRuntimeConfig().app.baseURL + 'logo-mt.svg'
 
-useSeoMeta({themeColor: '#FBFBFB'})
+useSeoMeta({themeColor: '#F2F2F7'})
 useHead({meta: [{name: 'color-scheme', content: 'light'}]})
 </script>
 

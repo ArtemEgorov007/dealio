@@ -95,72 +95,45 @@ onBeforeUnmount(() => {
       :shift-link="{ to: '/handover-shift', label: 'Сдачи' }"
       icon="heroicons:check-badge"
   >
-    <div class="scan-viewport">
-      <video ref="videoEl" class="scan-video" muted playsinline/>
+    <div class="crm-scan-viewport">
+      <video ref="videoEl" class="crm-scan-video" muted playsinline/>
 
-      <div v-if="status === 'saving'" class="scan-overlay">
-        <div class="spinner"/>
+      <div v-if="status === 'saving'" class="crm-scan-overlay">
+        <CrmEmptyState loading/>
         <span>Записываем…</span>
       </div>
 
-      <div v-if="status === 'unsupported'" class="scan-overlay scan-overlay--error">
+      <div v-if="status === 'unsupported'" class="crm-scan-overlay">
         <p>Камера не найдена на этом устройстве</p>
       </div>
 
-      <div v-if="status === 'denied'" class="scan-overlay scan-overlay--error">
+      <div v-if="status === 'denied'" class="crm-scan-overlay">
         <p>Нет доступа к камере — разрешите доступ в настройках браузера и обновите страницу</p>
       </div>
     </div>
 
-    <p class="scan-hint">Наведите камеру на QR-код бирки</p>
+    <p class="crm-scan-hint">Наведите камеру на QR-код бирки</p>
   </CrmScreen>
 </template>
 
 <style scoped lang="sass">
-.scan-viewport
-  position: relative
-  width: 100%
-  aspect-ratio: 1
-  border-radius: var(--radius-lg)
-  overflow: hidden
-  background-color: #000
-
-.scan-video
+.crm-scan-video
   width: 100%
   height: 100%
   object-fit: cover
 
-.scan-overlay
+.crm-scan-overlay
   position: absolute
   inset: 0
   display: flex
   flex-direction: column
   align-items: center
   justify-content: center
-  gap: var(--spacing-3)
-  padding: var(--spacing-4)
+  gap: 12px
+  padding: 16px
   text-align: center
   color: #fff
   background-color: rgba(0, 0, 0, 0.55)
-
-  &--error
-    color: #fff
-
-.scan-hint
-  margin: 0
-  font-size: var(--font-size-sm)
-  color: var(--color-text-secondary)
-  text-align: center
-
-.spinner
-  width: 28px
-  height: 28px
-  border: 2px solid rgba(255, 255, 255, 0.35)
-  border-top-color: #fff
-  border-radius: 50%
-  animation: spin 0.8s linear infinite
-
-@keyframes spin
-  to
-    transform: rotate(360deg)
+  font-size: 15px
+  line-height: 1.4
 </style>

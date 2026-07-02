@@ -72,30 +72,59 @@ const goToPacking = () => router.push('/workshop?flow=packing')
       </button>
     </template>
 
-    <div class="profile-card">
-      <div v-if="employeeStore.department" class="profile-row">
-        <span class="profile-row__label">Отдел</span>
-        <span class="profile-row__value">{{ employeeStore.department }}</span>
-      </div>
-      <div v-if="employeeStore.position" class="profile-row">
-        <span class="profile-row__label">Должность</span>
-        <span class="profile-row__value">{{ employeeStore.position }}</span>
-      </div>
-      <div v-if="employeeStore.platform" class="profile-row">
-        <span class="profile-row__label">Площадка</span>
-        <span class="profile-row__value">{{ employeeStore.platform }}</span>
-      </div>
-      <div v-if="employeeStore.login" class="profile-row profile-row--copy" @click="copyText(employeeStore.login, 'Логин')">
-        <span class="profile-row__label">Логин</span>
-        <span class="profile-row__value">{{ employeeStore.login }}</span>
-        <Icon name="heroicons:clipboard-document" size="16" class="profile-row__copy-icon"/>
-      </div>
-      <div v-if="employeeStore.password" class="profile-row profile-row--copy" @click="copyText(employeeStore.password, 'Пароль')">
-        <span class="profile-row__label">Пароль</span>
-        <span class="profile-row__value profile-row__value--password">{{ employeeStore.password }}</span>
-        <Icon name="heroicons:clipboard-document" size="16" class="profile-row__copy-icon"/>
-      </div>
-    </div>
+    <CrmGroupedList>
+      <CrmListRow
+          v-if="employeeStore.department"
+          tag="div"
+      >
+        <span class="profile-kv">
+          <span class="profile-kv__label">Отдел</span>
+          <span class="profile-kv__value">{{ employeeStore.department }}</span>
+        </span>
+      </CrmListRow>
+      <CrmListRow
+          v-if="employeeStore.position"
+          tag="div"
+      >
+        <span class="profile-kv">
+          <span class="profile-kv__label">Должность</span>
+          <span class="profile-kv__value">{{ employeeStore.position }}</span>
+        </span>
+      </CrmListRow>
+      <CrmListRow
+          v-if="employeeStore.platform"
+          tag="div"
+      >
+        <span class="profile-kv">
+          <span class="profile-kv__label">Площадка</span>
+          <span class="profile-kv__value">{{ employeeStore.platform }}</span>
+        </span>
+      </CrmListRow>
+      <CrmListRow
+          v-if="employeeStore.login"
+          @click="copyText(employeeStore.login, 'Логин')"
+      >
+        <span class="profile-kv">
+          <span class="profile-kv__label">Логин</span>
+          <span class="profile-kv__value">{{ employeeStore.login }}</span>
+        </span>
+        <template #trailing>
+          <Icon name="heroicons:clipboard-document" size="16" class="profile-kv__icon"/>
+        </template>
+      </CrmListRow>
+      <CrmListRow
+          v-if="employeeStore.password"
+          @click="copyText(employeeStore.password, 'Пароль')"
+      >
+        <span class="profile-kv">
+          <span class="profile-kv__label">Пароль</span>
+          <span class="profile-kv__value profile-kv__value--mono">{{ employeeStore.password }}</span>
+        </span>
+        <template #trailing>
+          <Icon name="heroicons:clipboard-document" size="16" class="profile-kv__icon"/>
+        </template>
+      </CrmListRow>
+    </CrmGroupedList>
   </CrmScreen>
 
   <CrmScreen
@@ -150,55 +179,34 @@ const goToPacking = () => router.push('/workshop?flow=packing')
   &:hover
     opacity: 0.7
 
-.profile-card
-  display: flex
-  flex-direction: column
-  border-radius: 13px
-  overflow: hidden
-  background-color: var(--color-card-bg)
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04)
-
-.profile-row
+.profile-kv
   display: flex
   align-items: center
-  gap: var(--spacing-3)
-  padding: 12px 16px
-  border-bottom: 0.5px solid rgba(60, 60, 67, 0.15)
+  gap: 12px
+  width: 100%
+  min-width: 0
 
-  &:last-child
-    border-bottom: none
-
-  &--copy
-    cursor: pointer
-    user-select: none
-    transition: background-color 0.15s ease
-
-    &:active
-      background-color: rgba(60, 60, 67, 0.06)
-
-.profile-row__label
+.profile-kv__label
   flex-shrink: 0
-  width: 80px
-  font-size: 13px
-  font-weight: 400
-  color: var(--color-text-secondary)
+  width: 88px
+  font-size: 15px
+  color: var(--color-text)
 
-.profile-row__value
+.profile-kv__value
   flex: 1
   min-width: 0
   font-size: 15px
-  font-weight: 400
+  text-align: right
   overflow: hidden
   text-overflow: ellipsis
   white-space: nowrap
-  color: var(--color-text)
+  color: var(--color-text-secondary)
 
-  &--password
+  &--mono
     font-family: monospace
     font-size: 14px
 
-.profile-row__copy-icon
-  flex-shrink: 0
+.profile-kv__icon
   color: rgba(60, 60, 67, 0.30)
 
 .register-form

@@ -86,16 +86,16 @@ const onDragEnd = () => {
           <span class="crm-sheet-handle"/>
         </div>
 
-        <p class="crm-sheet-label"><slot name="label"/></p>
+        <p v-if="$slots.label" class="crm-sheet-label"><slot name="label"/></p>
 
-        <article class="crm-sheet-card">
+        <article v-if="$slots.content" class="crm-sheet-card">
           <p class="crm-sheet-content"><slot name="content"/></p>
         </article>
 
-        <p class="crm-sheet-meta"><slot name="meta"/></p>
+        <p v-if="$slots.meta" class="crm-sheet-meta"><slot name="meta"/></p>
         <p v-if="$slots.error" class="crm-sheet-error"><slot name="error"/></p>
 
-        <div class="crm-sheet-actions">
+        <div v-if="$slots.actions" class="crm-sheet-actions">
           <slot name="actions"/>
         </div>
       </div>
@@ -115,7 +115,7 @@ const onDragEnd = () => {
 .crm-sheet-backdrop
   position: absolute
   inset: 0
-  background-color: rgba(1, 35, 66, 0.32)
+  background-color: rgba(0, 0, 0, 0.35)
 
 .crm-sheet-panel
   position: relative
@@ -123,14 +123,14 @@ const onDragEnd = () => {
   max-width: 480px
   display: flex
   flex-direction: column
-  align-items: center
-  gap: var(--spacing-2)
-  padding: 0 var(--spacing-5) calc(var(--spacing-5) + env(safe-area-inset-bottom))
-  background-color: var(--color-bg)
-  border: var(--border-width) solid var(--color-border)
+  align-items: stretch
+  gap: 8px
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom))
+  background-color: #F2F2F7
+  border: none
   border-bottom: none
-  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0
-  box-shadow: var(--shadow-xl)
+  border-radius: 18px 18px 0 0
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12)
   will-change: transform
 
 .crm-sheet-grip
@@ -148,54 +148,55 @@ const onDragEnd = () => {
   background-color: var(--color-border)
 
 .crm-sheet-label
-  align-self: flex-start
   margin: 0
-  font-size: var(--font-size-xs)
-  font-weight: 700
-  text-transform: uppercase
-  letter-spacing: 0.4px
-  color: var(--color-text-muted)
+  padding: 0 4px
+  font-size: 13px
+  font-weight: 400
+  color: var(--color-text-secondary)
 
 .crm-sheet-card
   width: 100%
   box-sizing: border-box
-  padding: var(--spacing-4)
-  border: var(--border-width) solid var(--color-border)
-  border-radius: var(--radius-md)
+  padding: 16px
+  border: none
+  border-radius: 13px
   background-color: var(--color-card-bg)
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04)
 
 .crm-sheet-content
   margin: 0
-  font-size: var(--font-size-sm)
-  font-weight: 500
-  line-height: 1.4
+  font-size: 17px
+  font-weight: 600
+  line-height: 1.35
   color: var(--color-text)
+  text-align: center
   white-space: pre-line
   overflow-wrap: anywhere
 
 .crm-sheet-meta
-  align-self: flex-start
-  margin: 0 0 var(--spacing-2)
-  font-size: var(--font-size-sm)
+  margin: 0
+  padding: 0 4px
+  font-size: 13px
+  text-align: center
   color: var(--color-text-secondary)
 
 .crm-sheet-error
-  align-self: flex-start
-  margin: 0 0 var(--spacing-2)
-  padding: 10px 12px
+  margin: 0
+  padding: 12px 14px
   width: 100%
   box-sizing: border-box
-  border-radius: var(--radius-md)
-  background-color: rgba(239, 68, 68, 0.1)
-  color: var(--color-danger)
-  font-size: var(--font-size-sm)
+  border-radius: 13px
+  background-color: rgba(255, 59, 48, 0.10)
+  color: #FF3B30
+  font-size: 15px
+  line-height: 1.4
 
 .crm-sheet-actions
   display: flex
   flex-direction: column
-  gap: var(--spacing-3)
+  gap: 8px
   width: 100%
-  margin-top: var(--spacing-2)
+  margin-top: 4px
 
 .crm-sheet-enter-active,
 .crm-sheet-leave-active

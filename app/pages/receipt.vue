@@ -41,15 +41,17 @@ const changeWorkshop = () => {
 
 <template>
   <CrmScreen title="Получение бирки" :shift-link="{ to: '/shift', label: 'Бирки за смену' }" icon="heroicons:tag">
-    <p v-if="sessionStore.journalSkipped" class="receipt-warning">
+    <p v-if="sessionStore.journalSkipped" class="crm-notice">
       Журнал не подключён. Настройте Web App на странице /crm-setup
     </p>
 
-    <article class="badge-card">
-      <p class="badge-card__label">Ваша бирка</p>
-      <p class="badge-card__content">{{ formatBadgeDisplay(badgeContent) }}</p>
-      <p class="badge-card__meta">{{ employeeStore.fio }} · {{ workshopTitle }}</p>
-    </article>
+    <CrmGroupedList>
+      <div class="crm-hero-card">
+        <p class="crm-hero-card__eyebrow">Ваша бирка</p>
+        <p class="crm-hero-card__title">{{ formatBadgeDisplay(badgeContent) }}</p>
+        <p class="crm-hero-card__meta">{{ employeeStore.fio }} · {{ workshopTitle }}</p>
+      </div>
+    </CrmGroupedList>
 
     <template #footer>
       <UiButton block @click="copyBadge">
@@ -64,39 +66,3 @@ const changeWorkshop = () => {
     </template>
   </CrmScreen>
 </template>
-
-<style scoped lang="sass">
-.receipt-warning
-  margin: 0
-  padding: 10px 12px
-  border-radius: var(--radius-md)
-  background-color: rgba(234, 179, 8, 0.12)
-  color: var(--color-text)
-  font-size: var(--font-size-sm)
-
-.badge-card
-  padding: var(--spacing-5)
-  border: var(--border-width) solid var(--color-border)
-  border-radius: var(--radius-lg)
-  background-color: var(--color-card-bg)
-
-.badge-card__label
-  margin: 0 0 var(--spacing-2)
-  font-size: var(--font-size-xs)
-  font-weight: 600
-  text-transform: uppercase
-  letter-spacing: 0.4px
-  color: var(--color-text-muted)
-
-.badge-card__content
-  margin: 0 0 var(--spacing-3)
-  font-size: var(--font-size-xl)
-  font-weight: 700
-  line-height: 1.35
-  overflow-wrap: anywhere
-
-.badge-card__meta
-  margin: 0
-  font-size: var(--font-size-sm)
-  color: var(--color-text-secondary)
-</style>

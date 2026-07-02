@@ -128,3 +128,131 @@
 .crm-layout textarea {
     font-size: 16px !important;
 }
+
+/* ─── Grouped inset list (UITableView) ─────────────────────────────────── */
+.crm-layout .crm-grouped-list + .crm-grouped-list,
+.crm-layout .crm-section-label + .crm-grouped-list {
+    margin-top: var(--spacing-3);
+}
+
+/* ─── iOS list accessory buttons ───────────────────────────────────────── */
+.crm-layout .crm-row-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: rgba(60, 60, 67, 0.45);
+    cursor: pointer;
+}
+
+.crm-layout .crm-row-action:active {
+    background-color: rgba(60, 60, 67, 0.08);
+}
+
+.crm-layout .crm-row-action--danger:active {
+    color: #FF3B30;
+    background-color: rgba(255, 59, 48, 0.10);
+}
+
+/* ─── iOS toggle (shift checklist) ─────────────────────────────────────── */
+.crm-layout .crm-ios-check {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    border-radius: 50%;
+    border: 1.5px solid rgba(60, 60, 67, 0.29);
+    background: transparent;
+    appearance: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.crm-layout .crm-ios-check:checked {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M6.2 11.3 3.4 8.5l-1 1 3.8 3.8 8-8-1-1z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 12px;
+}
+
+/* ─── Hero / receipt card inside grouped list ──────────────────────────── */
+.crm-layout .crm-hero-card {
+    padding: 20px 16px;
+    text-align: center;
+}
+
+.crm-layout .crm-hero-card__eyebrow {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.crm-layout .crm-hero-card__title {
+    margin: 0 0 10px;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.3px;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.crm-layout .crm-hero-card__meta {
+    margin: 0;
+    font-size: 15px;
+    color: var(--color-text-secondary);
+}
+
+/* ─── Inline notice (warning / info) ───────────────────────────────────── */
+.crm-layout .crm-notice {
+    margin: 0 0 var(--spacing-3);
+    padding: 12px 14px;
+    border-radius: 13px;
+    background-color: rgba(255, 149, 0, 0.12);
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--color-text);
+}
+
+.crm-layout .crm-notice--info {
+    background-color: rgba(1, 110, 215, 0.10);
+}
+
+/* ─── Scan viewport ────────────────────────────────────────────────────── */
+.crm-layout .crm-scan-viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 13px;
+    overflow: hidden;
+    background-color: #000;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.crm-layout .crm-scan-hint {
+    margin: 12px 0 0;
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+/* ─── Toasts on light CRM screens ──────────────────────────────────────── */
+body:has(.crm-layout) ol.dealio-toast-host .dealio-toast {
+    background-color: #FFFFFF !important;
+    border-color: rgba(60, 60, 67, 0.12) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+    border-radius: 13px !important;
+}
+
+@media (max-width: 768px) {
+    body:has(.crm-layout) ol.dealio-toast-host {
+        bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px) !important;
+    }
+}
