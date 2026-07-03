@@ -40,9 +40,11 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string | number | FileList): void
 }>()
 
+// FileList приходит только для type="file" (обрабатывается в handleFileChange),
+// в value текстового поля её подставлять нельзя.
 const inputValue = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  get: () => (props.modelValue instanceof FileList ? '' : props.modelValue),
+  set: (value: string | number) => emit('update:modelValue', value)
 })
 
 const generatedId = ref<string>('')

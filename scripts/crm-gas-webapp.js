@@ -465,7 +465,9 @@ function login_(loginValue, password) {
     const accessPackingIndex = header.indexOf('Доступ к упаковкам')
     const accessHandoverIndex = header.indexOf('Доступ к сдаче')
     const accessReportsIndex = header.indexOf('Доступ к отчетам')
-    const accessApprovalsIndex = header.indexOf('Право на согласования')
+    // Заголовок в таблице «Доступ к серверу» — «Право согласования» (без «на»).
+    // Раньше indexOf не находил → -1 → доступ по дефолту открывался всем.
+    const accessApprovalsIndex = header.indexOf('Право согласования')
     const accessSupplyIndex = header.indexOf('Заказ снабжения')
     const accessOrdersIndex = header.indexOf('Работа со снабжением')
     const accessWarehouseIndex = header.indexOf('Доступ к складу')

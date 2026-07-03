@@ -13,13 +13,13 @@ export function useCreateComment({refetch}: { refetch: () => void }) {
 
     const {mutate} = useMutation({
         mutationKey: ['add-comment'],
-        mutationFn: () => {
+        mutationFn: async () => {
             if (import.meta.client && isGuestSession()) {
-                return Promise.resolve({
+                return {
                     $id: uuid(),
                     $createdAt: new Date().toISOString(),
                     text: commentRef.value.trim(),
-                })
+                }
             }
             if (!store.card?.id) {
                 throw new Error('Элемент не выбран')
@@ -36,7 +36,7 @@ export function useCreateComment({refetch}: { refetch: () => void }) {
             refetch()
             commentRef.value = ''
         },
-        onError: showError,
+        onError: (error: unknown) => showError(error),
     })
 
     const writeComment = () => {

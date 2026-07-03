@@ -58,7 +58,7 @@ const cancel = () => {
   <CrmActionSheet
       :open="!!entry"
       :busy="phase === 'deleting'"
-      aria-label="Подтверждение удаления бирки"
+      ariaLabel="Подтверждение удаления бирки"
       @dismiss="cancel"
   >
     <template #label>{{ phase === 'error' ? 'Ошибка удаления' : 'Удалить бирку' }}</template>

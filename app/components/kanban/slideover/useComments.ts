@@ -17,7 +17,7 @@ export function useComments() {
         queryKey: computed(() => ['card', cardId.value, getCardsQueryScope(authStore.isGuest, authStore.userId)]),
         enabled: computed(() => slideStore.isOpen && !!cardId.value),
         staleTime: 60_000,
-        queryFn: () => {
+        queryFn: async () => {
             if (import.meta.client && authStore.isGuest) {
                 return boardStore.cards.find(card => card.$id === cardId.value) ?? null
             }

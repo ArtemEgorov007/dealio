@@ -98,7 +98,8 @@ const onListKeydown = (event: KeyboardEvent) => {
 
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
-    if (index >= 0) selectOption(props.options[index])
+    const current = props.options[index]
+    if (current) selectOption(current)
     return
   }
 
@@ -108,8 +109,9 @@ const onListKeydown = (event: KeyboardEvent) => {
     return
   }
 
-  if (nextIndex !== index && props.options[nextIndex]) {
-    selectOption(props.options[nextIndex])
+  const next = props.options[nextIndex]
+  if (nextIndex !== index && next) {
+    selectOption(next)
   }
 }
 
