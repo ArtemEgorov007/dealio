@@ -8,7 +8,7 @@ import {useAppToast} from '~/composables/useAppToast'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Бирки за смену | CRM'})
+useSeoMeta({title: 'Бирки за смену | ERP'})
 
 const employeeStore = useCrmEmployeeStore()
 const router = useRouter()

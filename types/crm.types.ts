@@ -23,16 +23,19 @@ export interface CrmAccessFlags {
     warehouse: boolean
 }
 
+// Fail-closed: доступ выдаётся только тем флагам, что сервер (GAS login_) явно
+// вернул как true из таблицы. Отсутствие флага в ответе = нет доступа, а не
+// «показать всё». Раньше дефолты были all-true и маскировали дырку в доступах.
 export const DEFAULT_ACCESS_FLAGS: CrmAccessFlags = {
-    badges: true,
-    measurements: true,
-    packing: true,
-    handover: true,
-    reports: true,
-    approvals: true,
-    supply: true,
-    orders: true,
-    warehouse: true,
+    badges: false,
+    measurements: false,
+    packing: false,
+    handover: false,
+    reports: false,
+    approvals: false,
+    supply: false,
+    orders: false,
+    warehouse: false,
 }
 
 export interface CrmEmployeeProfile {

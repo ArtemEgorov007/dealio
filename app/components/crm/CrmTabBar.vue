@@ -45,7 +45,7 @@ const goWarehouse = () => router.push('/warehouse')
 </script>
 
 <template>
-  <nav class="crm-tabbar" aria-label="Разделы CRM">
+  <nav class="crm-tabbar" aria-label="Разделы ERP">
     <button
         type="button"
         class="crm-tabbar__item"

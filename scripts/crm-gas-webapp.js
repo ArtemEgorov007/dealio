@@ -458,7 +458,11 @@ function login_(loginValue, password) {
     const departmentIndex = requireColumn_(header, 'Отдел', STAFF_SHEET)
     const positionIndex = requireColumn_(header, 'Должность', STAFF_SHEET)
 
-    // Необязательные столбцы — если отсутствуют, используем дефолты.
+    // Столбцы доступа. Fail-closed: если столбца нет (idx < 0) или значение
+    // не «Да» — доступ НЕ выдаётся (см. isYes ниже). Раньше отсутствие/опечатка
+    // столбца молча открывали раздел всем сотрудникам.
+    // «Доступ к сдаче» в таблице пока нет — раздел «Сдача» закрыт у всех, пока
+    // столбец не добавят со значением «Да» нужным людям.
     const platformIndex = header.indexOf('Площадка')
     const accessBadgesIndex = header.indexOf('Доступ к биркам')
     const accessMeasurementsIndex = header.indexOf('Доступ к промерам')
@@ -484,7 +488,7 @@ function login_(loginValue, password) {
             throw new Error('Учётная запись отключена — обратитесь к руководителю')
         }
 
-        const isYes = (idx) => idx < 0 ? true : normalizeCell_(row[idx]).toLowerCase() === 'да'
+        const isYes = (idx) => idx < 0 ? false : normalizeCell_(row[idx]).toLowerCase() === 'да'
         const strAt = (idx) => idx >= 0 ? normalizeCell_(row[idx]) : ''
 
         return {
@@ -537,7 +541,9 @@ function getOrCreateMeasurementSheet_() {
 
     if (!sheet) {
         sheet = spreadsheet.insertSheet(MEASUREMENT_SHEET)
-        sheet.appendRow(['Дата', 'Бирка', 'Покрытие', 'Зона 1', 'Зона 2', 'Зона 3', 'Зона 4', 'Зона 5', 'Оценка', 'Контролер'])
+        // Заголовки как в реальном листе «Промеры» (включая «Титул и марка»),
+        // чтобы пересозданный лист совпадал по структуре с оригиналом.
+        sheet.appendRow(['Дата', 'Бирка', 'Титул и марка', 'Покрытие', 'Зона 1', 'Зона 2', 'Зона 3', 'Зона 4', 'Зона 5', 'Оценка', 'Контролер'])
     }
 
     return sheet
@@ -612,7 +618,9 @@ function getOrCreateLogistSheet_() {
 
     if (!sheet) {
         sheet = spreadsheet.insertSheet(LOGIST_SHEET)
-        sheet.appendRow(['Дата', 'Цех', 'ФИО', 'Накладная', 'Бирка', 'Вес'])
+        // Заголовки как в реальном листе «Логисты» (включая «Титул», «Титул и
+        // марка», «Машина») — иначе пересозданный лист был бы урезан.
+        sheet.appendRow(['Дата', 'Цех', 'ФИО', 'Накладная', 'Бирка', 'Вес', 'Титул', 'Титул и марка', 'Машина'])
     }
 
     return sheet

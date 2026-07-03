@@ -18,14 +18,14 @@ export default defineNuxtConfig({
         baseURL: process.env.NUXT_APP_BASE_URL || '/',
         head: {
             htmlAttrs: {lang: 'ru'},
-            title: 'CRM — выдача бирок',
+            title: 'ERP — выдача бирок',
             link: [
                 {rel: 'icon', type: 'image/svg+xml', href: `${baseURL}favicon-mt.svg`},
                 {rel: 'apple-touch-icon', href: `${baseURL}icon-192.png`},
                 {rel: 'manifest', href: `${baseURL}manifest.json`},
             ],
             meta: [
-                {name: 'description', content: 'CRM — регистрация, выбор цеха и выдача бирок'},
+                {name: 'description', content: 'ERP — регистрация, выбор цеха и выдача бирок'},
                 {name: 'theme-color', content: '#000000'},
                 {name: 'color-scheme', content: 'dark'},
                 {name: 'apple-mobile-web-app-capable', content: 'yes'},

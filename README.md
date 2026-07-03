@@ -105,9 +105,9 @@ types/cards.types.ts    — типы (Appwrite collection `deals`)
 | Layout | `app/layouts/default.vue`, `Slideover.vue` |
 | Overflow | `KanbanCard.vue`, `KanbanColumn.vue`, `archive.vue`, `Comments.vue`, `Top.vue` |
 
-## Коммерческий проект: CRM «Выдача бирок» (Морфлот Технология)
+## Коммерческий проект: ERP «Выдача бирок» (Морфлот Технология)
 
-Внутри Dealio выросла отдельная коммерческая CRM для промышленного заказчика («Морфлот Технология» — антикоррозионная защита, изоляция, судоремонт) — задача поступила от заказчика как «оптимизируй процесс с гугл-таблицей», без готового ТЗ на архитектуру. Прод: [artemegorov007.github.io/dealio/badges](https://artemegorov007.github.io/dealio/badges).
+Внутри Dealio выросла отдельная коммерческая ERP для промышленного заказчика («Морфлот Технология» — антикоррозионная защита, изоляция, судоремонт) — задача поступила от заказчика как «оптимизируй процесс с гугл-таблицей», без готового ТЗ на архитектуру. Прод: [artemegorov007.github.io/dealio/badges](https://artemegorov007.github.io/dealio/badges).
 
 ### Бизнес-задача
 

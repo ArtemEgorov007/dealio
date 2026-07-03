@@ -7,7 +7,7 @@ import {useHaptics} from '~/composables/useHaptics'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Сдача работ | CRM'})
+useSeoMeta({title: 'Сдача работ | ERP'})
 
 const employeeStore = useCrmEmployeeStore()
 const {showSuccess, showError} = useAppToast()

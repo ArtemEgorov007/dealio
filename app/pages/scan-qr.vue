@@ -8,7 +8,7 @@ import {useHaptics} from '~/composables/useHaptics'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Считывание QR | CRM'})
+useSeoMeta({title: 'Считывание QR | ERP'})
 
 const employeeStore = useCrmEmployeeStore()
 const router = useRouter()

@@ -9,7 +9,7 @@ import {DEFAULT_SPREADSHEET_ID} from '~/utils/crm-sheets'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Подключение таблицы | CRM'})
+useSeoMeta({title: 'Подключение таблицы | ERP'})
 
 const gasUrl = ref(getCrmGasUrl())
 const testResult = ref('')

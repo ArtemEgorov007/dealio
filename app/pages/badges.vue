@@ -7,7 +7,7 @@ import {useCrmSessionStore} from '~~/store/crm-session.store'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Выбор бирки | CRM'})
+useSeoMeta({title: 'Выбор бирки | ERP'})
 
 const employeeStore = useCrmEmployeeStore()
 const sessionStore = useCrmSessionStore()

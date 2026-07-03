@@ -6,7 +6,7 @@ import {useAppToast} from '~/composables/useAppToast'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Промеры — ввод | CRM'})
+useSeoMeta({title: 'Промеры — ввод | ERP'})
 
 const employeeStore = useCrmEmployeeStore()
 const sessionStore = useCrmSessionStore()
