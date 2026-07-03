@@ -83,6 +83,6 @@ export function useUpdateCard() {
             invalidate()
             showSuccess('Изменения сохранены')
         },
-        onError: showError,
+        onError: (error: unknown) => showError(error),
     })
 }

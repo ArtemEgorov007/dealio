@@ -1,6 +1,6 @@
 <script setup lang="ts">
 definePageMeta({layout: 'crm'})
-useSeoMeta({title: 'Заказы | CRM'})
+useSeoMeta({title: 'Заказы | ERP'})
 </script>
 
 <template>

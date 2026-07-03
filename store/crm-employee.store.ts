@@ -9,9 +9,19 @@ import {
 } from '../types/crm.types'
 
 const STORAGE_KEY = 'crm-employee-profile'
+const VERSION_KEY = 'crm-profile-version'
+// Бампать при смене модели доступа. Профиль старой версии сбрасывается —
+// сотрудник входит заново и получает актуальные флаги из таблицы.
+// v2: переход на fail-closed доступы (пустой флаг = нет доступа).
+const PROFILE_VERSION = '2'
 
 function loadProfile(): CrmEmployeeProfile | null {
     if (typeof window === 'undefined') return null
+
+    if (localStorage.getItem(VERSION_KEY) !== PROFILE_VERSION) {
+        clearProfile()
+        return null
+    }
 
     try {
         const raw = localStorage.getItem(STORAGE_KEY)
@@ -25,6 +35,7 @@ function loadProfile(): CrmEmployeeProfile | null {
 function saveProfile(profile: CrmEmployeeProfile): void {
     if (typeof window === 'undefined') return
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
+    localStorage.setItem(VERSION_KEY, PROFILE_VERSION)
 }
 
 function clearProfile(): void {

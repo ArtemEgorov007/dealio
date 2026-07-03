@@ -13,9 +13,9 @@ export function useMoveCard(onMoved?: () => void) {
 
     const {mutate, isPending, variables} = useMutation({
         mutationKey: ['move-card'],
-        mutationFn: ({docId, status}: { docId: string; status: EnumStatus }) => {
+        mutationFn: async ({docId, status}: { docId: string; status: EnumStatus }) => {
             if (import.meta.client && isGuestSession()) {
-                return Promise.resolve({docId, status})
+                return {docId, status}
             }
             return updateCardStatus(docId, status)
         },
@@ -30,7 +30,7 @@ export function useMoveCard(onMoved?: () => void) {
             queryClient.invalidateQueries({queryKey: [CARDS_QUERY_KEY]})
             onMoved?.()
         },
-        onError: showError,
+        onError: (error: unknown) => showError(error),
     })
 
     return {moveCard: mutate, isMoving: isPending, movingToStatus: variables}

@@ -7,9 +7,9 @@ definePageMeta({layout: 'crm'})
 
 const employeeStore = useCrmEmployeeStore()
 
-const pageTitle = ref(employeeStore.hasFio ? 'Профиль | CRM' : 'Вход | CRM')
+const pageTitle = ref(employeeStore.hasFio ? 'Профиль | ERP' : 'Вход | ERP')
 watch(() => employeeStore.hasFio, (hasFio) => {
-    pageTitle.value = hasFio ? 'Профиль | CRM' : 'Вход | CRM'
+    pageTitle.value = hasFio ? 'Профиль | ERP' : 'Вход | ERP'
 })
 useSeoMeta({title: pageTitle})
 const router = useRouter()

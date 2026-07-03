@@ -178,7 +178,7 @@ const {mutate, isPending, isError, error} = useMutation({
     showSuccess('Карточка создана')
     emit('card-created')
   },
-  onError: showError,
+  onError: (mutationError: unknown) => showError(mutationError),
 })
 
 const onSubmit = handleSubmit(values => mutate(values))

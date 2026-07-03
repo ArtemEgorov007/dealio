@@ -1,5 +1,7 @@
 /** Appwrite collection `deals` — имена полей совпадают со схемой бэкенда */
 
+import type {Models} from 'appwrite'
+
 export interface IBaseField {
     $createdAt: string
     $id: string
@@ -32,4 +34,16 @@ export interface ICardRecord extends IBaseField {
     /** стоимость в рублях (Wishlist) */
     price: number
     status: EnumStatus
+}
+
+/** Документ Appwrite целиком (системные поля + доменные) — для запросов через SDK */
+export type ICardDocument = ICardRecord & Models.Document
+
+/** Payload создания карточки: customer без системных полей Appwrite */
+export interface INewCardData {
+    name: string
+    price: number
+    status: EnumStatus
+    customer: Pick<ICategoryField, 'name' | 'email'>
+    comments: IComment[]
 }

@@ -1,7 +1,7 @@
 import type {Models} from 'appwrite'
 
 import {COLLECTION_CARDS, DB_ID} from '~~/app.constants'
-import type {ICardRecord} from '~~/types/cards.types'
+import type {ICardDocument, INewCardData} from '~~/types/cards.types'
 import {EnumStatus} from '~~/types/cards.types'
 import {account, DB} from '~/utils/appwrite'
 import {buildUserPermissions} from '~/utils/appwrite-user'
@@ -23,9 +23,9 @@ function filterDocumentsByUser<T extends { $permissions?: string[] }>(
     )
 }
 
-export async function listCards(): Promise<Models.DocumentList<ICardRecord>> {
+export async function listCards(): Promise<Models.DocumentList<ICardDocument>> {
     const userId = await getSessionUserId()
-    const result = await DB.listDocuments<ICardRecord>(DB_ID, COLLECTION_CARDS)
+    const result = await DB.listDocuments<ICardDocument>(DB_ID, COLLECTION_CARDS)
     const documents = filterDocumentsByUser(result.documents, userId)
 
     return {
@@ -35,15 +35,11 @@ export async function listCards(): Promise<Models.DocumentList<ICardRecord>> {
     }
 }
 
-export async function createCard(
-    documentId: string,
-    data: Omit<Partial<ICardRecord>, '$id' | '$createdAt' | '$updatedAt' | '$permissions' | '$databaseId' | '$collectionId'>,
-) {
+export async function createCard(documentId: string, data: INewCardData) {
     const userId = await getSessionUserId()
-    const category = data.customer?.name
     const payload = {
         ...data,
-        price: toAppwritePrice(data.price ?? 0, category),
+        price: toAppwritePrice(data.price ?? 0, data.customer.name),
         status: toAppwriteStatus(data.status ?? EnumStatus.ideas),
     }
     return DB.createDocument(DB_ID, COLLECTION_CARDS, documentId, payload, buildUserPermissions(userId))
@@ -63,7 +59,7 @@ export async function updateCard(
     let category = data.customerName
 
     if (needsExisting) {
-        const existing = await DB.getDocument<ICardRecord>(DB_ID, COLLECTION_CARDS, documentId)
+        const existing = await DB.getDocument<ICardDocument>(DB_ID, COLLECTION_CARDS, documentId)
         category = data.customerName ?? existing.customer.name
 
         if (data.customerName !== undefined) {

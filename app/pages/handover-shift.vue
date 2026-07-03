@@ -6,7 +6,7 @@ import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Сдача работ | CRM'})
+useSeoMeta({title: 'Сдача работ | ERP'})
 
 const employeeStore = useCrmEmployeeStore()
 const router = useRouter()

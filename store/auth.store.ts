@@ -40,9 +40,20 @@ const defaultUser: IUser = {
     isGuest: false
 }
 
+const guestUser: IUser = {
+    id: undefined,
+    email: 'guest@dealio.demo',
+    name: 'Гость',
+    status: true,
+    isGuest: true
+}
+
 export const useAuthStore = defineStore('auth', {
+    // Гостевой флаг читаем из localStorage синхронно при создании стора —
+    // иначе запросы доски (vue-query) стартуют раньше, чем layout выставит
+    // isGuest, и гость бьёт в Appwrite (2×403 в консоли на каждом холодном старте).
     state: (): IAuthState => ({
-        user: {...defaultUser}
+        user: isGuestSession() ? {...guestUser} : {...defaultUser}
     }),
 
     getters: {
@@ -65,13 +76,7 @@ export const useAuthStore = defineStore('auth', {
 
         setGuest() {
             setGuestSession()
-            this.user = {
-                id: undefined,
-                email: 'guest@dealio.demo',
-                name: 'Гость',
-                status: true,
-                isGuest: true
-            }
+            this.user = {...guestUser}
         },
     }
 })

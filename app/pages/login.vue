@@ -151,7 +151,9 @@ const loginAsGuest = async () => {
   clearCardsCache(queryClient)
   isLoadingStore.set(false)
   await nextTick()
-  await router.replace('/')
+  // «/» принадлежит CRM-потоку (crm-flow.global уводит на /register) —
+  // гостя ведём сразу на доску.
+  await router.replace('/board')
 }
 </script>
 

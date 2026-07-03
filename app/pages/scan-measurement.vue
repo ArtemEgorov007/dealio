@@ -5,7 +5,7 @@ import {useHaptics} from '~/composables/useHaptics'
 
 definePageMeta({layout: 'crm'})
 
-useSeoMeta({title: 'Промеры — считывание | CRM'})
+useSeoMeta({title: 'Промеры — считывание | ERP'})
 
 const sessionStore = useCrmSessionStore()
 const router = useRouter()
