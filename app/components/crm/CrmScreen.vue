@@ -132,8 +132,12 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   -webkit-overflow-scrolling: touch
   display: flex
   flex-direction: column
+  align-items: stretch
   gap: var(--spacing-3)
   padding-bottom: var(--spacing-4)
+
+  > *
+    flex-shrink: 0
 
 .crm-screen__footer
   flex-shrink: 0

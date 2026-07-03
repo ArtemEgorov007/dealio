@@ -66,6 +66,7 @@ const onClick = (event: MouseEvent) => {
 <style scoped lang="sass">
 .crm-list-row
   display: flex
+  flex-shrink: 0
   align-items: center
   gap: 12px
   width: 100%

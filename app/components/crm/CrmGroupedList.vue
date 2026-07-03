@@ -16,6 +16,7 @@ withDefaults(defineProps<{
 .crm-grouped-list
   display: flex
   flex-direction: column
+  flex-shrink: 0
   background-color: var(--color-card-bg)
   border-radius: 13px
   overflow: hidden
