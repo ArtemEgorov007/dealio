@@ -410,7 +410,8 @@ function recordMeasurement_(fio, badge, coverage, zone1, zone2, zone3, zone4, zo
     const z4 = toNum(zone4)
     const z5 = toNum(zone5)
 
-    const rating = coverage + ': ' + [z1, z2, z3, z4, z5].join('/')
+    // Пустые зоны не попадают в оценку — иначе «250/260//240/255» с дырами.
+    const rating = coverage + ': ' + [z1, z2, z3, z4, z5].filter(function (z) { return z !== '' }).join('/')
 
     const row = new Array(header.length).fill('')
     row[dateIdx] = new Date()

@@ -26,8 +26,8 @@ export default defineNuxtConfig({
             ],
             meta: [
                 {name: 'description', content: 'ERP — регистрация, выбор цеха и выдача бирок'},
-                {name: 'theme-color', content: '#000000'},
-                {name: 'color-scheme', content: 'dark'},
+                {name: 'theme-color', content: '#016ED7'},
+                {name: 'color-scheme', content: 'light'},
                 {name: 'mobile-web-app-capable', content: 'yes'},
                 {name: 'apple-mobile-web-app-capable', content: 'yes'},
                 {name: 'apple-mobile-web-app-status-bar-style', content: 'default'},
