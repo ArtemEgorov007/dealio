@@ -169,7 +169,7 @@ onMounted(() => {
   padding: 14px 16px
   border-radius: 13px
   background-color: var(--color-card-bg)
-  box-shadow: 0 1px 0 rgba(0,0,0,0.04)
+  box-shadow: var(--erp-shadow-card, 0 1px 0 rgba(0,0,0,0.04))
 
 .measurement-badge__label
   flex-shrink: 0
@@ -233,5 +233,5 @@ onMounted(() => {
   background: var(--color-card-bg)
   border-radius: 13px
   padding: 4px 16px
-  box-shadow: 0 1px 0 rgba(0,0,0,0.04)
+  box-shadow: var(--erp-shadow-card, 0 1px 0 rgba(0,0,0,0.04))
 </style>

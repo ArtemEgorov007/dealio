@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+
 const route = useRoute()
+const employeeStore = useErpEmployeeStore()
 
 // Таб-бар прячем на входе и на главной-хабе (/register): там навигация —
 // это плитки. В разделах он плавно появляется для переключения.
@@ -7,6 +10,20 @@ const showTabBar = computed(() => {
     const path = route.path.length > 1 ? route.path.replace(/\/$/, '') : route.path
     return path !== '/register' && path !== '/'
 })
+
+// Динамика прав: обновляем доступы при открытии приложения и каждый раз,
+// когда пользователь возвращается в приложение (фокус вкладки/PWA). Так
+// изменение прав в таблице видно без перелогина.
+const refreshAccess = () => {
+    if (document.visibilityState === 'visible') employeeStore.refreshProfile()
+}
+
+onMounted(() => {
+    employeeStore.refreshProfile()
+    document.addEventListener('visibilitychange', refreshAccess)
+})
+
+onBeforeUnmount(() => document.removeEventListener('visibilitychange', refreshAccess))
 </script>
 
 <template>

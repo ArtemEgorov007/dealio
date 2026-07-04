@@ -109,6 +109,22 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
             saveProfile(this.$state as ErpEmployeeProfile)
         },
 
+        // Динамическое обновление прав: тихо перелогиниваемся по сохранённым
+        // учёткам и подтягиваем свежие доступы из таблицы. Ошибку глотаем —
+        // при сбое сети оставляем кэш, работу не прерываем. workshopId не
+        // трогаем (setProfile его не задаёт).
+        async refreshProfile() {
+            if (typeof window === 'undefined') return
+            if (!this.login || !this.password) return
+            try {
+                const {loginErpEmployee} = await import('~/utils/erp-sheets')
+                const profile = await loginErpEmployee(this.login, this.password)
+                this.setProfile(profile)
+            } catch {
+                // сеть/аккаунт недоступны — оставляем кэш
+            }
+        },
+
         setWorkshop(workshopId: WorkshopId) {
             this.workshopId = workshopId
             saveProfile(this.$state as ErpEmployeeProfile)

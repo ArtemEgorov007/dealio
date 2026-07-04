@@ -56,24 +56,26 @@ const clear = () => {
 
 .erp-search__field
   width: 100%
-  height: 36px
-  padding: 0 34px 0 34px
+  height: 40px
+  padding: 0 36px 0 36px
   border: none
-  border-radius: 10px
-  background-color: rgba(118, 118, 128, 0.12)
-  color: var(--color-text)
+  border-radius: 12px
+  /* Белая пилюля — чётко читается на синей градиент-шапке */
+  background-color: #fff
+  color: #16202e
   font-size: 16px
   appearance: none
+  box-shadow: 0 2px 8px -2px rgba(1, 74, 156, 0.25)
 
   &::-webkit-search-cancel-button
     display: none
 
   &::placeholder
-    color: rgba(60, 60, 67, 0.45)
+    color: rgba(60, 60, 67, 0.5)
 
   &:focus-visible
     outline: none
-    box-shadow: 0 0 0 3px rgba(1, 110, 215, 0.15)
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.45)
 
 .erp-search__clear
   position: absolute
@@ -90,8 +92,9 @@ const clear = () => {
   cursor: pointer
 
 .erp-search__meta
-  margin: 6px 0 0
+  margin: 8px 0 0
   padding: 0 4px
   font-size: 13px
-  color: var(--color-text-secondary)
+  font-weight: 500
+  color: rgba(255, 255, 255, 0.9)
 </style>
