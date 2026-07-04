@@ -6,6 +6,7 @@ defineProps<{
   shiftLink?: { to: string; label: string }
   icon?: string
   centerBrand?: boolean
+  footerHidden?: boolean
 }>()
 
 const baseURL = useRuntimeConfig().app.baseURL
@@ -58,8 +59,15 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
       <slot/>
     </div>
 
-    <footer v-if="$slots.footer" class="erp-screen__footer">
-      <slot name="footer"/>
+    <footer
+        v-if="$slots.footer"
+        class="erp-screen__footer"
+        :class="{ 'erp-screen__footer--hidden': footerHidden }"
+        :inert="footerHidden || undefined"
+    >
+      <div class="erp-screen__footer-inner">
+        <slot name="footer"/>
+      </div>
     </footer>
   </section>
 </template>
@@ -195,10 +203,27 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
 
 .erp-screen__footer
   flex-shrink: 0
-  display: flex
-  flex-direction: column
-  gap: var(--spacing-2)
+  display: grid
+  grid-template-rows: 1fr
   padding: var(--spacing-3) var(--spacing-4) calc(var(--spacing-4) + env(safe-area-inset-bottom))
   border-top: 0.5px solid var(--color-border)
   background-color: var(--color-bg)
+  transition: grid-template-rows 0.3s ease, padding 0.3s ease, opacity 0.25s ease, transform 0.3s ease
+
+  /* Плавно уезжает вниз (ввод в поиске) и выезжает обратно */
+  &--hidden
+    grid-template-rows: 0fr
+    padding-top: 0
+    padding-bottom: 0
+    opacity: 0
+    transform: translateY(12px)
+    border-top-color: transparent
+    pointer-events: none
+
+.erp-screen__footer-inner
+  min-height: 0
+  overflow: hidden
+  display: flex
+  flex-direction: column
+  gap: var(--spacing-2)
 </style>

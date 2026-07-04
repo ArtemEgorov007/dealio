@@ -97,6 +97,7 @@ onMounted(loadBadges)
       title="Выбор бирки"
       :subtitle="`Цех: ${workshopTitle}`"
       icon="heroicons:tag"
+      :footer-hidden="query.trim().length > 0"
   >
     <template v-if="!isLoading && !error && badges.length > 0" #search>
       <ErpSearchBar

@@ -174,7 +174,9 @@ const goWarehouse = () => router.push('/warehouse')
     display: none
 
 .erp-tabbar__item
-  flex: 0 0 auto
+  /* Растягиваются на всю ширину бара — иконки стоят по центру,
+     при переполнении бар по-прежнему скроллится */
+  flex: 1 0 auto
   min-width: 60px
   display: flex
   flex-direction: column
