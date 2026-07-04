@@ -164,7 +164,7 @@ const goWarehouse = () => router.push('/warehouse')
   overflow-x: auto
   scrollbar-width: none
   gap: 2px
-  margin: 4px 12px calc(env(safe-area-inset-bottom, 0px) + 10px)
+  margin: 4px 12px calc(env(safe-area-inset-bottom, 0px) + 16px)
   padding: 6px
   border-radius: 20px
   background: #fff
