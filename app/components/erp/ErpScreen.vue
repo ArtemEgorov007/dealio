@@ -67,29 +67,31 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   flex-shrink: 0
   background: var(--erp-grad-header)
   color: #fff
-  padding-top: var(--spacing-4)
-  border-radius: 0 0 22px 22px
+  padding-top: calc(env(safe-area-inset-top, 0px) + 18px)
+  border-radius: 0 0 24px 24px
+  box-shadow: 0 6px 20px -10px rgba(1, 110, 215, 0.5)
 
 .erp-screen__head-inner
-  padding: 0 var(--spacing-4) calc(var(--spacing-5) + 8px)
+  padding: 0 var(--spacing-4) 22px
 
 .erp-screen__head-row
   display: flex
   align-items: center
   justify-content: space-between
   gap: var(--spacing-3)
-  margin-bottom: var(--spacing-4)
+  min-height: 34px
+  margin-bottom: 18px
 
 .erp-screen__brand
   display: flex
+  align-items: center
 
 .erp-screen__brand-mark
-  height: 22px
+  height: 30px
   width: auto
   display: block
   /* Лого не меняем — только рендерим белым для контраста на синей шапке */
   filter: brightness(0) invert(1)
-  opacity: 0.95
 
 .erp-screen__head-actions
   display: flex
@@ -147,11 +149,7 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   flex-direction: column
   align-items: stretch
   gap: var(--spacing-3)
-  /* Тело «наезжает» на градиент — даёт глубину как в макете */
-  margin-top: -14px
-  padding: 0 var(--spacing-4) var(--spacing-4)
-  position: relative
-  z-index: 1
+  padding: 18px var(--spacing-4) var(--spacing-4)
 
   > *
     flex-shrink: 0
