@@ -7,10 +7,10 @@ export default defineNuxtConfig({
 
     runtimeConfig: {
         public: {
-            crmSpreadsheetId: process.env.NUXT_PUBLIC_CRM_SPREADSHEET_ID || '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U',
-            crmIssueSheetGid: process.env.NUXT_PUBLIC_CRM_ISSUE_SHEET_GID || '1376055067',
-            crmSheetsApiKey: process.env.NUXT_PUBLIC_CRM_SHEETS_API_KEY || '',
-            crmGasUrl: process.env.NUXT_PUBLIC_CRM_GAS_URL || '',
+            erpSpreadsheetId: process.env.NUXT_PUBLIC_ERP_SPREADSHEET_ID || '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U',
+            erpIssueSheetGid: process.env.NUXT_PUBLIC_ERP_ISSUE_SHEET_GID || '1376055067',
+            erpSheetsApiKey: process.env.NUXT_PUBLIC_ERP_SHEETS_API_KEY || '',
+            erpGasUrl: process.env.NUXT_PUBLIC_ERP_GAS_URL || '',
         },
     },
 
@@ -77,7 +77,7 @@ export default defineNuxtConfig({
         '@/assets/css/variables.css',
         '@/assets/css/kanban-effects.css',
         '@/assets/css/toast-overrides.css',
-        '@/assets/css/crm-theme.css',
+        '@/assets/css/erp-theme.css',
     ],
 
     pinia: {

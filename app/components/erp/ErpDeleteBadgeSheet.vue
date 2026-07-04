@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import {deleteIssuedBadge} from '~/utils/crm-sheets'
-import {formatBadgeDisplay} from '~/utils/crm-csv'
-import type {CrmIssuedBadgeEntry} from '~~/types/crm.types'
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {deleteIssuedBadge} from '~/utils/erp-sheets'
+import {formatBadgeDisplay} from '~/utils/erp-csv'
+import type {ErpIssuedBadgeEntry} from '~~/types/erp.types'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useHaptics} from '~/composables/useHaptics'
 
 const props = defineProps<{
-  entry: CrmIssuedBadgeEntry | null
+  entry: ErpIssuedBadgeEntry | null
 }>()
 
 const emit = defineEmits<{
-  deleted: [entry: CrmIssuedBadgeEntry]
+  deleted: [entry: ErpIssuedBadgeEntry]
   cancel: []
 }>()
 
-const employeeStore = useCrmEmployeeStore()
+const employeeStore = useErpEmployeeStore()
 const {vibrate} = useHaptics()
 
 type Phase = 'confirm' | 'deleting' | 'error'
@@ -55,7 +55,7 @@ const cancel = () => {
 </script>
 
 <template>
-  <CrmActionSheet
+  <ErpActionSheet
       :open="!!entry"
       :busy="phase === 'deleting'"
       ariaLabel="Подтверждение удаления бирки"
@@ -68,7 +68,7 @@ const cancel = () => {
     <template #actions>
       <button
           type="button"
-          class="crm-sheet-danger-btn"
+          class="erp-sheet-danger-btn"
           :disabled="phase === 'deleting'"
           @click="confirmDelete"
       >
@@ -78,11 +78,11 @@ const cancel = () => {
         Отмена
       </UiButton>
     </template>
-  </CrmActionSheet>
+  </ErpActionSheet>
 </template>
 
 <style scoped lang="sass">
-.crm-sheet-danger-btn
+.erp-sheet-danger-btn
   width: 100%
   height: 44px
   border: none

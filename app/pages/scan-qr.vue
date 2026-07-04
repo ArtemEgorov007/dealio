@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import type QrScanner from 'qr-scanner'
-import {recordPackingEntry} from '~/utils/crm-sheets'
-import {workshopLabel} from '~~/types/crm.types'
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {recordPackingEntry} from '~/utils/erp-sheets'
+import {workshopLabel} from '~~/types/erp.types'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useAppToast} from '~/composables/useAppToast'
 import {useHaptics} from '~/composables/useHaptics'
 
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 
 useSeoMeta({title: 'Считывание QR | ERP'})
 
-const employeeStore = useCrmEmployeeStore()
+const employeeStore = useErpEmployeeStore()
 const router = useRouter()
 const {showSuccess, showError} = useAppToast()
 const {vibrate} = useHaptics()
@@ -99,45 +99,45 @@ const changeWorkshop = () => {
 </script>
 
 <template>
-  <CrmScreen
+  <ErpScreen
       title="Считывание QR"
       :subtitle="`Упаковка · Цех: ${workshopTitle}`"
       icon="heroicons:qr-code"
   >
-    <div class="crm-scan-viewport">
-      <video ref="videoEl" class="crm-scan-video" muted playsinline/>
+    <div class="erp-scan-viewport">
+      <video ref="videoEl" class="erp-scan-video" muted playsinline/>
 
-      <div v-if="status === 'saving'" class="crm-scan-overlay">
-        <CrmEmptyState loading/>
+      <div v-if="status === 'saving'" class="erp-scan-overlay">
+        <ErpEmptyState loading/>
         <span>Записываем…</span>
       </div>
 
-      <div v-if="status === 'unsupported'" class="crm-scan-overlay">
+      <div v-if="status === 'unsupported'" class="erp-scan-overlay">
         <p>Камера не найдена на этом устройстве</p>
       </div>
 
-      <div v-if="status === 'denied'" class="crm-scan-overlay">
+      <div v-if="status === 'denied'" class="erp-scan-overlay">
         <p>Нет доступа к камере — разрешите доступ в настройках браузера и обновите страницу</p>
       </div>
     </div>
 
-    <p class="crm-scan-hint">Наведите камеру на QR-код бирки на упаковке</p>
+    <p class="erp-scan-hint">Наведите камеру на QR-код бирки на упаковке</p>
 
     <template #footer>
       <UiButton block variant="outline" @click="changeWorkshop">
         Сменить цех
       </UiButton>
     </template>
-  </CrmScreen>
+  </ErpScreen>
 </template>
 
 <style scoped lang="sass">
-.crm-scan-video
+.erp-scan-video
   width: 100%
   height: 100%
   object-fit: cover
 
-.crm-scan-overlay
+.erp-scan-overlay
   position: absolute
   inset: 0
   display: flex

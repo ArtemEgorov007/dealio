@@ -1,6 +1,6 @@
 import {defineStore} from 'pinia'
 
-export const useCrmSessionStore = defineStore('crm-session', {
+export const useErpSessionStore = defineStore('erp-session', {
     state: () => ({
         selectedBadge: '' as string,
         issued: false,

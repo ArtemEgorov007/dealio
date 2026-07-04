@@ -1,11 +1,11 @@
 <template>
-  <p class="crm-section-label">
+  <p class="erp-section-label">
     <slot/>
   </p>
 </template>
 
 <style scoped lang="sass">
-.crm-section-label
+.erp-section-label
   margin: 0 0 8px
   padding: 0 16px
   font-size: 13px

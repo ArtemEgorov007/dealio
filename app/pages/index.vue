@@ -1,13 +1,13 @@
 <script setup lang="ts">
-// Точка входа CRM — редирект в middleware crm-flow.global.ts
+// Точка входа ERP — редирект в middleware erp-flow.global.ts
 </script>
 
 <template>
-  <div class="crm-entry"/>
+  <div class="erp-entry"/>
 </template>
 
 <style scoped lang="sass">
-.crm-entry
+.erp-entry
   min-height: 100dvh
   background-color: var(--color-bg)
 </style>

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import {fetchWorkshopBadges} from '~/utils/crm-sheets'
-import {formatBadgeDisplay} from '~/utils/crm-csv'
-import {workshopLabel} from '~~/types/crm.types'
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
-import {useCrmSessionStore} from '~~/store/crm-session.store'
+import {fetchWorkshopBadges} from '~/utils/erp-sheets'
+import {formatBadgeDisplay} from '~/utils/erp-csv'
+import {workshopLabel} from '~~/types/erp.types'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+import {useErpSessionStore} from '~~/store/erp-session.store'
 
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 
 useSeoMeta({title: 'Выбор бирки | ERP'})
 
-const employeeStore = useCrmEmployeeStore()
-const sessionStore = useCrmSessionStore()
+const employeeStore = useErpEmployeeStore()
+const sessionStore = useErpSessionStore()
 const router = useRouter()
 
 const badges = ref<string[]>([])
@@ -75,40 +75,40 @@ onMounted(loadBadges)
 </script>
 
 <template>
-  <CrmScreen
+  <ErpScreen
       title="Выбор бирки"
       :subtitle="`Цех: ${workshopTitle}`"
       :shift-link="{ to: '/shift', label: 'Бирки за смену' }"
       icon="heroicons:tag"
   >
     <template v-if="!isLoading && !error && badges.length > 0" #search>
-      <CrmSearchBar
+      <ErpSearchBar
           v-model="query"
           placeholder="Поиск по бирке"
           :count-label="searchCountLabel"
       />
     </template>
 
-    <CrmEmptyState v-if="isLoading" loading>
+    <ErpEmptyState v-if="isLoading" loading>
       <span>Загрузка списка…</span>
-    </CrmEmptyState>
+    </ErpEmptyState>
 
-    <CrmEmptyState v-else-if="error" error>
+    <ErpEmptyState v-else-if="error" error>
       <p>{{ error }}</p>
       <UiButton variant="outline" @click="loadBadges">Повторить</UiButton>
-    </CrmEmptyState>
+    </ErpEmptyState>
 
-    <CrmEmptyState v-else-if="badges.length === 0">
+    <ErpEmptyState v-else-if="badges.length === 0">
       <p>Для цеха «{{ workshopTitle }}» бирки не найдены</p>
-    </CrmEmptyState>
+    </ErpEmptyState>
 
-    <CrmEmptyState v-else-if="filteredBadges.length === 0">
+    <ErpEmptyState v-else-if="filteredBadges.length === 0">
       <p>Ничего не найдено по запросу «{{ query }}»</p>
       <UiButton variant="outline" @click="query = ''">Очистить поиск</UiButton>
-    </CrmEmptyState>
+    </ErpEmptyState>
 
-    <CrmGroupedList v-else>
-      <CrmListRow
+    <ErpGroupedList v-else>
+      <ErpListRow
           v-for="badge in filteredBadges"
           :key="badge"
           chevron
@@ -116,17 +116,17 @@ onMounted(loadBadges)
           @click="selectBadge(badge)"
       >
         {{ formatBadgeDisplay(badge) }}
-      </CrmListRow>
-    </CrmGroupedList>
+      </ErpListRow>
+    </ErpGroupedList>
 
     <template #footer>
       <UiButton variant="ghost" block @click="changeWorkshop">
         Сменить цех
       </UiButton>
     </template>
-  </CrmScreen>
+  </ErpScreen>
 
-  <CrmBadgeConfirmSheet
+  <ErpBadgeConfirmSheet
       :badge="pendingBadge"
       @issued="onBadgeIssued"
       @cancel="cancelPendingBadge"

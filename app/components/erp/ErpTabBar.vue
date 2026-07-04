@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 
 const route = useRoute()
 const router = useRouter()
-const employeeStore = useCrmEmployeeStore()
+const employeeStore = useErpEmployeeStore()
 
 const isPackingSection = computed(() =>
     route.path === '/scan-qr' || (route.path === '/workshop' && route.query.flow === 'packing'),
@@ -45,11 +45,11 @@ const goWarehouse = () => router.push('/warehouse')
 </script>
 
 <template>
-  <nav class="crm-tabbar" aria-label="Разделы ERP">
+  <nav class="erp-tabbar" aria-label="Разделы ERP">
     <button
         type="button"
-        class="crm-tabbar__item"
-        :class="{ 'crm-tabbar__item--active': isProfileSection }"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isProfileSection }"
         @click="goProfile"
     >
       <Icon name="heroicons:user-circle" size="22"/>
@@ -59,8 +59,8 @@ const goWarehouse = () => router.push('/warehouse')
     <button
         v-if="!employeeStore.hasFio || access.badges"
         type="button"
-        class="crm-tabbar__item"
-        :class="{ 'crm-tabbar__item--active': isBadgesSection }"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isBadgesSection }"
         @click="goBadges"
     >
       <Icon name="heroicons:tag" size="22"/>
@@ -70,8 +70,8 @@ const goWarehouse = () => router.push('/warehouse')
     <button
         v-if="!employeeStore.hasFio || access.measurements"
         type="button"
-        class="crm-tabbar__item"
-        :class="{ 'crm-tabbar__item--active': isMeasurementSection }"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isMeasurementSection }"
         @click="goMeasurements"
     >
       <Icon name="heroicons:beaker" size="22"/>
@@ -81,8 +81,8 @@ const goWarehouse = () => router.push('/warehouse')
     <button
         v-if="!employeeStore.hasFio || access.packing"
         type="button"
-        class="crm-tabbar__item"
-        :class="{ 'crm-tabbar__item--active': isPackingSection }"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isPackingSection }"
         @click="goPacking"
     >
       <Icon name="heroicons:qr-code" size="22"/>
@@ -92,8 +92,8 @@ const goWarehouse = () => router.push('/warehouse')
     <button
         v-if="!employeeStore.hasFio || access.handover"
         type="button"
-        class="crm-tabbar__item"
-        :class="{ 'crm-tabbar__item--active': isHandoverSection }"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isHandoverSection }"
         @click="goHandover"
     >
       <Icon name="heroicons:check-badge" size="22"/>
@@ -103,8 +103,8 @@ const goWarehouse = () => router.push('/warehouse')
     <button
         v-if="!employeeStore.hasFio || access.reports"
         type="button"
-        class="crm-tabbar__item"
-        :class="{ 'crm-tabbar__item--active': isReportsSection }"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isReportsSection }"
         @click="goReports"
     >
       <Icon name="heroicons:chart-bar" size="22"/>
@@ -114,8 +114,8 @@ const goWarehouse = () => router.push('/warehouse')
     <button
         v-if="!employeeStore.hasFio || access.approvals"
         type="button"
-        class="crm-tabbar__item"
-        :class="{ 'crm-tabbar__item--active': isApprovalsSection }"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isApprovalsSection }"
         @click="goApprovals"
     >
       <Icon name="heroicons:check-circle" size="22"/>
@@ -125,8 +125,8 @@ const goWarehouse = () => router.push('/warehouse')
     <button
         v-if="!employeeStore.hasFio || access.supply"
         type="button"
-        class="crm-tabbar__item"
-        :class="{ 'crm-tabbar__item--active': isSupplySection }"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isSupplySection }"
         @click="goSupply"
     >
       <Icon name="heroicons:truck" size="22"/>
@@ -136,8 +136,8 @@ const goWarehouse = () => router.push('/warehouse')
     <button
         v-if="!employeeStore.hasFio || access.orders"
         type="button"
-        class="crm-tabbar__item"
-        :class="{ 'crm-tabbar__item--active': isOrdersSection }"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isOrdersSection }"
         @click="goOrders"
     >
       <Icon name="heroicons:shopping-bag" size="22"/>
@@ -147,8 +147,8 @@ const goWarehouse = () => router.push('/warehouse')
     <button
         v-if="!employeeStore.hasFio || access.warehouse"
         type="button"
-        class="crm-tabbar__item"
-        :class="{ 'crm-tabbar__item--active': isWarehouseSection }"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isWarehouseSection }"
         @click="goWarehouse"
     >
       <Icon name="heroicons:archive-box" size="22"/>
@@ -158,7 +158,7 @@ const goWarehouse = () => router.push('/warehouse')
 </template>
 
 <style scoped lang="sass">
-.crm-tabbar
+.erp-tabbar
   flex-shrink: 0
   display: flex
   overflow-x: auto
@@ -175,7 +175,7 @@ const goWarehouse = () => router.push('/warehouse')
   &::-webkit-scrollbar
     display: none
 
-.crm-tabbar__item
+.erp-tabbar__item
   flex: 0 0 auto
   min-width: 60px
   display: flex

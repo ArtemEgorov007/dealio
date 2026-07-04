@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import {fetchHandedOverBadgesToday} from '~/utils/crm-sheets'
-import {formatBadgeDisplay} from '~/utils/crm-csv'
-import type {CrmIssuedBadgeEntry} from '~~/types/crm.types'
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {fetchHandedOverBadgesToday} from '~/utils/erp-sheets'
+import {formatBadgeDisplay} from '~/utils/erp-csv'
+import type {ErpIssuedBadgeEntry} from '~~/types/erp.types'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 
 useSeoMeta({title: 'Сдача работ | ERP'})
 
-const employeeStore = useCrmEmployeeStore()
+const employeeStore = useErpEmployeeStore()
 const router = useRouter()
 
-const entries = ref<CrmIssuedBadgeEntry[]>([])
+const entries = ref<ErpIssuedBadgeEntry[]>([])
 const isLoading = ref(true)
 const error = ref('')
-const pendingUndo = ref<CrmIssuedBadgeEntry | null>(null)
+const pendingUndo = ref<ErpIssuedBadgeEntry | null>(null)
 
 const load = async () => {
     isLoading.value = true
@@ -33,7 +33,7 @@ const goBack = () => {
     router.push('/scan-handover')
 }
 
-const requestUndo = (entry: CrmIssuedBadgeEntry) => {
+const requestUndo = (entry: ErpIssuedBadgeEntry) => {
     pendingUndo.value = entry
 }
 
@@ -41,7 +41,7 @@ const cancelUndo = () => {
     pendingUndo.value = null
 }
 
-const onUndone = (entry: CrmIssuedBadgeEntry) => {
+const onUndone = (entry: ErpIssuedBadgeEntry) => {
     entries.value = entries.value.filter(item => item.row !== entry.row)
     pendingUndo.value = null
 }
@@ -50,29 +50,29 @@ onMounted(load)
 </script>
 
 <template>
-  <CrmScreen
+  <ErpScreen
       title="Сдача работ"
       :subtitle="employeeStore.fio"
       icon="heroicons:check-badge"
   >
-    <CrmEmptyState v-if="isLoading" loading>
+    <ErpEmptyState v-if="isLoading" loading>
       <span>Загрузка…</span>
-    </CrmEmptyState>
+    </ErpEmptyState>
 
-    <CrmEmptyState v-else-if="error" error>
+    <ErpEmptyState v-else-if="error" error>
       <p>{{ error }}</p>
       <UiButton variant="outline" @click="load">Повторить</UiButton>
-    </CrmEmptyState>
+    </ErpEmptyState>
 
-    <CrmEmptyState v-else-if="entries.length === 0">
+    <ErpEmptyState v-else-if="entries.length === 0">
       <p>За смену сдач пока не было</p>
-    </CrmEmptyState>
+    </ErpEmptyState>
 
     <template v-else>
-      <CrmSectionLabel>Сдано сегодня: {{ entries.length }}</CrmSectionLabel>
+      <ErpSectionLabel>Сдано сегодня: {{ entries.length }}</ErpSectionLabel>
 
-      <CrmGroupedList>
-        <CrmListRow
+      <ErpGroupedList>
+        <ErpListRow
             v-for="entry in entries"
             :key="entry.row"
             tag="article"
@@ -86,15 +86,15 @@ onMounted(load)
           <template #trailing>
             <button
                 type="button"
-                class="crm-row-action crm-row-action--danger"
+                class="erp-row-action erp-row-action--danger"
                 aria-label="Отменить сдачу"
                 @click.stop="requestUndo(entry)"
             >
               <Icon name="heroicons:arrow-uturn-left" size="16"/>
             </button>
           </template>
-        </CrmListRow>
-      </CrmGroupedList>
+        </ErpListRow>
+      </ErpGroupedList>
     </template>
 
     <template #footer>
@@ -102,9 +102,9 @@ onMounted(load)
         Назад
       </UiButton>
     </template>
-  </CrmScreen>
+  </ErpScreen>
 
-  <CrmUndoHandoverSheet
+  <ErpUndoHandoverSheet
       :entry="pendingUndo"
       @undone="onUndone"
       @cancel="cancelUndo"

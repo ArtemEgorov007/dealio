@@ -1,5 +1,5 @@
 <template>
-  <div class="crm-grouped-list" :class="{'crm-grouped-list--inset': inset}">
+  <div class="erp-grouped-list" :class="{'erp-grouped-list--inset': inset}">
     <slot/>
   </div>
 </template>
@@ -13,14 +13,14 @@ withDefaults(defineProps<{
 </script>
 
 <style scoped lang="sass">
-.crm-grouped-list
+.erp-grouped-list
   display: flex
   flex-direction: column
   flex-shrink: 0
   background-color: var(--color-card-bg)
-  border-radius: 13px
+  border-radius: 14px
   overflow: hidden
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04)
+  box-shadow: var(--erp-shadow-card, 0 1px 0 rgba(0, 0, 0, 0.04))
 
   &--inset
     margin: 0

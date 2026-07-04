@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import {
-    getCrmGasUrl,
-    getCrmSheetsMode,
-    saveCrmGasUrl,
-    testCrmGasConnection,
-} from '~/utils/crm-sheets'
-import {DEFAULT_SPREADSHEET_ID} from '~/utils/crm-sheets'
+    getErpGasUrl,
+    getErpSheetsMode,
+    saveErpGasUrl,
+    testErpGasConnection,
+} from '~/utils/erp-sheets'
+import {DEFAULT_SPREADSHEET_ID} from '~/utils/erp-sheets'
 
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 
 useSeoMeta({title: 'Подключение таблицы | ERP'})
 
-const gasUrl = ref(getCrmGasUrl())
+const gasUrl = ref(getErpGasUrl())
 const testResult = ref('')
 const isTesting = ref(false)
-const sheetsMode = computed(() => getCrmSheetsMode())
+const sheetsMode = computed(() => getErpSheetsMode())
 
-const GAS_CODE_FILE = 'scripts/crm-gas-webapp.js'
+const GAS_CODE_FILE = 'scripts/erp-gas-webapp.js'
 const FINDTAG_PROJECT_URL = 'https://script.google.com/home/projects/1m7e2q7A6IxEaf6xT10US-AATUyms3BgEbInPCVg_fWOr3-dztQrYY76s/edit'
 
 const saveUrl = () => {
@@ -25,7 +25,7 @@ const saveUrl = () => {
         return
     }
 
-    saveCrmGasUrl(gasUrl.value.trim())
+    saveErpGasUrl(gasUrl.value.trim())
     testResult.value = 'URL сохранён в localStorage'
 }
 
@@ -38,9 +38,9 @@ const runTest = async () => {
     isTesting.value = true
     testResult.value = 'Проверка…'
 
-    const result = await testCrmGasConnection(gasUrl.value.trim())
+    const result = await testErpGasConnection(gasUrl.value.trim())
     if (result.ok) {
-        saveCrmGasUrl(gasUrl.value.trim())
+        saveErpGasUrl(gasUrl.value.trim())
         testResult.value = `OK · Колпино: ${result.badgesCount} бирок`
     } else {
         testResult.value = result.error || 'Ошибка'
@@ -51,7 +51,7 @@ const runTest = async () => {
 </script>
 
 <template>
-  <CrmScreen title="Подключение таблицы">
+  <ErpScreen title="Подключение таблицы">
     <p class="setup-lead">
       Таблица:
       <a
@@ -76,10 +76,10 @@ const runTest = async () => {
       <p class="setup-card__hint setup-card__hint--warn">
         <a :href="FINDTAG_PROJECT_URL" target="_blank" rel="noopener">FindTagMFT</a>
         (Telegram-бот) не трогаем — у него свой деплой и триггеры.
-        CRM — новый проект Apps Script только для журнала.
+        ERP — новый проект Apps Script только для журнала.
       </p>
       <ol class="setup-steps">
-        <li><a href="https://script.google.com/home" target="_blank" rel="noopener">script.google.com</a> → <strong>Создать проект</strong> (название, напр. «CRM Ведомости»)</li>
+        <li><a href="https://script.google.com/home" target="_blank" rel="noopener">script.google.com</a> → <strong>Создать проект</strong> (название, напр. «ERP Ведомости»)</li>
         <li>Вставьте код из <code>{{ GAS_CODE_FILE }}</code></li>
         <li><strong>Развернуть → Новое развёртывание → Веб-приложение</strong></li>
         <li>Запуск от имени: <strong>Я</strong> · Доступ: <strong>Все</strong></li>
@@ -102,7 +102,7 @@ const runTest = async () => {
 
       <p v-if="testResult" class="setup-result">{{ testResult }}</p>
     </div>
-  </CrmScreen>
+  </ErpScreen>
 </template>
 
 <style scoped lang="sass">

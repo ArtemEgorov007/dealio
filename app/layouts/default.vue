@@ -36,9 +36,9 @@ const {resume} = useIntervalFn(pruneGuestArchive, PRUNE_INTERVAL_MS, {
 })
 
   onMounted(async () => {
-  const CRM_PATHS = ['/register', '/workshop', '/badges', '/receipt']
+  const ERP_PATHS = ['/register', '/workshop', '/badges', '/receipt']
 
-  if (CRM_PATHS.includes(route.path)) {
+  if (ERP_PATHS.includes(route.path)) {
     isLoadingStore.set(false)
     return
   }

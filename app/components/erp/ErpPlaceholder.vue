@@ -7,17 +7,17 @@ defineProps<{
 </script>
 
 <template>
-  <CrmGroupedList>
-    <div class="crm-placeholder">
-      <Icon :name="icon" size="40" class="crm-placeholder__icon"/>
-      <p class="crm-placeholder__title">{{ title ?? 'Раздел в разработке' }}</p>
-      <p v-if="description" class="crm-placeholder__text">{{ description }}</p>
+  <ErpGroupedList>
+    <div class="erp-placeholder">
+      <Icon :name="icon" size="40" class="erp-placeholder__icon"/>
+      <p class="erp-placeholder__title">{{ title ?? 'Раздел в разработке' }}</p>
+      <p v-if="description" class="erp-placeholder__text">{{ description }}</p>
     </div>
-  </CrmGroupedList>
+  </ErpGroupedList>
 </template>
 
 <style scoped lang="sass">
-.crm-placeholder
+.erp-placeholder
   display: flex
   flex-direction: column
   align-items: center
@@ -25,16 +25,16 @@ defineProps<{
   padding: 36px 20px
   text-align: center
 
-.crm-placeholder__icon
+.erp-placeholder__icon
   color: rgba(60, 60, 67, 0.30)
 
-.crm-placeholder__title
+.erp-placeholder__title
   margin: 0
   font-size: 17px
   font-weight: 600
   color: var(--color-text)
 
-.crm-placeholder__text
+.erp-placeholder__text
   margin: 0
   font-size: 15px
   line-height: 1.4

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import {appendBadgeJournalEntry} from '~/utils/crm-sheets'
-import {formatBadgeDisplay} from '~/utils/crm-csv'
-import {workshopLabel} from '~~/types/crm.types'
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {appendBadgeJournalEntry} from '~/utils/erp-sheets'
+import {formatBadgeDisplay} from '~/utils/erp-csv'
+import {workshopLabel} from '~~/types/erp.types'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useHaptics} from '~/composables/useHaptics'
 
 const props = defineProps<{
@@ -14,7 +14,7 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const employeeStore = useCrmEmployeeStore()
+const employeeStore = useErpEmployeeStore()
 const {vibrate} = useHaptics()
 
 type Phase = 'confirm' | 'saving' | 'error'
@@ -67,7 +67,7 @@ const cancel = () => {
 </script>
 
 <template>
-  <CrmActionSheet
+  <ErpActionSheet
       :open="!!badge"
       :busy="phase === 'saving'"
       ariaLabel="Подтверждение выдачи бирки"
@@ -85,5 +85,5 @@ const cancel = () => {
         {{ phase === 'error' ? 'Отмена' : 'Это не та бирка' }}
       </UiButton>
     </template>
-  </CrmActionSheet>
+  </ErpActionSheet>
 </template>

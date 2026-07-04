@@ -37,7 +37,7 @@ types/cards.types.ts    — типы (Appwrite collection `deals`)
 
 ## Appwrite + GitHub Pages
 
-Проект: `crm-system-nuxt-record123` · БД: `data-base` · коллекции: `deals`, `comments`.
+Проект: `erp-system-nuxt-record123` · БД: `data-base` · коллекции: `deals`, `comments`.
 
 Прод: [artemegorov007.github.io/dealio](https://artemegorov007.github.io/dealio/)
 
@@ -50,7 +50,7 @@ types/cards.types.ts    — типы (Appwrite collection `deals`)
 
 Маппинг UI ↔ Appwrite: `app/utils/appwrite-status.ts`, `app/utils/card-priority.ts`.
 
-В [Appwrite Console](https://cloud.appwrite.io/console/project-fra-crm-system-nuxt-record123):
+В [Appwrite Console](https://cloud.appwrite.io/console/project-fra-erp-system-nuxt-record123):
 
 - **Platforms** — `localhost`, `artemegorov007.github.io`
 - **Auth** — Email/Password
@@ -130,7 +130,7 @@ types/cards.types.ts    — типы (Appwrite collection `deals`)
 
 ### Нативность на телефоне
 
-- **PWA** — `manifest.json` + иконки 192/512 из логотипа заказчика; ставится на экран телефона как обычное приложение, открывается сразу в CRM-потоке, без адресной строки браузера
+- **PWA** — `manifest.json` + иконки 192/512 из логотипа заказчика; ставится на экран телефона как обычное приложение, открывается сразу в ERP-потоке, без адресной строки браузера
 - **Фирменная светлая тема** (`#FBFBFB` / `#016ED7` / `#3897ED` / `#D8FAFF`) и логотип «Морфлот Технология» — только на 4 экранах выдачи, kanban-трекер Dealio остаётся тёмным
 
 ### Ключевые файлы
@@ -138,12 +138,12 @@ types/cards.types.ts    — типы (Appwrite collection `deals`)
 | Область | Файлы |
 |---------|-------|
 | Экраны выдачи | `app/pages/register.vue`, `workshop.vue`, `badges.vue`, `receipt.vue` |
-| Поток/роутинг | `app/middleware/crm-flow.global.ts` |
-| Сессия выдачи (защита от дублей) | `store/crm-session.store.ts` |
-| Google Sheets / GAS | `app/utils/crm-sheets.ts`, `scripts/crm-gas-webapp.js` |
-| Фирменная тема (только CRM-экраны) | `app/assets/css/crm-theme.css` |
+| Поток/роутинг | `app/middleware/erp-flow.global.ts` |
+| Сессия выдачи (защита от дублей) | `store/erp-session.store.ts` |
+| Google Sheets / GAS | `app/utils/erp-sheets.ts`, `scripts/erp-gas-webapp.js` |
+| Фирменная тема (только ERP-экраны) | `app/assets/css/erp-theme.css` |
 | PWA | `public/manifest.json`, `public/icon-192.png`, `public/icon-512.png` |
-| Подключение журнала на устройстве | `app/pages/crm-setup.vue` |
+| Подключение журнала на устройстве | `app/pages/erp-setup.vue` |
 
 ## Скрипты
 

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type QrScanner from 'qr-scanner'
-import {useCrmSessionStore} from '~~/store/crm-session.store'
+import {useErpSessionStore} from '~~/store/erp-session.store'
 import {useHaptics} from '~/composables/useHaptics'
 
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 
 useSeoMeta({title: 'Промеры — считывание | ERP'})
 
-const sessionStore = useCrmSessionStore()
+const sessionStore = useErpSessionStore()
 const router = useRouter()
 const {vibrate} = useHaptics()
 
@@ -72,34 +72,34 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <CrmScreen
+  <ErpScreen
       title="Промеры"
       subtitle="Считайте QR бирки для ввода промеров"
       icon="heroicons:beaker"
   >
-    <div class="crm-scan-viewport">
-      <video ref="videoEl" class="crm-scan-video" muted playsinline/>
+    <div class="erp-scan-viewport">
+      <video ref="videoEl" class="erp-scan-video" muted playsinline/>
 
-      <div v-if="status === 'unsupported'" class="crm-scan-overlay">
+      <div v-if="status === 'unsupported'" class="erp-scan-overlay">
         <p>Камера не найдена на этом устройстве</p>
       </div>
 
-      <div v-if="status === 'denied'" class="crm-scan-overlay">
+      <div v-if="status === 'denied'" class="erp-scan-overlay">
         <p>Нет доступа к камере — разрешите доступ в настройках браузера и обновите страницу</p>
       </div>
     </div>
 
-    <p class="crm-scan-hint">Наведите камеру на QR-код бирки</p>
-  </CrmScreen>
+    <p class="erp-scan-hint">Наведите камеру на QR-код бирки</p>
+  </ErpScreen>
 </template>
 
 <style scoped lang="sass">
-.crm-scan-video
+.erp-scan-video
   width: 100%
   height: 100%
   object-fit: cover
 
-.crm-scan-overlay
+.erp-scan-overlay
   position: absolute
   inset: 0
   display: flex

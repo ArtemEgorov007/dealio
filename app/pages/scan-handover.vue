@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type QrScanner from 'qr-scanner'
-import {recordHandoverEntry} from '~/utils/crm-sheets'
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {recordHandoverEntry} from '~/utils/erp-sheets'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useAppToast} from '~/composables/useAppToast'
 import {useHaptics} from '~/composables/useHaptics'
 
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 
 useSeoMeta({title: 'Сдача работ | ERP'})
 
-const employeeStore = useCrmEmployeeStore()
+const employeeStore = useErpEmployeeStore()
 const {showSuccess, showError} = useAppToast()
 const {vibrate} = useHaptics()
 
@@ -89,40 +89,40 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <CrmScreen
+  <ErpScreen
       title="Сдача работ"
       subtitle="Считайте QR бирки для записи сдачи"
       :shift-link="{ to: '/handover-shift', label: 'Сдачи' }"
       icon="heroicons:check-badge"
   >
-    <div class="crm-scan-viewport">
-      <video ref="videoEl" class="crm-scan-video" muted playsinline/>
+    <div class="erp-scan-viewport">
+      <video ref="videoEl" class="erp-scan-video" muted playsinline/>
 
-      <div v-if="status === 'saving'" class="crm-scan-overlay">
-        <CrmEmptyState loading/>
+      <div v-if="status === 'saving'" class="erp-scan-overlay">
+        <ErpEmptyState loading/>
         <span>Записываем…</span>
       </div>
 
-      <div v-if="status === 'unsupported'" class="crm-scan-overlay">
+      <div v-if="status === 'unsupported'" class="erp-scan-overlay">
         <p>Камера не найдена на этом устройстве</p>
       </div>
 
-      <div v-if="status === 'denied'" class="crm-scan-overlay">
+      <div v-if="status === 'denied'" class="erp-scan-overlay">
         <p>Нет доступа к камере — разрешите доступ в настройках браузера и обновите страницу</p>
       </div>
     </div>
 
-    <p class="crm-scan-hint">Наведите камеру на QR-код бирки</p>
-  </CrmScreen>
+    <p class="erp-scan-hint">Наведите камеру на QR-код бирки</p>
+  </ErpScreen>
 </template>
 
 <style scoped lang="sass">
-.crm-scan-video
+.erp-scan-video
   width: 100%
   height: 100%
   object-fit: cover
 
-.crm-scan-overlay
+.erp-scan-overlay
   position: absolute
   inset: 0
   display: flex

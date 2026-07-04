@@ -7,19 +7,19 @@ defineProps<{
 
 <template>
   <div
-      class="crm-empty"
+      class="erp-empty"
       :class="{
-        'crm-empty--error': error,
-        'crm-empty--loading': loading,
+        'erp-empty--error': error,
+        'erp-empty--loading': loading,
       }"
   >
-    <div v-if="loading" class="crm-empty__spinner" aria-hidden="true"/>
+    <div v-if="loading" class="erp-empty__spinner" aria-hidden="true"/>
     <slot/>
   </div>
 </template>
 
 <style scoped lang="sass">
-.crm-empty
+.erp-empty
   display: flex
   flex-direction: column
   align-items: center
@@ -34,15 +34,15 @@ defineProps<{
   &--error
     color: var(--color-danger)
 
-.crm-empty__spinner
+.erp-empty__spinner
   width: 28px
   height: 28px
   border: 2px solid rgba(60, 60, 67, 0.18)
   border-top-color: var(--color-primary)
   border-radius: 50%
-  animation: crm-spin 0.8s linear infinite
+  animation: erp-spin 0.8s linear infinite
 
-@keyframes crm-spin
+@keyframes erp-spin
   to
     transform: rotate(360deg)
 </style>

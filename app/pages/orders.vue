@@ -1,10 +1,10 @@
 <script setup lang="ts">
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 useSeoMeta({title: 'Заказы | ERP'})
 </script>
 
 <template>
-  <CrmScreen title="Заказы" icon="heroicons:shopping-bag">
-    <CrmPlaceholder icon="heroicons:shopping-bag"/>
-  </CrmScreen>
+  <ErpScreen title="Заказы" icon="heroicons:shopping-bag">
+    <ErpPlaceholder icon="heroicons:shopping-bag"/>
+  </ErpScreen>
 </template>

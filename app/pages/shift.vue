@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import {fetchIssuedBadgesToday} from '~/utils/crm-sheets'
-import {formatBadgeDisplay} from '~/utils/crm-csv'
-import {workshopLabel} from '~~/types/crm.types'
-import type {CrmIssuedBadgeEntry} from '~~/types/crm.types'
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
+import {fetchIssuedBadgesToday} from '~/utils/erp-sheets'
+import {formatBadgeDisplay} from '~/utils/erp-csv'
+import {workshopLabel} from '~~/types/erp.types'
+import type {ErpIssuedBadgeEntry} from '~~/types/erp.types'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useAppToast} from '~/composables/useAppToast'
 
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 
 useSeoMeta({title: 'Бирки за смену | ERP'})
 
-const employeeStore = useCrmEmployeeStore()
+const employeeStore = useErpEmployeeStore()
 const router = useRouter()
 const {showSuccess, showError} = useAppToast()
 
-const entries = ref<CrmIssuedBadgeEntry[]>([])
+const entries = ref<ErpIssuedBadgeEntry[]>([])
 const isLoading = ref(true)
 const error = ref('')
-const pendingDelete = ref<CrmIssuedBadgeEntry | null>(null)
+const pendingDelete = ref<ErpIssuedBadgeEntry | null>(null)
 
-const CHECKED_STORAGE_KEY = 'crm-shift-checked'
+const CHECKED_STORAGE_KEY = 'erp-shift-checked'
 
 const todayDateKey = (): string => {
     const now = new Date()
@@ -78,7 +78,7 @@ const goBack = () => {
     router.back()
 }
 
-const copyBadge = async (entry: CrmIssuedBadgeEntry) => {
+const copyBadge = async (entry: ErpIssuedBadgeEntry) => {
     try {
         await navigator.clipboard.writeText(entry.badge)
         showSuccess('Скопировано в буфер обмена')
@@ -87,7 +87,7 @@ const copyBadge = async (entry: CrmIssuedBadgeEntry) => {
     }
 }
 
-const requestDelete = (entry: CrmIssuedBadgeEntry) => {
+const requestDelete = (entry: ErpIssuedBadgeEntry) => {
     pendingDelete.value = entry
 }
 
@@ -95,7 +95,7 @@ const cancelDelete = () => {
     pendingDelete.value = null
 }
 
-const onDeleted = (entry: CrmIssuedBadgeEntry) => {
+const onDeleted = (entry: ErpIssuedBadgeEntry) => {
     entries.value = entries.value.filter(item => item.row !== entry.row)
     pendingDelete.value = null
 }
@@ -104,29 +104,29 @@ onMounted(load)
 </script>
 
 <template>
-  <CrmScreen
+  <ErpScreen
       title="Бирки за смену"
       :subtitle="workshopTitle ? `${employeeStore.fio} · ${workshopTitle}` : employeeStore.fio"
       icon="heroicons:tag"
   >
-    <CrmEmptyState v-if="isLoading" loading>
+    <ErpEmptyState v-if="isLoading" loading>
       <span>Загрузка…</span>
-    </CrmEmptyState>
+    </ErpEmptyState>
 
-    <CrmEmptyState v-else-if="error" error>
+    <ErpEmptyState v-else-if="error" error>
       <p>{{ error }}</p>
       <UiButton variant="outline" @click="load">Повторить</UiButton>
-    </CrmEmptyState>
+    </ErpEmptyState>
 
-    <CrmEmptyState v-else-if="entries.length === 0">
+    <ErpEmptyState v-else-if="entries.length === 0">
       <p>За смену бирки пока не выдавались</p>
-    </CrmEmptyState>
+    </ErpEmptyState>
 
     <template v-else>
-      <CrmSectionLabel>Выдано сегодня: {{ entries.length }}</CrmSectionLabel>
+      <ErpSectionLabel>Выдано сегодня: {{ entries.length }}</ErpSectionLabel>
 
-      <CrmGroupedList>
-        <CrmListRow
+      <ErpGroupedList>
+        <ErpListRow
             v-for="entry in entries"
             :key="entry.row"
             tag="article"
@@ -135,7 +135,7 @@ onMounted(load)
           <template #leading>
             <input
                 type="checkbox"
-                class="crm-ios-check"
+                class="erp-ios-check"
                 :checked="checkedBadges.has(entry.badge)"
                 aria-label="Отметить как обработано"
                 @change="toggleChecked(entry.badge)"
@@ -150,7 +150,7 @@ onMounted(load)
           <template #trailing>
             <button
                 type="button"
-                class="crm-row-action"
+                class="erp-row-action"
                 aria-label="Скопировать бирку"
                 @click.stop="copyBadge(entry)"
             >
@@ -158,15 +158,15 @@ onMounted(load)
             </button>
             <button
                 type="button"
-                class="crm-row-action crm-row-action--danger"
+                class="erp-row-action erp-row-action--danger"
                 aria-label="Удалить бирку"
                 @click.stop="requestDelete(entry)"
             >
               <Icon name="heroicons:trash" size="16"/>
             </button>
           </template>
-        </CrmListRow>
-      </CrmGroupedList>
+        </ErpListRow>
+      </ErpGroupedList>
     </template>
 
     <template #footer>
@@ -174,9 +174,9 @@ onMounted(load)
         Назад
       </UiButton>
     </template>
-  </CrmScreen>
+  </ErpScreen>
 
-  <CrmDeleteBadgeSheet
+  <ErpDeleteBadgeSheet
       :entry="pendingDelete"
       @deleted="onDeleted"
       @cancel="cancelDelete"

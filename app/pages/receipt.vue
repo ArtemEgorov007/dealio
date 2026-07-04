@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import {formatBadgeDisplay} from '~/utils/crm-csv'
-import {workshopLabel} from '~~/types/crm.types'
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
-import {useCrmSessionStore} from '~~/store/crm-session.store'
+import {formatBadgeDisplay} from '~/utils/erp-csv'
+import {workshopLabel} from '~~/types/erp.types'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+import {useErpSessionStore} from '~~/store/erp-session.store'
 import {useAppToast} from '~/composables/useAppToast'
 
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 
 useSeoMeta({title: 'Получение бирки | ERP'})
 
-const employeeStore = useCrmEmployeeStore()
-const sessionStore = useCrmSessionStore()
+const employeeStore = useErpEmployeeStore()
+const sessionStore = useErpSessionStore()
 const router = useRouter()
 const {showSuccess, showError} = useAppToast()
 
@@ -40,18 +40,18 @@ const changeWorkshop = () => {
 </script>
 
 <template>
-  <CrmScreen title="Получение бирки" :shift-link="{ to: '/shift', label: 'Бирки за смену' }" icon="heroicons:tag">
-    <p v-if="sessionStore.journalSkipped" class="crm-notice">
-      Журнал не подключён. Настройте Web App на странице /crm-setup
+  <ErpScreen title="Получение бирки" :shift-link="{ to: '/shift', label: 'Бирки за смену' }" icon="heroicons:tag">
+    <p v-if="sessionStore.journalSkipped" class="erp-notice">
+      Журнал не подключён. Настройте Web App на странице /erp-setup
     </p>
 
-    <CrmGroupedList>
-      <div class="crm-hero-card">
-        <p class="crm-hero-card__eyebrow">Ваша бирка</p>
-        <p class="crm-hero-card__title">{{ formatBadgeDisplay(badgeContent) }}</p>
-        <p class="crm-hero-card__meta">{{ employeeStore.fio }} · {{ workshopTitle }}</p>
+    <ErpGroupedList>
+      <div class="erp-hero-card">
+        <p class="erp-hero-card__eyebrow">Ваша бирка</p>
+        <p class="erp-hero-card__title">{{ formatBadgeDisplay(badgeContent) }}</p>
+        <p class="erp-hero-card__meta">{{ employeeStore.fio }} · {{ workshopTitle }}</p>
       </div>
-    </CrmGroupedList>
+    </ErpGroupedList>
 
     <template #footer>
       <UiButton block @click="copyBadge">
@@ -64,5 +64,5 @@ const changeWorkshop = () => {
         Сменить цех
       </UiButton>
     </template>
-  </CrmScreen>
+  </ErpScreen>
 </template>

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import {recordMeasurement} from '~/utils/crm-sheets'
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
-import {useCrmSessionStore} from '~~/store/crm-session.store'
+import {recordMeasurement} from '~/utils/erp-sheets'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+import {useErpSessionStore} from '~~/store/erp-session.store'
 import {useAppToast} from '~/composables/useAppToast'
 
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 
 useSeoMeta({title: 'Промеры — ввод | ERP'})
 
-const employeeStore = useCrmEmployeeStore()
-const sessionStore = useCrmSessionStore()
+const employeeStore = useErpEmployeeStore()
+const sessionStore = useErpSessionStore()
 const router = useRouter()
 const {showSuccess, showError} = useAppToast()
 
@@ -78,7 +78,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <CrmScreen
+  <ErpScreen
       title="Промеры"
       icon="heroicons:beaker"
   >
@@ -158,7 +158,7 @@ onMounted(() => {
         Назад
       </UiButton>
     </template>
-  </CrmScreen>
+  </ErpScreen>
 </template>
 
 <style scoped lang="sass">

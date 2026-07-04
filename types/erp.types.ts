@@ -6,12 +6,12 @@ export interface WorkshopOption {
     sheetColumn: string
 }
 
-export const CRM_WORKSHOPS: WorkshopOption[] = [
+export const ERP_WORKSHOPS: WorkshopOption[] = [
     {id: 'kolpino', label: 'Колпино', sheetColumn: 'Колпино'},
     {id: 'volkhonka', label: 'Волхонка', sheetColumn: 'Волхонка'},
 ]
 
-export interface CrmAccessFlags {
+export interface ErpAccessFlags {
     badges: boolean
     measurements: boolean
     packing: boolean
@@ -26,7 +26,7 @@ export interface CrmAccessFlags {
 // Fail-closed: доступ выдаётся только тем флагам, что сервер (GAS login_) явно
 // вернул как true из таблицы. Отсутствие флага в ответе = нет доступа, а не
 // «показать всё». Раньше дефолты были all-true и маскировали дырку в доступах.
-export const DEFAULT_ACCESS_FLAGS: CrmAccessFlags = {
+export const DEFAULT_ACCESS_FLAGS: ErpAccessFlags = {
     badges: false,
     measurements: false,
     packing: false,
@@ -38,7 +38,7 @@ export const DEFAULT_ACCESS_FLAGS: CrmAccessFlags = {
     warehouse: false,
 }
 
-export interface CrmEmployeeProfile {
+export interface ErpEmployeeProfile {
     fio: string
     workshopId: WorkshopId | null
     department?: string
@@ -46,23 +46,23 @@ export interface CrmEmployeeProfile {
     platform?: string
     login?: string
     password?: string
-    access?: CrmAccessFlags
+    access?: ErpAccessFlags
 }
 
-export interface CrmBadgeIssue {
+export interface ErpBadgeIssue {
     workshopId: WorkshopId
     fio: string
     badgeContent: string
 }
 
-export interface CrmIssuedBadgeEntry {
+export interface ErpIssuedBadgeEntry {
     row: number
     badge: string
     time: string
 }
 
 export function workshopById(id: WorkshopId): WorkshopOption {
-    const found = CRM_WORKSHOPS.find(item => item.id === id)
+    const found = ERP_WORKSHOPS.find(item => item.id === id)
     if (!found) throw new Error(`Unknown workshop: ${id}`)
     return found
 }

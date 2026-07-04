@@ -71,31 +71,31 @@ const onDragEnd = () => {
 </script>
 
 <template>
-  <Transition name="crm-sheet">
-    <div v-if="open" class="crm-sheet-root">
-      <div class="crm-sheet-backdrop" aria-hidden="true" @click="dismiss"/>
+  <Transition name="erp-sheet">
+    <div v-if="open" class="erp-sheet-root">
+      <div class="erp-sheet-backdrop" aria-hidden="true" @click="dismiss"/>
 
       <div
-          class="crm-sheet-panel"
+          class="erp-sheet-panel"
           role="dialog"
           aria-modal="true"
           :aria-label="ariaLabel"
           :style="panelStyle"
       >
-        <div class="crm-sheet-grip" @pointerdown="onDragStart">
-          <span class="crm-sheet-handle"/>
+        <div class="erp-sheet-grip" @pointerdown="onDragStart">
+          <span class="erp-sheet-handle"/>
         </div>
 
-        <p v-if="$slots.label" class="crm-sheet-label"><slot name="label"/></p>
+        <p v-if="$slots.label" class="erp-sheet-label"><slot name="label"/></p>
 
-        <article v-if="$slots.content" class="crm-sheet-card">
-          <p class="crm-sheet-content"><slot name="content"/></p>
+        <article v-if="$slots.content" class="erp-sheet-card">
+          <p class="erp-sheet-content"><slot name="content"/></p>
         </article>
 
-        <p v-if="$slots.meta" class="crm-sheet-meta"><slot name="meta"/></p>
-        <p v-if="$slots.error" class="crm-sheet-error"><slot name="error"/></p>
+        <p v-if="$slots.meta" class="erp-sheet-meta"><slot name="meta"/></p>
+        <p v-if="$slots.error" class="erp-sheet-error"><slot name="error"/></p>
 
-        <div v-if="$slots.actions" class="crm-sheet-actions">
+        <div v-if="$slots.actions" class="erp-sheet-actions">
           <slot name="actions"/>
         </div>
       </div>
@@ -104,7 +104,7 @@ const onDragEnd = () => {
 </template>
 
 <style scoped lang="sass">
-.crm-sheet-root
+.erp-sheet-root
   position: fixed
   inset: 0
   z-index: var(--z-index-modal)
@@ -112,12 +112,12 @@ const onDragEnd = () => {
   align-items: flex-end
   justify-content: center
 
-.crm-sheet-backdrop
+.erp-sheet-backdrop
   position: absolute
   inset: 0
   background-color: rgba(0, 0, 0, 0.35)
 
-.crm-sheet-panel
+.erp-sheet-panel
   position: relative
   width: 100%
   max-width: 480px
@@ -133,7 +133,7 @@ const onDragEnd = () => {
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12)
   will-change: transform
 
-.crm-sheet-grip
+.erp-sheet-grip
   display: flex
   justify-content: center
   width: 100%
@@ -141,20 +141,20 @@ const onDragEnd = () => {
   touch-action: none
   cursor: grab
 
-.crm-sheet-handle
+.erp-sheet-handle
   width: 36px
   height: 4px
   border-radius: var(--radius-full)
   background-color: var(--color-border)
 
-.crm-sheet-label
+.erp-sheet-label
   margin: 0
   padding: 0 4px
   font-size: 13px
   font-weight: 400
   color: var(--color-text-secondary)
 
-.crm-sheet-card
+.erp-sheet-card
   width: 100%
   box-sizing: border-box
   padding: 16px
@@ -163,7 +163,7 @@ const onDragEnd = () => {
   background-color: var(--color-card-bg)
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04)
 
-.crm-sheet-content
+.erp-sheet-content
   margin: 0
   font-size: 17px
   font-weight: 600
@@ -173,14 +173,14 @@ const onDragEnd = () => {
   white-space: pre-line
   overflow-wrap: anywhere
 
-.crm-sheet-meta
+.erp-sheet-meta
   margin: 0
   padding: 0 4px
   font-size: 13px
   text-align: center
   color: var(--color-text-secondary)
 
-.crm-sheet-error
+.erp-sheet-error
   margin: 0
   padding: 12px 14px
   width: 100%
@@ -191,26 +191,26 @@ const onDragEnd = () => {
   font-size: 15px
   line-height: 1.4
 
-.crm-sheet-actions
+.erp-sheet-actions
   display: flex
   flex-direction: column
   gap: 8px
   width: 100%
   margin-top: 4px
 
-.crm-sheet-enter-active,
-.crm-sheet-leave-active
-  .crm-sheet-backdrop
+.erp-sheet-enter-active,
+.erp-sheet-leave-active
+  .erp-sheet-backdrop
     transition: opacity var(--dealio-motion-duration) var(--dealio-motion-ease)
 
-  .crm-sheet-panel
+  .erp-sheet-panel
     transition: transform var(--dealio-motion-duration) var(--dealio-motion-ease)
 
-.crm-sheet-enter-from,
-.crm-sheet-leave-to
-  .crm-sheet-backdrop
+.erp-sheet-enter-from,
+.erp-sheet-leave-to
+  .erp-sheet-backdrop
     opacity: 0
 
-  .crm-sheet-panel
+  .erp-sheet-panel
     transform: translateY(100%)
 </style>

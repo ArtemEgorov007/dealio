@@ -26,45 +26,45 @@ const onClick = (event: MouseEvent) => {
 <template>
   <component
       :is="tag"
-      class="crm-list-row"
+      class="erp-list-row"
       :class="{
-        'crm-list-row--button': tag === 'button',
-        'crm-list-row--selected': selected,
-        'crm-list-row--multiline': multiline,
-        'crm-list-row--disabled': disabled,
+        'erp-list-row--button': tag === 'button',
+        'erp-list-row--selected': selected,
+        'erp-list-row--multiline': multiline,
+        'erp-list-row--disabled': disabled,
       }"
       :type="tag === 'button' ? 'button' : undefined"
       :disabled="tag === 'button' ? disabled : undefined"
       @click="onClick"
   >
-    <span v-if="$slots.leading" class="crm-list-row__leading">
+    <span v-if="$slots.leading" class="erp-list-row__leading">
       <slot name="leading"/>
     </span>
 
-    <span class="crm-list-row__body">
+    <span class="erp-list-row__body">
       <slot/>
     </span>
 
-    <span v-if="$slots.trailing || chevron || selected" class="crm-list-row__trailing">
+    <span v-if="$slots.trailing || chevron || selected" class="erp-list-row__trailing">
       <slot name="trailing"/>
       <Icon
           v-if="selected && !$slots.trailing"
           name="heroicons:check"
           size="20"
-          class="crm-list-row__check"
+          class="erp-list-row__check"
       />
       <Icon
           v-else-if="chevron && !$slots.trailing"
           name="heroicons:chevron-right"
           size="16"
-          class="crm-list-row__chevron"
+          class="erp-list-row__chevron"
       />
     </span>
   </component>
 </template>
 
 <style scoped lang="sass">
-.crm-list-row
+.erp-list-row
   display: flex
   flex-shrink: 0
   align-items: center
@@ -87,7 +87,7 @@ const onClick = (event: MouseEvent) => {
     cursor: pointer
     transition: background-color 0.12s ease
 
-    &:active:not(.crm-list-row--disabled)
+    &:active:not(.erp-list-row--disabled)
       background-color: rgba(60, 60, 67, 0.08)
 
   &--multiline
@@ -99,30 +99,30 @@ const onClick = (event: MouseEvent) => {
     opacity: 0.45
     cursor: default
 
-.crm-list-row__leading
+.erp-list-row__leading
   flex-shrink: 0
   display: flex
   align-items: center
 
-.crm-list-row__body
+.erp-list-row__body
   flex: 1
   min-width: 0
   font-size: 15px
   font-weight: 400
   line-height: 1.35
 
-.crm-list-row--multiline .crm-list-row__body
+.erp-list-row--multiline .erp-list-row__body
   white-space: pre-line
 
-.crm-list-row__trailing
+.erp-list-row__trailing
   flex-shrink: 0
   display: flex
   align-items: center
   gap: 8px
 
-.crm-list-row__chevron
+.erp-list-row__chevron
   color: rgba(60, 60, 67, 0.30)
 
-.crm-list-row__check
+.erp-list-row__check
   color: var(--color-primary)
 </style>

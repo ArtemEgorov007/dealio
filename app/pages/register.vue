@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
-import {loginCrmEmployee} from '~/utils/crm-sheets'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+import {loginErpEmployee} from '~/utils/erp-sheets'
 import {useAppToast} from '~/composables/useAppToast'
 
-definePageMeta({layout: 'crm'})
+definePageMeta({layout: 'erp'})
 
-const employeeStore = useCrmEmployeeStore()
+const employeeStore = useErpEmployeeStore()
 
 const pageTitle = ref(employeeStore.hasFio ? 'Профиль | ERP' : 'Вход | ERP')
 watch(() => employeeStore.hasFio, (hasFio) => {
@@ -20,6 +20,31 @@ const password = ref('')
 const error = ref('')
 const isLoading = ref(false)
 
+// Имя из ФИО (Фамилия Имя Отчество) — для приветствия
+const firstName = computed(() => employeeStore.fio.trim().split(/\s+/)[1] ?? '')
+const greeting = computed(() => firstName.value ? `Здравствуйте, ${firstName.value}` : 'Здравствуйте')
+const shiftLine = computed(() => {
+    const parts = [employeeStore.position, employeeStore.platform].filter(Boolean)
+    return parts.join(' · ') || undefined
+})
+
+// Модули хаба — те же, что в таб-баре, фильтр по доступам сотрудника
+const modules = computed(() => {
+    const a = employeeStore.access
+    const all = [
+        {key: 'badges', to: '/workshop', icon: 'heroicons:tag', label: 'Бирки', caption: 'Выдать', tone: '#016ED7'},
+        {key: 'measurements', to: '/scan-measurement', icon: 'heroicons:beaker', label: 'Промеры', caption: 'Считать', tone: '#2FB463'},
+        {key: 'packing', to: '/workshop?flow=packing', icon: 'heroicons:qr-code', label: 'Упаковка', caption: 'QR-скан', tone: '#E7920B'},
+        {key: 'handover', to: '/scan-handover', icon: 'heroicons:check-badge', label: 'Сдача', caption: 'Приёмка', tone: '#8E4EC6'},
+        {key: 'reports', to: '/reports', icon: 'heroicons:chart-bar', label: 'Отчёты', caption: 'В разработке', tone: '#016ED7'},
+        {key: 'approvals', to: '/approvals', icon: 'heroicons:check-circle', label: 'Согласования', caption: 'В разработке', tone: '#016ED7'},
+        {key: 'supply', to: '/supply', icon: 'heroicons:truck', label: 'Снабжение', caption: 'В разработке', tone: '#5B6B7F'},
+        {key: 'orders', to: '/orders', icon: 'heroicons:shopping-bag', label: 'Заказы', caption: 'В разработке', tone: '#5B6B7F'},
+        {key: 'warehouse', to: '/warehouse', icon: 'heroicons:archive-box', label: 'Склад', caption: 'В разработке', tone: '#5B6B7F'},
+    ]
+    return all.filter(m => a[m.key as keyof typeof a])
+})
+
 const submit = async () => {
     if (!loginField.value.trim() || !password.value) {
         error.value = 'Введите логин и пароль'
@@ -30,7 +55,7 @@ const submit = async () => {
     error.value = ''
 
     try {
-        const profile = await loginCrmEmployee(loginField.value.trim(), password.value)
+        const profile = await loginErpEmployee(loginField.value.trim(), password.value)
         employeeStore.setProfile(profile)
         password.value = ''
     } catch (loginError) {
@@ -54,56 +79,54 @@ const copyText = async (text: string, label: string) => {
         // clipboard недоступен (HTTP или права) — молча пропускаем
     }
 }
-
-const goToBadges = () => router.push('/workshop')
-const goToPacking = () => router.push('/workshop?flow=packing')
 </script>
 
 <template>
-  <CrmScreen
+  <ErpScreen
       v-if="employeeStore.hasFio"
-      title="Профиль"
-      icon="heroicons:user-circle"
-      :subtitle="employeeStore.fio"
+      :title="greeting"
+      :subtitle="shiftLine"
   >
     <template #actions>
       <button type="button" class="logout-btn" aria-label="Выйти" @click="logout">
-        <Icon name="heroicons:arrow-right-on-rectangle" size="22"/>
+        <Icon name="heroicons:arrow-right-on-rectangle" size="20"/>
       </button>
     </template>
 
-    <CrmGroupedList>
-      <CrmListRow
-          v-if="employeeStore.department"
-          tag="div"
-      >
+    <ErpSectionLabel>Разделы</ErpSectionLabel>
+    <div class="hub-grid">
+      <ErpTile
+          v-for="m in modules"
+          :key="m.to"
+          :to="m.to"
+          :icon="m.icon"
+          :label="m.label"
+          :caption="m.caption"
+          :tone="m.tone"
+      />
+    </div>
+
+    <ErpSectionLabel>Профиль</ErpSectionLabel>
+    <ErpGroupedList>
+      <ErpListRow v-if="employeeStore.department" tag="div">
         <span class="profile-kv">
           <span class="profile-kv__label">Отдел</span>
           <span class="profile-kv__value">{{ employeeStore.department }}</span>
         </span>
-      </CrmListRow>
-      <CrmListRow
-          v-if="employeeStore.position"
-          tag="div"
-      >
+      </ErpListRow>
+      <ErpListRow v-if="employeeStore.position" tag="div">
         <span class="profile-kv">
           <span class="profile-kv__label">Должность</span>
           <span class="profile-kv__value">{{ employeeStore.position }}</span>
         </span>
-      </CrmListRow>
-      <CrmListRow
-          v-if="employeeStore.platform"
-          tag="div"
-      >
+      </ErpListRow>
+      <ErpListRow v-if="employeeStore.platform" tag="div">
         <span class="profile-kv">
           <span class="profile-kv__label">Площадка</span>
           <span class="profile-kv__value">{{ employeeStore.platform }}</span>
         </span>
-      </CrmListRow>
-      <CrmListRow
-          v-if="employeeStore.login"
-          @click="copyText(employeeStore.login, 'Логин')"
-      >
+      </ErpListRow>
+      <ErpListRow v-if="employeeStore.login" @click="copyText(employeeStore.login, 'Логин')">
         <span class="profile-kv">
           <span class="profile-kv__label">Логин</span>
           <span class="profile-kv__value">{{ employeeStore.login }}</span>
@@ -111,11 +134,8 @@ const goToPacking = () => router.push('/workshop?flow=packing')
         <template #trailing>
           <Icon name="heroicons:clipboard-document" size="16" class="profile-kv__icon"/>
         </template>
-      </CrmListRow>
-      <CrmListRow
-          v-if="employeeStore.password"
-          @click="copyText(employeeStore.password, 'Пароль')"
-      >
+      </ErpListRow>
+      <ErpListRow v-if="employeeStore.password" @click="copyText(employeeStore.password, 'Пароль')">
         <span class="profile-kv">
           <span class="profile-kv__label">Пароль</span>
           <span class="profile-kv__value profile-kv__value--mono">{{ employeeStore.password }}</span>
@@ -123,43 +143,42 @@ const goToPacking = () => router.push('/workshop?flow=packing')
         <template #trailing>
           <Icon name="heroicons:clipboard-document" size="16" class="profile-kv__icon"/>
         </template>
-      </CrmListRow>
-    </CrmGroupedList>
-  </CrmScreen>
+      </ErpListRow>
+    </ErpGroupedList>
+  </ErpScreen>
 
-  <CrmScreen
+  <ErpScreen
       v-else
       title="Вход"
       icon="heroicons:user-circle"
       subtitle="Войдите со своим логином"
   >
-    <form class="register-form" @submit.prevent="submit">
-      <UiInput
-          id="crm-login"
-          v-model="loginField"
-          label="Логин"
-          autocomplete="username"
-          required
-          @keyup.enter="submit"
-      />
-      <UiInput
-          id="crm-password"
-          v-model="password"
-          type="password"
-          label="Пароль"
-          autocomplete="current-password"
-          required
-          :error="error"
-          @keyup.enter="submit"
-      />
-    </form>
-
-    <div class="register-actions">
-      <UiButton block :loading="isLoading" @click="submit">
-        Войти
-      </UiButton>
+    <div class="login-card">
+      <form class="register-form" @submit.prevent="submit">
+        <UiInput
+            id="erp-login"
+            v-model="loginField"
+            label="Логин"
+            autocomplete="username"
+            required
+            @keyup.enter="submit"
+        />
+        <UiInput
+            id="erp-password"
+            v-model="password"
+            type="password"
+            label="Пароль"
+            autocomplete="current-password"
+            required
+            :error="error"
+            @keyup.enter="submit"
+        />
+        <UiButton block :loading="isLoading" @click="submit">
+          Войти
+        </UiButton>
+      </form>
     </div>
-  </CrmScreen>
+  </ErpScreen>
 </template>
 
 <style scoped lang="sass">
@@ -171,13 +190,18 @@ const goToPacking = () => router.push('/workshop?flow=packing')
   height: 34px
   border: none
   border-radius: var(--radius-full)
-  background: rgba(118, 118, 128, 0.12)
-  color: var(--color-text-secondary)
+  background: rgba(255, 255, 255, 0.18)
+  color: #fff
   cursor: pointer
   transition: opacity 0.15s ease
 
   &:hover
-    opacity: 0.7
+    opacity: 0.75
+
+.hub-grid
+  display: grid
+  grid-template-columns: 1fr 1fr
+  gap: 10px
 
 .profile-kv
   display: flex
@@ -209,14 +233,14 @@ const goToPacking = () => router.push('/workshop?flow=packing')
 .profile-kv__icon
   color: rgba(60, 60, 67, 0.30)
 
+.login-card
+  padding: 20px 16px
+  border-radius: 18px
+  background: var(--color-card-bg)
+  box-shadow: var(--erp-shadow-card)
+
 .register-form
   display: flex
   flex-direction: column
-  gap: var(--spacing-2)
-  margin-bottom: var(--spacing-3)
-
-.register-actions
-  display: flex
-  flex-direction: column
-  gap: var(--spacing-2)
+  gap: var(--spacing-3)
 </style>

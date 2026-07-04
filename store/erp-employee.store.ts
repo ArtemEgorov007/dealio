@@ -2,20 +2,20 @@ import {defineStore} from 'pinia'
 
 import {
     isValidFio,
-    type CrmAccessFlags,
-    type CrmEmployeeProfile,
+    type ErpAccessFlags,
+    type ErpEmployeeProfile,
     type WorkshopId,
     DEFAULT_ACCESS_FLAGS,
-} from '../types/crm.types'
+} from '../types/erp.types'
 
-const STORAGE_KEY = 'crm-employee-profile'
-const VERSION_KEY = 'crm-profile-version'
+const STORAGE_KEY = 'erp-employee-profile'
+const VERSION_KEY = 'erp-profile-version'
 // Бампать при смене модели доступа. Профиль старой версии сбрасывается —
 // сотрудник входит заново и получает актуальные флаги из таблицы.
 // v2: переход на fail-closed доступы (пустой флаг = нет доступа).
 const PROFILE_VERSION = '2'
 
-function loadProfile(): CrmEmployeeProfile | null {
+function loadProfile(): ErpEmployeeProfile | null {
     if (typeof window === 'undefined') return null
 
     if (localStorage.getItem(VERSION_KEY) !== PROFILE_VERSION) {
@@ -26,13 +26,13 @@ function loadProfile(): CrmEmployeeProfile | null {
     try {
         const raw = localStorage.getItem(STORAGE_KEY)
         if (!raw) return null
-        return JSON.parse(raw) as CrmEmployeeProfile
+        return JSON.parse(raw) as ErpEmployeeProfile
     } catch {
         return null
     }
 }
 
-function saveProfile(profile: CrmEmployeeProfile): void {
+function saveProfile(profile: ErpEmployeeProfile): void {
     if (typeof window === 'undefined') return
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
     localStorage.setItem(VERSION_KEY, PROFILE_VERSION)
@@ -51,10 +51,10 @@ interface EmployeeState {
     platform: string
     login: string
     password: string
-    access: CrmAccessFlags
+    access: ErpAccessFlags
 }
 
-export const useCrmEmployeeStore = defineStore('crm-employee', {
+export const useErpEmployeeStore = defineStore('erp-employee', {
     state: (): EmployeeState => ({
         fio: '',
         workshopId: null,
@@ -87,7 +87,7 @@ export const useCrmEmployeeStore = defineStore('crm-employee', {
 
         setFio(fio: string) {
             this.fio = fio.trim()
-            saveProfile(this.$state as CrmEmployeeProfile)
+            saveProfile(this.$state as ErpEmployeeProfile)
         },
 
         setProfile(profile: {
@@ -97,7 +97,7 @@ export const useCrmEmployeeStore = defineStore('crm-employee', {
             platform: string
             login: string
             password: string
-            access: CrmAccessFlags
+            access: ErpAccessFlags
         }) {
             this.fio = profile.fio
             this.department = profile.department
@@ -106,17 +106,17 @@ export const useCrmEmployeeStore = defineStore('crm-employee', {
             this.login = profile.login
             this.password = profile.password
             this.access = profile.access
-            saveProfile(this.$state as CrmEmployeeProfile)
+            saveProfile(this.$state as ErpEmployeeProfile)
         },
 
         setWorkshop(workshopId: WorkshopId) {
             this.workshopId = workshopId
-            saveProfile(this.$state as CrmEmployeeProfile)
+            saveProfile(this.$state as ErpEmployeeProfile)
         },
 
         clearWorkshop() {
             this.workshopId = null
-            saveProfile(this.$state as CrmEmployeeProfile)
+            saveProfile(this.$state as ErpEmployeeProfile)
         },
 
         logout() {

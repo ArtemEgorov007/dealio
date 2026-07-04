@@ -1,6 +1,6 @@
-import type {CrmAccessFlags, CrmBadgeIssue, CrmIssuedBadgeEntry, WorkshopId} from '~~/types/crm.types'
-import {DEFAULT_ACCESS_FLAGS, workshopById} from '~~/types/crm.types'
-import {parseCsv} from '~/utils/crm-csv'
+import type {ErpAccessFlags, ErpBadgeIssue, ErpIssuedBadgeEntry, WorkshopId} from '~~/types/erp.types'
+import {DEFAULT_ACCESS_FLAGS, workshopById} from '~~/types/erp.types'
+import {parseCsv} from '~/utils/erp-csv'
 
 const ISSUE_SHEET = 'Выдача'
 const JOURNAL_SHEET = 'Журнал выдачи бирок'
@@ -8,7 +8,7 @@ const ISSUE_SHEET_GID = '1376055067'
 
 const DEFAULT_SPREADSHEET_ID = '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
 
-const GAS_URL_STORAGE_KEY = 'crm-gas-url'
+const GAS_URL_STORAGE_KEY = 'erp-gas-url'
 
 const MOCK_BADGES: Record<WorkshopId, string[]> = {
     kolpino: [
@@ -33,7 +33,7 @@ interface SheetsRuntimeConfig {
 interface GasResponse {
     ok?: boolean
     badges?: string[]
-    entries?: CrmIssuedBadgeEntry[]
+    entries?: ErpIssuedBadgeEntry[]
     error?: string
     fio?: string
     department?: string
@@ -41,28 +41,28 @@ interface GasResponse {
     platform?: string
     login?: string
     password?: string
-    access?: CrmAccessFlags
+    access?: ErpAccessFlags
 }
 
-export interface CrmLoginProfile {
+export interface ErpLoginProfile {
     fio: string
     department: string
     position: string
     platform: string
     login: string
     password: string
-    access: CrmAccessFlags
+    access: ErpAccessFlags
 }
 
 function getConfig(): SheetsRuntimeConfig {
     const config = useRuntimeConfig()
-    const envGasUrl = config.public.crmGasUrl || ''
+    const envGasUrl = config.public.erpGasUrl || ''
     const storedGasUrl = import.meta.client ? localStorage.getItem(GAS_URL_STORAGE_KEY) || '' : ''
 
     return {
-        spreadsheetId: config.public.crmSpreadsheetId || DEFAULT_SPREADSHEET_ID,
-        issueSheetGid: config.public.crmIssueSheetGid || ISSUE_SHEET_GID,
-        apiKey: config.public.crmSheetsApiKey || '',
+        spreadsheetId: config.public.erpSpreadsheetId || DEFAULT_SPREADSHEET_ID,
+        issueSheetGid: config.public.erpIssueSheetGid || ISSUE_SHEET_GID,
+        apiKey: config.public.erpSheetsApiKey || '',
         gasUrl: envGasUrl || storedGasUrl,
     }
 }
@@ -226,7 +226,7 @@ export async function fetchWorkshopBadges(workshopId: WorkshopId): Promise<strin
 
 async function issueBadgeViaGas(
     config: SheetsRuntimeConfig,
-    entry: CrmBadgeIssue,
+    entry: ErpBadgeIssue,
 ): Promise<void> {
     const result = await requestGasPost(config, {
         action: 'issueBadge',
@@ -240,7 +240,7 @@ async function issueBadgeViaGas(
     }
 }
 
-export async function fetchIssuedBadgesToday(fio: string, workshopId: WorkshopId | null): Promise<CrmIssuedBadgeEntry[]> {
+export async function fetchIssuedBadgesToday(fio: string, workshopId: WorkshopId | null): Promise<ErpIssuedBadgeEntry[]> {
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -260,7 +260,7 @@ export async function fetchIssuedBadgesToday(fio: string, workshopId: WorkshopId
     return result.entries ?? []
 }
 
-export async function deleteIssuedBadge(entry: CrmIssuedBadgeEntry, fio: string): Promise<void> {
+export async function deleteIssuedBadge(entry: ErpIssuedBadgeEntry, fio: string): Promise<void> {
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -279,7 +279,7 @@ export async function deleteIssuedBadge(entry: CrmIssuedBadgeEntry, fio: string)
     }
 }
 
-export async function fetchHandedOverBadgesToday(fio: string): Promise<CrmIssuedBadgeEntry[]> {
+export async function fetchHandedOverBadgesToday(fio: string): Promise<ErpIssuedBadgeEntry[]> {
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -316,7 +316,7 @@ export async function recordHandoverEntry(fio: string, badgeContent: string): Pr
     }
 }
 
-export async function undoHandover(entry: CrmIssuedBadgeEntry, fio: string): Promise<void> {
+export async function undoHandover(entry: ErpIssuedBadgeEntry, fio: string): Promise<void> {
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -335,7 +335,7 @@ export async function undoHandover(entry: CrmIssuedBadgeEntry, fio: string): Pro
     }
 }
 
-export async function loginCrmEmployee(login: string, password: string): Promise<CrmLoginProfile> {
+export async function loginErpEmployee(login: string, password: string): Promise<ErpLoginProfile> {
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -412,7 +412,7 @@ export async function recordPackingEntry(workshopId: WorkshopId, qrText: string)
 
 export type JournalWriteResult = 'ok' | 'skipped'
 
-export async function appendBadgeJournalEntry(entry: CrmBadgeIssue): Promise<JournalWriteResult> {
+export async function appendBadgeJournalEntry(entry: ErpBadgeIssue): Promise<JournalWriteResult> {
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -423,7 +423,7 @@ export async function appendBadgeJournalEntry(entry: CrmBadgeIssue): Promise<Jou
     return 'ok'
 }
 
-export function getCrmSheetsMode(): 'gas' | 'csv' | 'api' | 'mock' {
+export function getErpSheetsMode(): 'gas' | 'csv' | 'api' | 'mock' {
     const config = getConfig()
     if (isGasConfigured(config)) return 'gas'
     if (config.spreadsheetId && config.issueSheetGid) return 'csv'
@@ -431,7 +431,7 @@ export function getCrmSheetsMode(): 'gas' | 'csv' | 'api' | 'mock' {
     return 'mock'
 }
 
-export function saveCrmGasUrl(url: string): void {
+export function saveErpGasUrl(url: string): void {
     if (!import.meta.client) return
     const trimmed = url.trim()
     if (trimmed) {
@@ -441,11 +441,11 @@ export function saveCrmGasUrl(url: string): void {
     }
 }
 
-export function getCrmGasUrl(): string {
+export function getErpGasUrl(): string {
     return getConfig().gasUrl
 }
 
-export async function testCrmGasConnection(gasUrl: string): Promise<{ ok: boolean; badgesCount?: number; error?: string }> {
+export async function testErpGasConnection(gasUrl: string): Promise<{ ok: boolean; badgesCount?: number; error?: string }> {
     const config = {...getConfig(), gasUrl}
     try {
         const badges = await fetchBadgesViaGas(config, 'kolpino')

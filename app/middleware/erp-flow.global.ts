@@ -1,7 +1,7 @@
-import {useCrmEmployeeStore} from '~~/store/crm-employee.store'
-import {useCrmSessionStore} from '~~/store/crm-session.store'
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+import {useErpSessionStore} from '~~/store/erp-session.store'
 
-const CRM_ROUTES = new Set([
+const ERP_ROUTES = new Set([
     '/register',
     '/workshop',
     '/badges',
@@ -30,14 +30,14 @@ export default defineNuxtRouteMiddleware((to) => {
         return
     }
 
-    const employeeStore = useCrmEmployeeStore()
-    const sessionStore = useCrmSessionStore()
+    const employeeStore = useErpEmployeeStore()
+    const sessionStore = useErpSessionStore()
 
     if (path === '/') {
         return navigateTo('/register')
     }
 
-    if (!CRM_ROUTES.has(path)) {
+    if (!ERP_ROUTES.has(path)) {
         return
     }
 

@@ -1,14 +1,24 @@
 /*
- * iOS 18 палитра для CRM «Морфлот Технология».
- * Применяется только внутри .crm-layout — kanban-трекер не затронут.
+ * iOS 18 палитра для ERP «Морфлот Технология».
+ * Применяется только внутри .erp-layout — kanban-трекер не затронут.
  */
-.crm-layout {
-    /* iOS System Grouped Backgrounds */
-    --color-bg:           #F2F2F7;   /* systemGroupedBackground */
-    --color-bg-secondary: #FFFFFF;   /* secondarySystemGroupedBackground */
-    --color-bg-tertiary:  #F2F2F7;
+.erp-layout {
+    /* Корпоративный синий: светло-синий тинт вместо нейтрально-серого */
+    --color-bg:           #EAF2FD;   /* сине-тинт grouped background */
+    --color-bg-secondary: #FFFFFF;
+    --color-bg-tertiary:  #EAF2FD;
     --color-bg-surface:   #FFFFFF;
     --color-bg-alt:       #FFFFFF;
+
+    /* Брендовая градиентная шапка + сине-тонированная глубина карточек */
+    --erp-grad-header:  linear-gradient(135deg, #016ED7 0%, #3897ED 100%);
+    --erp-shadow-card:  0 2px 10px -4px rgba(1, 110, 215, 0.25);
+    --erp-shadow-tile:  0 2px 12px -5px rgba(1, 110, 215, 0.30);
+
+    /* Статус-цвета (отдельно от бренд-акцента) */
+    --erp-ok:   #2FB463;
+    --erp-warn: #E7920B;
+    --erp-crit: #E5484D;
 
     /* iOS Labels */
     --color-text:          #000000;                  /* label */
@@ -62,29 +72,29 @@
 }
 
 /* ─── Button: iOS pill shape, 50px primary tap target ─────────────────── */
-.crm-layout .ui-btn {
+.erp-layout .ui-btn {
     border-radius: 14px;
     letter-spacing: -0.2px;
 }
-.crm-layout .ui-btn--md {
+.erp-layout .ui-btn--md {
     height: 44px;
     font-size: 15px;
     padding: 0 20px;
 }
-.crm-layout .ui-btn--primary,
-.crm-layout .ui-btn--secondary,
-.crm-layout .ui-btn--outline {
+.erp-layout .ui-btn--primary,
+.erp-layout .ui-btn--secondary,
+.erp-layout .ui-btn--outline {
     border-radius: 14px;
 }
-.crm-layout .ui-btn--primary:hover:enabled {
+.erp-layout .ui-btn--primary:hover:enabled {
     transform: none;
 }
-.crm-layout .ui-btn--ghost {
+.erp-layout .ui-btn--ghost {
     border-radius: 10px;
 }
 
 /* ─── Input: iOS grouped-inset style ──────────────────────────────────── */
-.crm-layout .ui-input__label {
+.erp-layout .ui-input__label {
     text-transform: none;
     letter-spacing: 0;
     font-weight: 500;
@@ -92,28 +102,28 @@
     color: rgba(60, 60, 67, 0.60);
     margin-bottom: 5px;
 }
-.crm-layout .ui-input__field {
+.erp-layout .ui-input__field {
     height: 44px;
     border-radius: 10px;
     border-color: rgba(60, 60, 67, 0.18);
     font-size: 16px;
     padding: 0 14px;
 }
-.crm-layout .ui-input__field:focus-visible {
+.erp-layout .ui-input__field:focus-visible {
     border-color: #016ED7;
     box-shadow: 0 0 0 3px rgba(1, 110, 215, 0.12) !important;
 }
 
 /* Внутри grouped-карточки (.zones) убираем отступ снизу у input */
-.crm-layout .zones .ui-input {
+.erp-layout .zones .ui-input {
     margin-bottom: 0;
     padding: 4px 0;
     border-bottom: 0.5px solid rgba(60, 60, 67, 0.15);
 }
-.crm-layout .zones .ui-input:last-child {
+.erp-layout .zones .ui-input:last-child {
     border-bottom: none;
 }
-.crm-layout .zones .ui-input__field {
+.erp-layout .zones .ui-input__field {
     background: transparent;
     border-color: transparent;
     border-radius: 0;
@@ -122,21 +132,21 @@
 
 /*
  * iOS Safari зумирует страницу при фокусе на input с font-size < 16px.
- * Держим минимум 16px для всех полей ввода в CRM.
+ * Держим минимум 16px для всех полей ввода в ERP.
  */
-.crm-layout input,
-.crm-layout textarea {
+.erp-layout input,
+.erp-layout textarea {
     font-size: 16px !important;
 }
 
 /* ─── Grouped inset list (UITableView) ─────────────────────────────────── */
-.crm-layout .crm-grouped-list + .crm-grouped-list,
-.crm-layout .crm-section-label + .crm-grouped-list {
+.erp-layout .erp-grouped-list + .erp-grouped-list,
+.erp-layout .erp-section-label + .erp-grouped-list {
     margin-top: var(--spacing-3);
 }
 
 /* ─── iOS list accessory buttons ───────────────────────────────────────── */
-.crm-layout .crm-row-action {
+.erp-layout .erp-row-action {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -149,17 +159,17 @@
     cursor: pointer;
 }
 
-.crm-layout .crm-row-action:active {
+.erp-layout .erp-row-action:active {
     background-color: rgba(60, 60, 67, 0.08);
 }
 
-.crm-layout .crm-row-action--danger:active {
+.erp-layout .erp-row-action--danger:active {
     color: #FF3B30;
     background-color: rgba(255, 59, 48, 0.10);
 }
 
 /* ─── iOS toggle (shift checklist) ─────────────────────────────────────── */
-.crm-layout .crm-ios-check {
+.erp-layout .erp-ios-check {
     flex-shrink: 0;
     width: 22px;
     height: 22px;
@@ -172,7 +182,7 @@
     transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.crm-layout .crm-ios-check:checked {
+.erp-layout .erp-ios-check:checked {
     border-color: var(--color-primary);
     background-color: var(--color-primary);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M6.2 11.3 3.4 8.5l-1 1 3.8 3.8 8-8-1-1z'/%3E%3C/svg%3E");
@@ -182,18 +192,18 @@
 }
 
 /* ─── Hero / receipt card inside grouped list ──────────────────────────── */
-.crm-layout .crm-hero-card {
+.erp-layout .erp-hero-card {
     padding: 20px 16px;
     text-align: center;
 }
 
-.crm-layout .crm-hero-card__eyebrow {
+.erp-layout .erp-hero-card__eyebrow {
     margin: 0 0 8px;
     font-size: 13px;
     color: var(--color-text-secondary);
 }
 
-.crm-layout .crm-hero-card__title {
+.erp-layout .erp-hero-card__title {
     margin: 0 0 10px;
     font-size: 22px;
     font-weight: 600;
@@ -203,14 +213,14 @@
     overflow-wrap: anywhere;
 }
 
-.crm-layout .crm-hero-card__meta {
+.erp-layout .erp-hero-card__meta {
     margin: 0;
     font-size: 15px;
     color: var(--color-text-secondary);
 }
 
 /* ─── Inline notice (warning / info) ───────────────────────────────────── */
-.crm-layout .crm-notice {
+.erp-layout .erp-notice {
     margin: 0 0 var(--spacing-3);
     padding: 12px 14px;
     border-radius: 13px;
@@ -220,12 +230,12 @@
     color: var(--color-text);
 }
 
-.crm-layout .crm-notice--info {
+.erp-layout .erp-notice--info {
     background-color: rgba(1, 110, 215, 0.10);
 }
 
 /* ─── Scan viewport ────────────────────────────────────────────────────── */
-.crm-layout .crm-scan-viewport {
+.erp-layout .erp-scan-viewport {
     position: relative;
     width: 100%;
     aspect-ratio: 1;
@@ -235,7 +245,7 @@
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
 }
 
-.crm-layout .crm-scan-hint {
+.erp-layout .erp-scan-hint {
     margin: 12px 0 0;
     font-size: 15px;
     line-height: 1.4;
@@ -243,8 +253,8 @@
     text-align: center;
 }
 
-/* ─── Toasts on light CRM screens ──────────────────────────────────────── */
-body:has(.crm-layout) ol.dealio-toast-host .dealio-toast {
+/* ─── Toasts on light ERP screens ──────────────────────────────────────── */
+body:has(.erp-layout) ol.dealio-toast-host .dealio-toast {
     background-color: #FFFFFF !important;
     border-color: rgba(60, 60, 67, 0.12) !important;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
@@ -252,7 +262,7 @@ body:has(.crm-layout) ol.dealio-toast-host .dealio-toast {
 }
 
 @media (max-width: 768px) {
-    body:has(.crm-layout) ol.dealio-toast-host {
+    body:has(.erp-layout) ol.dealio-toast-host {
         bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px) !important;
     }
 }
