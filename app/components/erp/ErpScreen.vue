@@ -2,11 +2,15 @@
 defineProps<{
   title: string
   subtitle?: string
+  overline?: string
   shiftLink?: { to: string; label: string }
   icon?: string
+  centerBrand?: boolean
 }>()
 
-const logoSrc = useRuntimeConfig().app.baseURL + 'logo-mt.svg'
+const baseURL = useRuntimeConfig().app.baseURL
+const logoSrc = baseURL + 'logo-mt.svg'
+const markSrc = baseURL + 'logo-mt-mark.svg'
 
 useSeoMeta({themeColor: '#016ED7'})
 useHead({meta: [{name: 'color-scheme', content: 'light'}]})
@@ -14,25 +18,33 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
 
 <template>
   <section class="erp-screen">
-    <header class="erp-screen__head">
+    <header class="erp-screen__head" :class="{ 'erp-screen__head--center': centerBrand }">
       <div class="erp-screen__head-inner">
-        <div class="erp-screen__head-row">
-          <div class="erp-screen__brand">
-            <img :src="logoSrc" alt="Морфлот Технология" class="erp-screen__brand-mark">
+        <template v-if="centerBrand">
+          <img :src="markSrc" alt="" class="erp-screen__brand-hero">
+          <h1 class="erp-screen__title erp-screen__title--center">{{ title }}</h1>
+          <p v-if="subtitle" class="erp-screen__subtitle erp-screen__subtitle--center">{{ subtitle }}</p>
+        </template>
+        <template v-else>
+          <div class="erp-screen__head-row">
+            <div class="erp-screen__brand">
+              <img :src="logoSrc" alt="Морфлот Технология" class="erp-screen__brand-mark">
+            </div>
+            <div class="erp-screen__head-actions">
+              <NuxtLink v-if="shiftLink" :to="shiftLink.to" class="erp-screen__shift-link">
+                <Icon name="heroicons:clipboard-document-list" size="16"/>
+                {{ shiftLink.label }}
+              </NuxtLink>
+              <slot name="actions"/>
+            </div>
           </div>
-          <div class="erp-screen__head-actions">
-            <NuxtLink v-if="shiftLink" :to="shiftLink.to" class="erp-screen__shift-link">
-              <Icon name="heroicons:clipboard-document-list" size="16"/>
-              {{ shiftLink.label }}
-            </NuxtLink>
-            <slot name="actions"/>
-          </div>
-        </div>
-        <h1 class="erp-screen__title">
-          <Icon v-if="icon" :name="icon" size="22" class="erp-screen__title-icon"/>
-          {{ title }}
-        </h1>
-        <p v-if="subtitle" class="erp-screen__subtitle">{{ subtitle }}</p>
+          <p v-if="overline" class="erp-screen__overline">{{ overline }}</p>
+          <h1 class="erp-screen__title">
+            <Icon v-if="icon" :name="icon" size="22" class="erp-screen__title-icon"/>
+            {{ title }}
+          </h1>
+          <p v-if="subtitle" class="erp-screen__subtitle">{{ subtitle }}</p>
+        </template>
         <div v-if="$slots.hero" class="erp-screen__hero">
           <slot name="hero"/>
         </div>
@@ -97,6 +109,33 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   display: flex
   align-items: center
   gap: var(--spacing-2)
+
+/* Центрированная брендовая шапка (экран входа) */
+.erp-screen__head--center .erp-screen__head-inner
+  padding-top: 10px
+  padding-bottom: 30px
+  text-align: center
+
+.erp-screen__brand-hero
+  width: 52px
+  height: 52px
+  display: block
+  margin: 0 auto 12px
+  filter: brightness(0) invert(1)
+
+.erp-screen__title--center
+  justify-content: center
+  font-size: 21px
+  margin-bottom: 2px
+
+.erp-screen__subtitle--center
+  color: #d5e6fb
+
+.erp-screen__overline
+  font-size: 12px
+  font-weight: 500
+  color: rgba(255, 255, 255, 0.85)
+  margin-bottom: 2px
 
 .erp-screen__shift-link
   flex-shrink: 0

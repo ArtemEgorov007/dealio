@@ -25,6 +25,24 @@ const workshopTitle = computed(() =>
 
 const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim()
 
+// Заголовок + подтекст строки: первая строка (или часть до «·») — жирная,
+// остальное — серым под ней, как в макете «Корпоративный синий»
+const badgeParts = (badge: string): { title: string; sub: string } => {
+    const display = formatBadgeDisplay(badge)
+    const newlineIndex = display.indexOf('\n')
+    if (newlineIndex > 0) {
+        return {
+            title: display.slice(0, newlineIndex).trim(),
+            sub: display.slice(newlineIndex + 1).replace(/\n+/g, ' · ').trim(),
+        }
+    }
+    const dotIndex = display.indexOf('·')
+    if (dotIndex > 0) {
+        return {title: display.slice(0, dotIndex).trim(), sub: display.slice(dotIndex + 1).trim()}
+    }
+    return {title: display, sub: ''}
+}
+
 const filteredBadges = computed(() => {
     const needle = normalize(query.value)
     if (!needle) return badges.value
@@ -78,7 +96,6 @@ onMounted(loadBadges)
   <ErpScreen
       title="Выбор бирки"
       :subtitle="`Цех: ${workshopTitle}`"
-      :shift-link="{ to: '/shift', label: 'Бирки за смену' }"
       icon="heroicons:tag"
   >
     <template v-if="!isLoading && !error && badges.length > 0" #search>
@@ -112,14 +129,25 @@ onMounted(loadBadges)
           v-for="badge in filteredBadges"
           :key="badge"
           chevron
-          multiline
+          class="badge-list-row"
           @click="selectBadge(badge)"
       >
-        {{ formatBadgeDisplay(badge) }}
+        <template #leading>
+          <span class="badge-row-ic">
+            <Icon name="heroicons:tag" size="16"/>
+          </span>
+        </template>
+        <span class="badge-row">
+          <span class="badge-row__title">{{ badgeParts(badge).title }}</span>
+          <span v-if="badgeParts(badge).sub" class="badge-row__sub">{{ badgeParts(badge).sub }}</span>
+        </span>
       </ErpListRow>
     </ErpGroupedList>
 
     <template #footer>
+      <UiButton block @click="router.push('/shift')">
+        Бирки за смену
+      </UiButton>
       <UiButton variant="ghost" block @click="changeWorkshop">
         Сменить цех
       </UiButton>
@@ -132,3 +160,38 @@ onMounted(loadBadges)
       @cancel="cancelPendingBadge"
   />
 </template>
+
+<style scoped lang="sass">
+/* Иконка, текст и стрелка центрируются по вертикали — ровные строки как в макете */
+.badge-list-row
+  align-items: center
+  padding-top: 10px
+  padding-bottom: 10px
+
+.badge-row-ic
+  display: flex
+  align-items: center
+  justify-content: center
+  width: 30px
+  height: 30px
+  border-radius: 9px
+  background: rgba(1, 110, 215, 0.10)
+  color: var(--color-primary)
+
+.badge-row
+  display: flex
+  flex-direction: column
+  gap: 1px
+  min-width: 0
+
+.badge-row__title
+  font-size: 15px
+  font-weight: 650
+  line-height: 1.3
+  color: var(--color-text)
+
+.badge-row__sub
+  font-size: 12px
+  line-height: 1.35
+  color: var(--color-text-secondary)
+</style>

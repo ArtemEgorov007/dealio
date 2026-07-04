@@ -82,6 +82,8 @@ const copyBadge = async (entry: ErpIssuedBadgeEntry) => {
     try {
         await navigator.clipboard.writeText(entry.badge)
         showSuccess('Скопировано в буфер обмена')
+        // Скопировал — значит обработал: отмечаем бирку галочкой
+        if (!checkedBadges.value.has(entry.badge)) toggleChecked(entry.badge)
     } catch (copyError) {
         showError(copyError, 'Не удалось скопировать')
     }

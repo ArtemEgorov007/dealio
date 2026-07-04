@@ -22,10 +22,17 @@ const isLoading = ref(false)
 
 // Имя из ФИО (Фамилия Имя Отчество) — для приветствия
 const firstName = computed(() => employeeStore.fio.trim().split(/\s+/)[1] ?? '')
-const greeting = computed(() => firstName.value ? `Здравствуйте, ${firstName.value}` : 'Здравствуйте')
-const shiftLine = computed(() => {
-    const parts = [employeeStore.position, employeeStore.platform].filter(Boolean)
-    return parts.join(' · ') || undefined
+const greetingWord = () => {
+    const hour = new Date().getHours()
+    if (hour >= 5 && hour < 12) return 'Доброе утро'
+    if (hour >= 12 && hour < 18) return 'Добрый день'
+    return 'Добрый вечер'
+}
+const greeting = computed(() => firstName.value ? `${greetingWord()}, ${firstName.value}` : greetingWord())
+// Строка над именем: «Смена · Площадка · 4 июля»
+const shiftOverline = computed(() => {
+    const date = new Intl.DateTimeFormat('ru-RU', {day: 'numeric', month: 'long'}).format(new Date())
+    return ['Смена', employeeStore.platform, date].filter(Boolean).join(' · ')
 })
 
 // Модули хаба — те же, что в таб-баре, фильтр по доступам сотрудника
@@ -111,7 +118,8 @@ const copyText = async (text: string, label: string) => {
   <ErpScreen
       v-if="employeeStore.hasFio"
       :title="greeting"
-      :subtitle="shiftLine"
+      :subtitle="employeeStore.position || undefined"
+      :overline="shiftOverline"
   >
     <template #actions>
       <button type="button" class="logout-btn" aria-label="Выйти" @click="logout">
@@ -188,18 +196,18 @@ const copyText = async (text: string, label: string) => {
 
   <ErpScreen
       v-else
-      title="Вход"
-      icon="heroicons:user-circle"
-      subtitle="Войдите со своим логином"
+      center-brand
+      title="Морфлот Технология"
+      subtitle="Производственная ERP-платформа"
   >
     <div class="login-card">
+      <h2 class="login-card__title">Вход</h2>
       <form class="register-form" @submit.prevent="submit">
         <UiInput
             id="erp-login"
             v-model="loginField"
             label="Логин"
             autocomplete="username"
-            required
             @keyup.enter="submit"
         />
         <UiInput
@@ -208,11 +216,10 @@ const copyText = async (text: string, label: string) => {
             type="password"
             label="Пароль"
             autocomplete="current-password"
-            required
             :error="error"
             @keyup.enter="submit"
         />
-        <UiButton block :loading="isLoading" @click="submit">
+        <UiButton block size="lg" :loading="isLoading" @click="submit">
           Войти
         </UiButton>
       </form>
@@ -300,7 +307,41 @@ const copyText = async (text: string, label: string) => {
   padding: 20px 16px
   border-radius: 18px
   background: var(--color-card-bg)
-  box-shadow: var(--erp-shadow-card)
+  /* Карточка «плывёт» над стыком градиента и фона — как в макете */
+  margin-top: -6px
+  box-shadow: 0 12px 30px -12px rgba(1, 110, 215, 0.4)
+
+.login-card__title
+  font-size: 17px
+  font-weight: 800
+  letter-spacing: -0.3px
+  margin: 0 0 14px
+  color: var(--color-text)
+
+/* Нативные iOS-поля: filled без рамки, фокус подсвечивает синим */
+.login-card :deep(.ui-input__field)
+  height: 50px
+  border-radius: 12px
+  border-color: transparent
+  background: rgba(118, 118, 128, 0.10)
+  transition: background-color 0.15s ease, border-color 0.15s ease
+
+.login-card :deep(.ui-input__field:focus-visible)
+  background: #fff
+  border-color: #016ED7
+
+/* Крупная кнопка, «хочется нажать»: 52px + отклик на нажатие */
+.login-card :deep(.ui-btn--lg)
+  height: 52px
+  border-radius: 14px
+  font-size: 17px
+  font-weight: 700
+  margin-top: 4px
+  transition: transform 0.1s ease, box-shadow 0.1s ease
+
+.login-card :deep(.ui-btn--lg:active:enabled)
+  transform: scale(0.97)
+  box-shadow: 0 3px 10px -5px rgba(1, 110, 215, 0.6)
 
 .register-form
   display: flex

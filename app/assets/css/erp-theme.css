@@ -86,8 +86,17 @@
 .erp-layout .ui-btn--outline {
     border-radius: 14px;
 }
+/* Брендовый градиент на primary — как CTA в макете «Корпоративный синий» */
+.erp-layout .ui-btn--primary {
+    background: linear-gradient(135deg, #016ED7 0%, #3897ED 100%);
+    box-shadow: 0 6px 16px -6px rgba(1, 110, 215, 0.6);
+}
 .erp-layout .ui-btn--primary:hover:enabled {
     transform: none;
+    background: linear-gradient(135deg, #0260BD 0%, #2385DB 100%);
+}
+.erp-layout .ui-btn--primary:active:enabled {
+    background: linear-gradient(135deg, #014F9C 0%, #1D77C7 100%);
 }
 .erp-layout .ui-btn--ghost {
     border-radius: 10px;
@@ -254,6 +263,21 @@
 }
 
 /* ─── Toasts on light ERP screens ──────────────────────────────────────── */
+/* Хост тостов живёт вне .erp-layout — переменные текста наследуются от
+   тёмного kanban-корня (#f5f5f7), и текст пропадает на белом тосте.
+   Переопределяем токены прямо на хосте. */
+body:has(.erp-layout) ol.dealio-toast-host {
+    --color-text: #000000;
+    --color-text-secondary: rgba(60, 60, 67, 0.60);
+    --color-text-muted: rgba(60, 60, 67, 0.60);
+    --color-bg-tertiary: #EAF2FD;
+    --color-primary: #016ED7;
+    --color-primary-light: rgba(1, 110, 215, 0.10);
+    --color-button-outline-border: rgba(1, 110, 215, 0.35);
+    --color-button-outline-text: #016ED7;
+    --color-button-outline-text-hover: #014F9C;
+}
+
 body:has(.erp-layout) ol.dealio-toast-host .dealio-toast {
     background-color: #FFFFFF !important;
     border-color: rgba(60, 60, 67, 0.12) !important;
