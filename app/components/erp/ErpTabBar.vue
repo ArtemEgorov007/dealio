@@ -163,14 +163,12 @@ const goWarehouse = () => router.push('/warehouse')
   display: flex
   overflow-x: auto
   scrollbar-width: none
-  border-top: 0.5px solid rgba(60, 60, 67, 0.29)
-  background: #F2F2F7
-  padding-bottom: env(safe-area-inset-bottom)
-
-  @supports (backdrop-filter: blur(1px))
-    background: rgba(242, 242, 247, 0.85)
-    backdrop-filter: blur(20px) saturate(180%)
-    -webkit-backdrop-filter: blur(20px) saturate(180%)
+  gap: 2px
+  margin: 4px 12px calc(env(safe-area-inset-bottom, 0px) + 10px)
+  padding: 6px
+  border-radius: 20px
+  background: #fff
+  box-shadow: 0 8px 26px -10px rgba(1, 110, 215, 0.32), 0 1px 3px rgba(1, 110, 215, 0.08)
 
   &::-webkit-scrollbar
     display: none
@@ -181,18 +179,22 @@ const goWarehouse = () => router.push('/warehouse')
   display: flex
   flex-direction: column
   align-items: center
-  gap: 2px
-  padding: 8px 8px 5px
+  gap: 3px
+  padding: 7px 8px
   border: none
+  border-radius: 14px
   background: none
-  color: rgba(60, 60, 67, 0.55)
+  color: #8a97a8
   font-size: 10px
-  font-weight: 500
+  font-weight: 600
   cursor: pointer
   white-space: nowrap
-  transition: color 0.15s ease
+  transition: color 0.15s ease, background-color 0.15s ease
+
+  &:active
+    background-color: rgba(1, 110, 215, 0.06)
 
   &--active
     color: var(--color-primary)
-    font-weight: 600
+    background-color: var(--color-primary-light)
 </style>

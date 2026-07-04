@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
-import {loginErpEmployee} from '~/utils/erp-sheets'
+import {loginErpEmployee, fetchIssuedBadgesToday, fetchHandedOverBadgesToday} from '~/utils/erp-sheets'
 import {useAppToast} from '~/composables/useAppToast'
 
 definePageMeta({layout: 'erp'})
@@ -44,6 +44,32 @@ const modules = computed(() => {
     ]
     return all.filter(m => a[m.key as keyof typeof a])
 })
+
+// Живые счётчики за смену для стат-чипов в шапке хаба
+const issuedCount = ref<number | null>(null)
+const handedCount = ref<number | null>(null)
+
+const loadShiftStats = async () => {
+    if (!employeeStore.hasFio) return
+    const a = employeeStore.access
+    if (a.badges) {
+        try {
+            issuedCount.value = (await fetchIssuedBadgesToday(employeeStore.fio, null)).length
+        } catch {
+            issuedCount.value = null
+        }
+    }
+    if (a.handover) {
+        try {
+            handedCount.value = (await fetchHandedOverBadgesToday(employeeStore.fio)).length
+        } catch {
+            handedCount.value = null
+        }
+    }
+}
+
+onMounted(loadShiftStats)
+watch(() => employeeStore.hasFio, (has) => { if (has) loadShiftStats() })
 
 const submit = async () => {
     if (!loginField.value.trim() || !password.value) {
@@ -91,6 +117,19 @@ const copyText = async (text: string, label: string) => {
       <button type="button" class="logout-btn" aria-label="Выйти" @click="logout">
         <Icon name="heroicons:arrow-right-on-rectangle" size="20"/>
       </button>
+    </template>
+
+    <template v-if="issuedCount != null || handedCount != null" #hero>
+      <div class="hub-stats">
+        <div v-if="issuedCount != null" class="hub-stat">
+          <span class="hub-stat__num">{{ issuedCount }}</span>
+          <span class="hub-stat__label">бирок за смену</span>
+        </div>
+        <div v-if="handedCount != null" class="hub-stat">
+          <span class="hub-stat__num">{{ handedCount }}</span>
+          <span class="hub-stat__label">сдач за смену</span>
+        </div>
+      </div>
     </template>
 
     <ErpSectionLabel>Разделы</ErpSectionLabel>
@@ -197,6 +236,30 @@ const copyText = async (text: string, label: string) => {
 
   &:hover
     opacity: 0.75
+
+.hub-stats
+  display: flex
+  gap: 10px
+
+.hub-stat
+  flex: 1
+  display: flex
+  flex-direction: column
+  gap: 1px
+  padding: 10px 12px
+  border-radius: 13px
+  background: rgba(255, 255, 255, 0.16)
+
+.hub-stat__num
+  font-size: 22px
+  font-weight: 800
+  line-height: 1.1
+  color: #fff
+  font-variant-numeric: tabular-nums
+
+.hub-stat__label
+  font-size: 11px
+  color: rgba(255, 255, 255, 0.85)
 
 .hub-grid
   display: grid
