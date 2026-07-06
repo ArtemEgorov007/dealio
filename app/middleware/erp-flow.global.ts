@@ -71,6 +71,20 @@ export default defineNuxtRouteMiddleware((to) => {
         return
     }
 
+    // Бирки (/workshop без flow=packing, /badges, /receipt, /shift) требуют
+    // access.badges; упаковка (/workshop?flow=packing, /scan-qr) — access.packing.
+    // Таб-бар уже прячет эти разделы без доступа, но прямой переход по URL
+    // раньше не проверялся вовсе — не ранний return, ниже ещё есть проверки
+    // hasWorkshop/packingWorkshopConfirmed/hasSelectedBadge для этих же путей.
+    const BADGES_OR_PACKING_ROUTES = new Set(['/workshop', '/badges', '/receipt', '/shift', '/scan-qr'])
+    if (BADGES_OR_PACKING_ROUTES.has(path)) {
+        const isPackingRoute = path === '/scan-qr' || (path === '/workshop' && to.query.flow === 'packing')
+        const requiredFlag = isPackingRoute ? 'packing' : 'badges'
+        if (!employeeStore.access[requiredFlag]) {
+            return navigateTo('/register')
+        }
+    }
+
     if (path === '/workshop' || path === '/shift') {
         return
     }

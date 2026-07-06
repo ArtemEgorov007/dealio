@@ -32,7 +32,7 @@ const clear = () => {
           v-if="query"
           type="button"
           class="erp-search__clear"
-          aria-label="Очистить поиск"
+          aria-label="Очистить строку поиска"
           @click="clear"
       >
         <Icon name="heroicons:x-circle" size="18"/>
