@@ -32,26 +32,50 @@ const isWarehouseSection = computed(() => route.path === '/warehouse')
 
 const access = computed(() => employeeStore.access)
 
-// Fade по краям только когда бар реально не помещается и скроллится (много
-// доступных разделов) — иначе на коротком баре (2-4 вкладки) края гасли бы
-// без причины, обрезая иконку у самой рамки без смысла.
+// Fade по краю — только со стороны, где реально есть скрытые вкладки. В
+// начале скролла (слева) фейда слева быть не должно — там нечего скрывать,
+// первая вкладка обрезана не будет. Пересчитываем на scroll/resize/смену
+// набора вкладок (доступы поменялись).
 const tabbarEl = ref<HTMLElement | null>(null)
-const isScrollable = ref(false)
+const canScrollLeft = ref(false)
+const canScrollRight = ref(false)
 
-const checkScrollable = () => {
+const SCROLL_EDGE_THRESHOLD = 4
+
+const updateScrollState = () => {
   const el = tabbarEl.value
   if (!el) return
-  isScrollable.value = el.scrollWidth > el.clientWidth + 1
+  const maxScroll = el.scrollWidth - el.clientWidth
+  canScrollLeft.value = el.scrollLeft > SCROLL_EDGE_THRESHOLD
+  canScrollRight.value = el.scrollLeft < maxScroll - SCROLL_EDGE_THRESHOLD
 }
 
 onMounted(() => {
-  checkScrollable()
-  window.addEventListener('resize', checkScrollable)
+  updateScrollState()
+  tabbarEl.value?.addEventListener('scroll', updateScrollState, {passive: true})
+  window.addEventListener('resize', updateScrollState)
 })
 
-onBeforeUnmount(() => window.removeEventListener('resize', checkScrollable))
+onBeforeUnmount(() => {
+  tabbarEl.value?.removeEventListener('scroll', updateScrollState)
+  window.removeEventListener('resize', updateScrollState)
+})
 
-watch(access, () => nextTick(checkScrollable), {deep: true})
+watch(access, () => nextTick(updateScrollState), {deep: true})
+
+const FADE_SIZE = '14px'
+
+const tabbarMaskStyle = computed(() => {
+  let image = 'none'
+  if (canScrollLeft.value && canScrollRight.value) {
+    image = `linear-gradient(to right, transparent, black ${FADE_SIZE}, black calc(100% - ${FADE_SIZE}), transparent)`
+  } else if (canScrollLeft.value) {
+    image = `linear-gradient(to right, transparent, black ${FADE_SIZE})`
+  } else if (canScrollRight.value) {
+    image = `linear-gradient(to right, black calc(100% - ${FADE_SIZE}), transparent)`
+  }
+  return {maskImage: image, WebkitMaskImage: image}
+})
 
 const goProfile = () => router.push('/register')
 const goBadges = () => router.push('/workshop')
@@ -69,7 +93,7 @@ const goWarehouse = () => router.push('/warehouse')
   <nav
       ref="tabbarEl"
       class="erp-tabbar"
-      :class="{ 'erp-tabbar--scrollable': isScrollable }"
+      :style="tabbarMaskStyle"
       aria-label="Разделы ERP"
   >
     <button
@@ -198,10 +222,6 @@ const goWarehouse = () => router.push('/warehouse')
 
   &::-webkit-scrollbar
     display: none
-
-  &--scrollable
-    mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 14px), transparent)
-    -webkit-mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 14px), transparent)
 
 .erp-tabbar__item
   /* Растягиваются на всю ширину бара — иконки стоят по центру,
