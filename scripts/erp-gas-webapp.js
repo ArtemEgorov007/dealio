@@ -19,7 +19,10 @@
  * POST { action: 'recordMeasurement', fio, badge, coverage, zone1..zone5 }
  * POST { action: 'login',            login, password }
  */
-const SPREADSHEET_ID = '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
+// Script Property SPREADSHEET_ID переопределяет дефолт — используется для staging-копии
+// таблицы, прод-деплой не задаёт это свойство и продолжает работать с дефолтом как раньше.
+const SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID')
+    || '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
 const ISSUE_SHEET = 'Выдача'
 const JOURNAL_SHEET = 'Журнал выдачи бирок'
 const LOGIST_SHEET = 'Логисты'
@@ -33,7 +36,9 @@ const WORKSHOP_SHEETS = {
 }
 
 // Отдельная таблица доступа сотрудников (логины/пароли/статусы) — НЕ «Ведомости».
-const ACCESS_SPREADSHEET_ID = '12TAfi2p6hMBG_MnP4LEROnZ6BaJp0bTFHd93jq06Qz8'
+// Script Property ACCESS_SPREADSHEET_ID переопределяет дефолт по той же схеме, что и SPREADSHEET_ID.
+const ACCESS_SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('ACCESS_SPREADSHEET_ID')
+    || '12TAfi2p6hMBG_MnP4LEROnZ6BaJp0bTFHd93jq06Qz8'
 const STAFF_SHEET = 'Сотрудники'
 const ACTIVE_STATUS = 'Работает'
 
@@ -301,6 +306,7 @@ function recordHandover_(fio, badgeContent) {
     }
 
     try {
+        assertBadgeNotRecorded_(sheet, badgeContent, HANDOVER_SHEET)
         sheet.appendRow(row)
     } finally {
         lock.releaseLock()
@@ -584,14 +590,14 @@ function recordPacking_(workshop, qrText) {
     const workshopLabel = getWorkshopSheetName_(workshop)
     const sheet = getOrCreateLogistSheet_()
 
-    const row = buildLogistRow_(sheet, workshopLabel, qrText)
-
     const lock = LockService.getScriptLock()
     if (!lock.tryLock(5000)) {
         throw new Error('busy')
     }
 
     try {
+        assertBadgeNotRecorded_(sheet, qrText, LOGIST_SHEET)
+        const row = buildLogistRow_(sheet, workshopLabel, qrText)
         sheet.appendRow(row)
     } finally {
         lock.releaseLock()
@@ -625,6 +631,26 @@ function getOrCreateLogistSheet_() {
     }
 
     return sheet
+}
+
+/**
+ * Упаковка и сдача — одна бирка не должна попасть в таблицу дважды.
+ * Проверяем только столбец «Бирка» на целевом листе; журнал выдачи,
+ * промеры и прочие записи не затрагиваем.
+ */
+function assertBadgeNotRecorded_(sheet, badgeContent, sheetName) {
+    const normalized = normalizeCell_(badgeContent)
+    if (!normalized) return
+
+    const header = getSheetHeader_(sheet)
+    const badgeIndex = requireColumn_(header, 'Бирка', sheetName)
+    const values = sheet.getDataRange().getValues()
+
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        if (normalizeCell_(values[rowIndex][badgeIndex]) === normalized) {
+            throw new Error('Бирка уже записана')
+        }
+    }
 }
 
 function formatDateKey_(date) {
