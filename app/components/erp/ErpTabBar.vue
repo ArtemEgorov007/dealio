@@ -32,6 +32,27 @@ const isWarehouseSection = computed(() => route.path === '/warehouse')
 
 const access = computed(() => employeeStore.access)
 
+// Fade по краям только когда бар реально не помещается и скроллится (много
+// доступных разделов) — иначе на коротком баре (2-4 вкладки) края гасли бы
+// без причины, обрезая иконку у самой рамки без смысла.
+const tabbarEl = ref<HTMLElement | null>(null)
+const isScrollable = ref(false)
+
+const checkScrollable = () => {
+  const el = tabbarEl.value
+  if (!el) return
+  isScrollable.value = el.scrollWidth > el.clientWidth + 1
+}
+
+onMounted(() => {
+  checkScrollable()
+  window.addEventListener('resize', checkScrollable)
+})
+
+onBeforeUnmount(() => window.removeEventListener('resize', checkScrollable))
+
+watch(access, () => nextTick(checkScrollable), {deep: true})
+
 const goProfile = () => router.push('/register')
 const goBadges = () => router.push('/workshop')
 const goMeasurements = () => router.push('/scan-measurement')
@@ -45,7 +66,12 @@ const goWarehouse = () => router.push('/warehouse')
 </script>
 
 <template>
-  <nav class="erp-tabbar" aria-label="Разделы ERP">
+  <nav
+      ref="tabbarEl"
+      class="erp-tabbar"
+      :class="{ 'erp-tabbar--scrollable': isScrollable }"
+      aria-label="Разделы ERP"
+  >
     <button
         type="button"
         class="erp-tabbar__item"
@@ -172,6 +198,10 @@ const goWarehouse = () => router.push('/warehouse')
 
   &::-webkit-scrollbar
     display: none
+
+  &--scrollable
+    mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 14px), transparent)
+    -webkit-mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 14px), transparent)
 
 .erp-tabbar__item
   /* Растягиваются на всю ширину бара — иконки стоят по центру,
