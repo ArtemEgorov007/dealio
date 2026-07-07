@@ -8,7 +8,7 @@ const router = useRouter()
 <template>
   <ErpScreen title="Склад" icon="heroicons:archive-box">
     <div class="wh-hub-actions">
-      <ErpGroupedList>
+      <ErpGroupedList class="wh-hub-card">
         <ErpListRow chevron @click="router.push('/warehouse-receive')">
           <template #leading>
             <span class="wh-hub-ic wh-hub-ic--receive">
@@ -21,7 +21,7 @@ const router = useRouter()
           </span>
         </ErpListRow>
       </ErpGroupedList>
-      <ErpGroupedList>
+      <ErpGroupedList class="wh-hub-card">
         <ErpListRow chevron @click="router.push('/warehouse-issue')">
           <template #leading>
             <span class="wh-hub-ic wh-hub-ic--issue">
@@ -34,7 +34,7 @@ const router = useRouter()
           </span>
         </ErpListRow>
       </ErpGroupedList>
-      <ErpGroupedList>
+      <ErpGroupedList class="wh-hub-card">
         <ErpListRow chevron @click="router.push('/warehouse-balance')">
           <template #leading>
             <span class="wh-hub-ic wh-hub-ic--balance">
@@ -57,13 +57,18 @@ const router = useRouter()
   flex-direction: column
   gap: 12px
 
+/* Крупнее стандартного ErpListRow — на хабе только 3 действия, крупный тап-таргет
+   ближе к макету, чем плотный список (как в /register «Профиль») */
+.wh-hub-card :deep(.erp-list-row)
+  padding: 16px
+
 .wh-hub-ic
   display: flex
   align-items: center
   justify-content: center
-  width: 36px
-  height: 36px
-  border-radius: 11px
+  width: 42px
+  height: 42px
+  border-radius: 12px
 
   &--receive
     color: #1E8A4C

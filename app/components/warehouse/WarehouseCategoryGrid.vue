@@ -37,7 +37,7 @@ const iconFor = (category: string) => CATEGORY_ICONS[category] || 'heroicons:tag
         :class="{ 'wh-cat-tile--active': category === selected }"
         @click="$emit('select', category)"
     >
-      <span class="wh-cat-tile__ic"><Icon :name="iconFor(category)" size="16"/></span>
+      <span class="wh-cat-tile__ic"><Icon :name="iconFor(category)" size="20"/></span>
       <b>{{ category }}</b>
     </button>
   </div>
@@ -49,15 +49,18 @@ const iconFor = (category: string) => CATEGORY_ICONS[category] || 'heroicons:tag
   grid-template-columns: 1fr 1fr
   gap: 8px
 
+/* Размеры — как у ErpTile («Разделы» на /register), а не мельче: один
+   плиточный паттерн на всё приложение, не отдельный урезанный вариант */
 .wh-cat-tile
   display: flex
   flex-direction: column
-  gap: 6px
-  padding: 12px 10px
+  gap: 9px
+  min-height: 107px
+  padding: 13px 12px 12px
   border: 1px solid var(--color-border)
-  border-radius: 13px
+  border-radius: 16px
   background: var(--color-card-bg)
-  box-shadow: var(--erp-shadow-card, 0 1px 0 rgba(0, 0, 0, 0.04))
+  box-shadow: var(--erp-shadow-tile, var(--erp-shadow-card, 0 1px 0 rgba(0, 0, 0, 0.04)))
   text-align: left
   cursor: pointer
 
@@ -69,14 +72,15 @@ const iconFor = (category: string) => CATEGORY_ICONS[category] || 'heroicons:tag
   display: flex
   align-items: center
   justify-content: center
-  width: 28px
-  height: 28px
-  border-radius: 9px
+  width: 36px
+  height: 36px
+  border-radius: 11px
   background: var(--color-primary-light)
   color: var(--color-primary)
 
 .wh-cat-tile b
-  font-size: 12.5px
-  font-weight: 650
-  line-height: 1.2
+  font-size: 14px
+  font-weight: 700
+  letter-spacing: -0.2px
+  line-height: 1.25
 </style>

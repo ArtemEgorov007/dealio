@@ -95,6 +95,10 @@ const onDragEnd = () => {
         <p v-if="$slots.meta" class="erp-sheet-meta"><slot name="meta"/></p>
         <p v-if="$slots.error" class="erp-sheet-error"><slot name="error"/></p>
 
+        <div v-if="$slots.form" class="erp-sheet-form">
+          <slot name="form"/>
+        </div>
+
         <div v-if="$slots.actions" class="erp-sheet-actions">
           <slot name="actions"/>
         </div>
@@ -190,6 +194,12 @@ const onDragEnd = () => {
   color: #FF3B30
   font-size: 15px
   line-height: 1.4
+
+.erp-sheet-form
+  display: flex
+  flex-direction: column
+  gap: var(--spacing-3)
+  width: 100%
 
 .erp-sheet-actions
   display: flex

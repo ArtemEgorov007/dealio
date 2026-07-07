@@ -1,5 +1,4 @@
 import {defineStore} from 'pinia'
-import type {WarehouseStockItem} from '~~/types/warehouse.types'
 
 export const useErpSessionStore = defineStore('erp-session', {
     state: () => ({
@@ -8,15 +7,11 @@ export const useErpSessionStore = defineStore('erp-session', {
         journalSkipped: false,
         packingWorkshopConfirmed: false,
         measurementBadge: '' as string,
-        warehouseReceiveItem: null as string | null,
-        warehouseIssueItem: null as WarehouseStockItem | null,
     }),
 
     getters: {
         hasSelectedBadge: (state): boolean => state.selectedBadge.trim().length > 0,
         hasMeasurementBadge: (state): boolean => state.measurementBadge.trim().length > 0,
-        hasWarehouseReceiveItem: (state): boolean => state.warehouseReceiveItem !== null,
-        hasWarehouseIssueItem: (state): boolean => state.warehouseIssueItem !== null,
     },
 
     actions: {
@@ -50,22 +45,6 @@ export const useErpSessionStore = defineStore('erp-session', {
 
         clearMeasurementBadge() {
             this.measurementBadge = ''
-        },
-
-        setWarehouseReceiveItem(name: string) {
-            this.warehouseReceiveItem = name
-        },
-
-        clearWarehouseReceiveItem() {
-            this.warehouseReceiveItem = null
-        },
-
-        setWarehouseIssueItem(item: WarehouseStockItem) {
-            this.warehouseIssueItem = item
-        },
-
-        clearWarehouseIssueItem() {
-            this.warehouseIssueItem = null
         },
     },
 })
