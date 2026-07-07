@@ -10,7 +10,7 @@ useSeoMeta({title: 'Приём | ERP'})
 
 const employeeStore = useErpEmployeeStore()
 const {showSuccess} = useAppToast()
-const {requestIdFor} = useIdempotencyKey()
+const {requestIdFor, reset: resetRequestId} = useIdempotencyKey()
 
 const categories = ref<string[]>([])
 const categoriesLoading = ref(true)
@@ -136,6 +136,7 @@ const submit = async () => {
             requestId,
         })
         showSuccess('Товар принят', sheetItem.value)
+        resetRequestId()
         sheetItem.value = null
     } catch (error) {
         submitError.value = error instanceof Error ? error.message : 'Не удалось оформить приём'

@@ -11,7 +11,7 @@ useSeoMeta({title: 'Выдача | ERP'})
 
 const employeeStore = useErpEmployeeStore()
 const {showSuccess} = useAppToast()
-const {requestIdFor} = useIdempotencyKey()
+const {requestIdFor, reset: resetRequestId} = useIdempotencyKey()
 
 const categories = ref<string[]>([])
 const categoriesLoading = ref(true)
@@ -145,6 +145,7 @@ const submit = async () => {
             requestId,
         })
         showSuccess('Товар выдан', sheetItem.value.name)
+        resetRequestId()
         sheetItem.value = null
         retryItems()
     } catch (error) {

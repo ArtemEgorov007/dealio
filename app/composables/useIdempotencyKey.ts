@@ -21,5 +21,13 @@ export function useIdempotencyKey() {
         return id
     }
 
-    return {requestIdFor}
+    // Вызывать после подтверждённого успеха: иначе повтор той же формы
+    // (два одинаковых прихода подряд и т.п.) дедуплицируется сервером
+    // как ложный повтор и тихо не запишется.
+    const reset = () => {
+        lastFingerprint.value = null
+        lastRequestId.value = null
+    }
+
+    return {requestIdFor, reset}
 }
