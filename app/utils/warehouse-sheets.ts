@@ -97,6 +97,7 @@ export interface ReceiveItemPayload {
     qty: number
     unit: string
     fio: string
+    requestId: string
 }
 
 export async function receiveWarehouseItem(payload: ReceiveItemPayload): Promise<void> {
@@ -113,6 +114,7 @@ export interface IssueItemPayload {
     unit: string
     fio: string
     recipientFio: string
+    requestId: string
 }
 
 export async function issueWarehouseItem(payload: IssueItemPayload): Promise<void> {

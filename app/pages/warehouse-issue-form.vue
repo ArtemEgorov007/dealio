@@ -4,6 +4,7 @@ import {WAREHOUSE_UNITS, WAREHOUSE_TYPES} from '~~/types/warehouse.types'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useErpSessionStore} from '~~/store/erp-session.store'
 import {useAppToast} from '~/composables/useAppToast'
+import {useIdempotencyKey} from '~/composables/useIdempotencyKey'
 
 definePageMeta({layout: 'erp'})
 useSeoMeta({title: 'Выдача товара | ERP'})
@@ -12,6 +13,7 @@ const employeeStore = useErpEmployeeStore()
 const sessionStore = useErpSessionStore()
 const router = useRouter()
 const {showSuccess, showError} = useAppToast()
+const {requestIdFor} = useIdempotencyKey()
 
 const item = computed(() => sessionStore.warehouseIssueItem)
 
@@ -42,6 +44,11 @@ const submit = async () => {
 
     isLoading.value = true
 
+    const fingerprint = JSON.stringify([
+        item.value.cell, item.value.name, type.value, qty.value.trim(), unit.value, recipientFio.value.trim(),
+    ])
+    const requestId = requestIdFor(fingerprint)
+
     try {
         await issueWarehouseItem({
             platform: employeeStore.platform,
@@ -52,6 +59,7 @@ const submit = async () => {
             unit: unit.value!,
             fio: employeeStore.fio,
             recipientFio: recipientFio.value.trim(),
+            requestId,
         })
         showSuccess('Товар выдан', item.value.name)
         sessionStore.clearWarehouseIssueItem()

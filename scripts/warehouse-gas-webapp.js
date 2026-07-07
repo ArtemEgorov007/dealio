@@ -181,18 +181,22 @@ function receiveItem_(payload) {
         throw new Error('Заполните все поля')
     }
 
+    const requestId = String(payload.requestId || '')
     const category = findCategoryForItem_(name)
 
     const lock = LockService.getScriptLock()
     if (!lock.tryLock(5000)) throw new Error('busy')
 
     try {
+        if (isDuplicateRequest_(requestId)) return
+
         ensureStockRow_(platform, cell, name, type, category, unit)
         appendLogRow_({
             platform: platform, action: 'Прием', cell: cell, name: name, type: type,
             qty: qty, unit: unit, receivedBy: fio, issuedBy: '', recipientFio: '',
             id: buildId_(platform, cell, name, type, category),
         })
+        markRequestDone_(requestId)
     } finally {
         lock.releaseLock()
     }
@@ -221,6 +225,7 @@ function issueItem_(payload) {
         throw new Error('Заполните все поля')
     }
 
+    const requestId = String(payload.requestId || '')
     const category = findCategoryForItem_(name)
     const id = buildId_(platform, cell, name, type, category)
 
@@ -228,6 +233,8 @@ function issueItem_(payload) {
     if (!lock.tryLock(5000)) throw new Error('busy')
 
     try {
+        if (isDuplicateRequest_(requestId)) return
+
         const sheet = getSheet_(STOCK_SHEET)
         const rowNumber = findStockRow_(sheet, id)
         const balance = rowNumber > 0 ? (Number(sheet.getRange(rowNumber, 9).getValue()) || 0) : 0
@@ -239,9 +246,32 @@ function issueItem_(payload) {
             qty: qty, unit: unit, receivedBy: '', issuedBy: fio, recipientFio: recipientFio,
             id: id,
         })
+        markRequestDone_(requestId)
     } finally {
         lock.releaseLock()
     }
+}
+
+/**
+ * GAS Web App POST-ответы идут через редирект на script.googleusercontent.com,
+ * который иногда 404-ит на клиенте уже ПОСЛЕ того, как сервер полностью
+ * отработал запрос — клиент видит ошибку и слепой повтор реально задваивает
+ * Приём/Выдачу. requestId — на фронте генерируется один раз на конкретный
+ * набор значений формы (см. useIdempotencyKey) и переиспользуется при повторе
+ * с теми же значениями, так что второй вызов с тем же ID безопасно не делает
+ * повторную запись. TTL 21600с — максимум для CacheService, с большим запасом
+ * покрывает любой правдоподобный ручной повтор.
+ */
+const IDEMPOTENCY_TTL_SECONDS = 21600
+
+function isDuplicateRequest_(requestId) {
+    if (!requestId) return false
+    return CacheService.getScriptCache().get('wh_req_' + requestId) === '1'
+}
+
+function markRequestDone_(requestId) {
+    if (!requestId) return
+    CacheService.getScriptCache().put('wh_req_' + requestId, '1', IDEMPOTENCY_TTL_SECONDS)
 }
 
 // Лог: A Дата|B Площадка|C Действие|D Ячейка|E Наименование|F Тип|G Категория
