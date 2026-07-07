@@ -295,11 +295,14 @@ const submit = async () => {
    не трогаем */
 :deep(.erp-sheet-panel)
   background-color: var(--color-card-bg)
+  gap: var(--spacing-3)
 
 :deep(.erp-sheet-label)
-  font-size: 15px
-  font-weight: 800
-  color: var(--color-text)
+  font-size: 12.5px
+  font-weight: 600
+  color: var(--color-text-secondary)
+  text-transform: uppercase
+  letter-spacing: 0.3px
 
 :deep(.erp-sheet-card)
   padding: 0
@@ -307,11 +310,14 @@ const submit = async () => {
   box-shadow: none
 
 :deep(.erp-sheet-content)
-  margin-top: -4px
+  margin-top: 0
   font-size: 16px
-  font-weight: 600
+  font-weight: 500
   text-align: left
   color: var(--color-text)
+
+:deep(.erp-sheet-actions)
+  margin-top: 0
 
 .wh-issue-row
   display: flex

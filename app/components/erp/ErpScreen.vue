@@ -191,6 +191,7 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   flex: 1
   min-height: 0
   overflow-y: auto
+  scrollbar-gutter: stable
   -webkit-overflow-scrolling: touch
   display: flex
   flex-direction: column
