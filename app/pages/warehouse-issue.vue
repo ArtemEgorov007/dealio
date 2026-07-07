@@ -99,6 +99,7 @@ onMounted(loadCategories)
       <template v-if="selectedCategory">
         <ErpSearchBar
             v-model="query"
+            on-light
             placeholder="Поиск по наименованию"
             :count-label="stockItems.length ? `Найдено ${filteredItems.length} из ${stockItems.length}` : ''"
         />

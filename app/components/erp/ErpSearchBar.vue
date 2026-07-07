@@ -1,10 +1,13 @@
 <script setup lang="ts">
 const query = defineModel<string>({default: ''})
 
-defineProps<{
+withDefaults(defineProps<{
   placeholder?: string
   countLabel?: string
-}>()
+  onLight?: boolean
+}>(), {
+  onLight: false,
+})
 
 const emit = defineEmits<{
   clear: []
@@ -38,7 +41,7 @@ const clear = () => {
         <Icon name="heroicons:x-circle" size="18"/>
       </button>
     </div>
-    <p v-if="countLabel" class="erp-search__meta">{{ countLabel }}</p>
+    <p v-if="countLabel" class="erp-search__meta" :class="{ 'erp-search__meta--on-light': onLight }">{{ countLabel }}</p>
   </div>
 </template>
 
@@ -97,4 +100,9 @@ const clear = () => {
   font-size: 13px
   font-weight: 500
   color: rgba(255, 255, 255, 0.9)
+
+  /* Компонент по умолчанию расчитан на слот #search в синей шапке (см.
+     badges.vue) — на светлом фоне тела экрана белый текст нечитаем */
+  &--on-light
+    color: var(--color-text-secondary)
 </style>
