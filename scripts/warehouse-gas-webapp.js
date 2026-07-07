@@ -169,10 +169,10 @@ function ensureStockRow_(platform, cell, name, type, category, unit) {
 }
 
 function receiveItem_(payload) {
-    const platform = String(payload.platform || '')
+    const platform = String(payload.platform || '').trim()
     const cell = String(payload.cell || '').trim()
     const name = String(payload.name || '').trim()
-    const type = String(payload.type || '')
+    const type = String(payload.type || '').trim()
     const qty = Number(payload.qty)
     const unit = String(payload.unit || '')
     const fio = String(payload.fio || '')
@@ -208,10 +208,10 @@ function receiveItem_(payload) {
  * ветки «позиция не найдена»).
  */
 function issueItem_(payload) {
-    const platform = String(payload.platform || '')
+    const platform = String(payload.platform || '').trim()
     const cell = String(payload.cell || '').trim()
     const name = String(payload.name || '').trim()
-    const type = String(payload.type || '')
+    const type = String(payload.type || '').trim()
     const qty = Number(payload.qty)
     const unit = String(payload.unit || '')
     const fio = String(payload.fio || '')
