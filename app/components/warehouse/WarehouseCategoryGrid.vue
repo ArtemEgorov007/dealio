@@ -1,0 +1,64 @@
+<script setup lang="ts">
+defineProps<{
+  categories: string[]
+  selected: string | null
+}>()
+
+defineEmits<{
+  select: [category: string]
+}>()
+</script>
+
+<template>
+  <div class="wh-cat-grid">
+    <button
+        v-for="category in categories"
+        :key="category"
+        type="button"
+        class="wh-cat-tile"
+        :class="{ 'wh-cat-tile--active': category === selected }"
+        @click="$emit('select', category)"
+    >
+      <span class="wh-cat-tile__ic"><Icon name="heroicons:tag" size="16"/></span>
+      <b>{{ category }}</b>
+    </button>
+  </div>
+</template>
+
+<style scoped lang="sass">
+.wh-cat-grid
+  display: grid
+  grid-template-columns: 1fr 1fr
+  gap: 8px
+
+.wh-cat-tile
+  display: flex
+  flex-direction: column
+  gap: 6px
+  padding: 12px 10px
+  border: 1px solid var(--color-border)
+  border-radius: 13px
+  background: var(--color-card-bg)
+  box-shadow: var(--erp-shadow-card, 0 1px 0 rgba(0, 0, 0, 0.04))
+  text-align: left
+  cursor: pointer
+
+  &--active
+    outline: 2px solid var(--color-primary)
+    outline-offset: -1px
+
+.wh-cat-tile__ic
+  display: flex
+  align-items: center
+  justify-content: center
+  width: 28px
+  height: 28px
+  border-radius: 9px
+  background: var(--color-primary-light)
+  color: var(--color-primary)
+
+.wh-cat-tile b
+  font-size: 12.5px
+  font-weight: 650
+  line-height: 1.2
+</style>
