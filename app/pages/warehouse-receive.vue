@@ -42,11 +42,16 @@ const loadCategories = async () => {
     }
 }
 
+const itemsSectionRef = ref<HTMLElement | null>(null)
+
 const selectCategory = async (category: string) => {
     selectedCategory.value = category
     query.value = ''
     itemsLoading.value = true
     itemsError.value = ''
+    // Подсказка, что снизу появился контент — иначе на длинной сетке категорий
+    // не всегда очевидно, что список уже подгрузился под текущей прокруткой.
+    nextTick(() => itemsSectionRef.value?.scrollIntoView({behavior: 'smooth', block: 'start'}))
     try {
         const fetchedItems = await fetchWarehouseItems(category)
         // Guard against stale responses: only write if this category is still selected
@@ -141,7 +146,12 @@ const submit = async () => {
 </script>
 
 <template>
-  <ErpScreen title="Приём" icon="heroicons:arrow-down-tray">
+  <ErpScreen
+      title="Приём"
+      icon="heroicons:arrow-down-tray"
+      :subtitle="`Площадка: ${employeeStore.platform}`"
+      :shift-link="{ to: '/warehouse', label: 'Склад', icon: 'heroicons:chevron-left', iconSize: 13 }"
+  >
     <ErpEmptyState v-if="categoriesLoading" loading>
       <span>Загрузка категорий…</span>
     </ErpEmptyState>
@@ -160,12 +170,14 @@ const submit = async () => {
       />
 
       <template v-if="selectedCategory">
-        <ErpSearchBar
-            v-model="query"
-            on-light
-            placeholder="Поиск по наименованию"
-            :count-label="items.length ? `Найдено ${filteredItems.length} из ${items.length}` : ''"
-        />
+        <div ref="itemsSectionRef">
+          <ErpSearchBar
+              v-model="query"
+              on-light
+              placeholder="Поиск по наименованию"
+              :count-label="items.length ? `Найдено ${filteredItems.length} из ${items.length}` : ''"
+          />
+        </div>
 
         <ErpEmptyState v-if="itemsLoading" loading>
           <span>Загрузка…</span>
@@ -278,11 +290,11 @@ const submit = async () => {
   box-shadow: none
 
 :deep(.erp-sheet-content)
-  margin-top: -6px
-  font-size: 13px
-  font-weight: 400
+  margin-top: -4px
+  font-size: 16px
+  font-weight: 600
   text-align: left
-  color: var(--color-text-secondary)
+  color: var(--color-text)
 
 .wh-sheet-field
   display: flex

@@ -28,7 +28,12 @@ onMounted(load)
 </script>
 
 <template>
-  <ErpScreen title="Баланс" icon="heroicons:scale" :subtitle="`Площадка: ${employeeStore.platform}`">
+  <ErpScreen
+      title="Баланс"
+      icon="heroicons:scale"
+      :subtitle="`Площадка: ${employeeStore.platform}`"
+      :shift-link="{ to: '/warehouse', label: 'Склад', icon: 'heroicons:chevron-left', iconSize: 13 }"
+  >
     <ErpEmptyState v-if="isLoading" loading>
       <span>Загрузка…</span>
     </ErpEmptyState>

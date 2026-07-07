@@ -1,12 +1,20 @@
 <script setup lang="ts">
+import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+
 definePageMeta({layout: 'erp'})
 useSeoMeta({title: 'Склад | ERP'})
 
 const router = useRouter()
+const employeeStore = useErpEmployeeStore()
 </script>
 
 <template>
-  <ErpScreen title="Склад" icon="heroicons:archive-box">
+  <ErpScreen
+      title="Склад"
+      icon="heroicons:archive-box"
+      :subtitle="`Площадка: ${employeeStore.platform}`"
+      :shift-link="{ to: '/register', label: employeeStore.fio, icon: 'heroicons:user-circle' }"
+  >
     <div class="wh-hub-actions">
       <ErpGroupedList class="wh-hub-card">
         <ErpListRow chevron @click="router.push('/warehouse-receive')">

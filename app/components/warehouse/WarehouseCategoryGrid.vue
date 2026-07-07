@@ -37,7 +37,7 @@ const iconFor = (category: string) => CATEGORY_ICONS[category] || 'heroicons:tag
         :class="{ 'wh-cat-tile--active': category === selected }"
         @click="$emit('select', category)"
     >
-      <span class="wh-cat-tile__ic"><Icon :name="iconFor(category)" size="20"/></span>
+      <span class="wh-cat-tile__ic"><Icon :name="iconFor(category)" size="16"/></span>
       <b>{{ category }}</b>
     </button>
   </div>
@@ -54,11 +54,11 @@ const iconFor = (category: string) => CATEGORY_ICONS[category] || 'heroicons:tag
 .wh-cat-tile
   display: flex
   flex-direction: column
-  gap: 9px
-  min-height: 107px
-  padding: 13px 12px 12px
+  gap: 6px
+  min-height: 76px
+  padding: 10px 9px
   border: 1px solid var(--color-border)
-  border-radius: 16px
+  border-radius: 14px
   background: var(--color-card-bg)
   box-shadow: var(--erp-shadow-tile, var(--erp-shadow-card, 0 1px 0 rgba(0, 0, 0, 0.04)))
   text-align: left
@@ -72,15 +72,15 @@ const iconFor = (category: string) => CATEGORY_ICONS[category] || 'heroicons:tag
   display: flex
   align-items: center
   justify-content: center
-  width: 36px
-  height: 36px
-  border-radius: 11px
+  width: 28px
+  height: 28px
+  border-radius: 9px
   background: var(--color-primary-light)
   color: var(--color-primary)
 
 .wh-cat-tile b
-  font-size: 14px
-  font-weight: 700
-  letter-spacing: -0.2px
-  line-height: 1.25
+  font-size: 12px
+  font-weight: 650
+  letter-spacing: -0.1px
+  line-height: 1.2
 </style>

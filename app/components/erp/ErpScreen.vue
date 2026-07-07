@@ -3,7 +3,7 @@ defineProps<{
   title: string
   subtitle?: string
   overline?: string
-  shiftLink?: { to: string; label: string }
+  shiftLink?: { to: string; label: string; icon?: string; iconSize?: number }
   icon?: string
   centerBrand?: boolean
   footerHidden?: boolean
@@ -33,7 +33,7 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
             </div>
             <div class="erp-screen__head-actions">
               <NuxtLink v-if="shiftLink" :to="shiftLink.to" class="erp-screen__shift-link">
-                <Icon name="heroicons:clipboard-document-list" size="16"/>
+                <Icon :name="shiftLink.icon || 'heroicons:clipboard-document-list'" :size="shiftLink.iconSize || 16"/>
                 {{ shiftLink.label }}
               </NuxtLink>
               <slot name="actions"/>
