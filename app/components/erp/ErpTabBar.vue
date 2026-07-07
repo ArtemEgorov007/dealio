@@ -28,7 +28,7 @@ const isReportsSection = computed(() => route.path === '/reports')
 const isApprovalsSection = computed(() => route.path === '/approvals')
 const isSupplySection = computed(() => route.path === '/supply')
 const isOrdersSection = computed(() => route.path === '/orders')
-const isWarehouseSection = computed(() => route.path === '/warehouse')
+const isWarehouseSection = computed(() => route.path.startsWith('/warehouse'))
 
 const access = computed(() => employeeStore.access)
 
