@@ -17,6 +17,11 @@ const ERP_ROUTES = new Set([
     '/supply',
     '/orders',
     '/warehouse',
+    '/warehouse-receive',
+    '/warehouse-receive-form',
+    '/warehouse-issue',
+    '/warehouse-issue-form',
+    '/warehouse-balance',
 ])
 
 const DEALIO_PREFIXES = ['/board', '/login', '/archive', '/settings', '/dashboard', '/ideas', '/tasks', '/wishlist', '/help']
@@ -61,6 +66,11 @@ export default defineNuxtRouteMiddleware((to) => {
         '/supply': 'supply',
         '/orders': 'orders',
         '/warehouse': 'warehouse',
+        '/warehouse-receive': 'warehouse',
+        '/warehouse-receive-form': 'warehouse',
+        '/warehouse-issue': 'warehouse',
+        '/warehouse-issue-form': 'warehouse',
+        '/warehouse-balance': 'warehouse',
     }
 
     const guardedFlag = ACCESS_GUARDED[path]
@@ -103,5 +113,13 @@ export default defineNuxtRouteMiddleware((to) => {
 
     if (path === '/receipt' && !sessionStore.hasSelectedBadge) {
         return navigateTo('/badges')
+    }
+
+    if (path === '/warehouse-receive-form' && !sessionStore.hasWarehouseReceiveItem) {
+        return navigateTo('/warehouse-receive')
+    }
+
+    if (path === '/warehouse-issue-form' && !sessionStore.hasWarehouseIssueItem) {
+        return navigateTo('/warehouse-issue')
     }
 })
