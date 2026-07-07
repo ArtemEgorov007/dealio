@@ -11,6 +11,7 @@ export default defineNuxtConfig({
             erpIssueSheetGid: process.env.NUXT_PUBLIC_ERP_ISSUE_SHEET_GID || '1376055067',
             erpSheetsApiKey: process.env.NUXT_PUBLIC_ERP_SHEETS_API_KEY || '',
             erpGasUrl: process.env.NUXT_PUBLIC_ERP_GAS_URL || '',
+            warehouseGasUrl: process.env.NUXT_PUBLIC_WAREHOUSE_GAS_URL || '',
         },
     },
 

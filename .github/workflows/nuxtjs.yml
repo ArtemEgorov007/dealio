@@ -39,6 +39,7 @@ jobs:
           # Секрет в GitHub пока называется NUXT_PUBLIC_CRM_GAS_URL (переименование
           # секрета требует прав к секрет-хранилищу) — маппим его в ERP-переменную.
           NUXT_PUBLIC_ERP_GAS_URL: ${{ secrets.NUXT_PUBLIC_CRM_GAS_URL }}
+          NUXT_PUBLIC_WAREHOUSE_GAS_URL: ${{ secrets.NUXT_PUBLIC_WAREHOUSE_GAS_URL }}
         run: npm run generate
 
       - name: Verify static output
