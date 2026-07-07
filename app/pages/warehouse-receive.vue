@@ -44,11 +44,21 @@ const selectCategory = async (category: string) => {
     itemsLoading.value = true
     itemsError.value = ''
     try {
-        items.value = await fetchWarehouseItems(category)
+        const fetchedItems = await fetchWarehouseItems(category)
+        // Guard against stale responses: only write if this category is still selected
+        if (selectedCategory.value === category) {
+            items.value = fetchedItems
+        }
     } catch (error) {
-        itemsError.value = error instanceof Error ? error.message : 'Ошибка загрузки товаров'
+        // Guard against stale responses: only write error if this category is still selected
+        if (selectedCategory.value === category) {
+            itemsError.value = error instanceof Error ? error.message : 'Ошибка загрузки товаров'
+        }
     } finally {
-        itemsLoading.value = false
+        // Guard against stale responses: only clear loading state if this category is still selected
+        if (selectedCategory.value === category) {
+            itemsLoading.value = false
+        }
     }
 }
 
