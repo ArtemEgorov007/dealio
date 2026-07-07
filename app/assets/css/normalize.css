@@ -16,7 +16,8 @@ body {
     color: var(--color-text);
 }
 
-html {
+html,
+body {
     scrollbar-gutter: stable;
 }
 
