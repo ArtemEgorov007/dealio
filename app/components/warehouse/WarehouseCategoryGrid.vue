@@ -7,6 +7,24 @@ defineProps<{
 defineEmits<{
   select: [category: string]
 }>()
+
+// Категории приходят из листа «Номенклатура» (не фиксированный enum) — маппинг
+// покрывает известные на сегодня значения, для незнакомой категории иконка
+// падает на общий heroicons:tag, а не ломается.
+const CATEGORY_ICONS: Record<string, string> = {
+  'Канцелярия': 'heroicons:pencil-square',
+  'СИЗ': 'heroicons:shield-check',
+  'Инструменты': 'heroicons:wrench-screwdriver',
+  'Форма': 'heroicons:user',
+  'Малое оборудование': 'heroicons:cog-6-tooth',
+  'Окрасочные расходники': 'heroicons:paint-brush',
+  'Запчасти': 'heroicons:cube',
+  'Электрика': 'heroicons:bolt',
+  'Прочие расходники': 'heroicons:archive-box',
+  'Крепежи': 'heroicons:link',
+}
+
+const iconFor = (category: string) => CATEGORY_ICONS[category] || 'heroicons:tag'
 </script>
 
 <template>
@@ -19,7 +37,7 @@ defineEmits<{
         :class="{ 'wh-cat-tile--active': category === selected }"
         @click="$emit('select', category)"
     >
-      <span class="wh-cat-tile__ic"><Icon name="heroicons:tag" size="16"/></span>
+      <span class="wh-cat-tile__ic"><Icon :name="iconFor(category)" size="16"/></span>
       <b>{{ category }}</b>
     </button>
   </div>

@@ -7,45 +7,56 @@ const router = useRouter()
 
 <template>
   <ErpScreen title="Склад" icon="heroicons:archive-box">
-    <ErpGroupedList>
-      <ErpListRow chevron @click="router.push('/warehouse-receive')">
-        <template #leading>
-          <span class="wh-hub-ic wh-hub-ic--receive">
-            <Icon name="heroicons:arrow-down-tray" size="20"/>
+    <div class="wh-hub-actions">
+      <ErpGroupedList>
+        <ErpListRow chevron @click="router.push('/warehouse-receive')">
+          <template #leading>
+            <span class="wh-hub-ic wh-hub-ic--receive">
+              <Icon name="heroicons:arrow-down-tray" size="20"/>
+            </span>
+          </template>
+          <span class="wh-hub-row">
+            <span class="wh-hub-row__title">Приём</span>
+            <span class="wh-hub-row__sub">Оприходовать товар на склад</span>
           </span>
-        </template>
-        <span class="wh-hub-row">
-          <span class="wh-hub-row__title">Приём</span>
-          <span class="wh-hub-row__sub">Оприходовать товар на склад</span>
-        </span>
-      </ErpListRow>
-      <ErpListRow chevron @click="router.push('/warehouse-issue')">
-        <template #leading>
-          <span class="wh-hub-ic wh-hub-ic--issue">
-            <Icon name="heroicons:arrow-up-tray" size="20"/>
+        </ErpListRow>
+      </ErpGroupedList>
+      <ErpGroupedList>
+        <ErpListRow chevron @click="router.push('/warehouse-issue')">
+          <template #leading>
+            <span class="wh-hub-ic wh-hub-ic--issue">
+              <Icon name="heroicons:arrow-up-tray" size="20"/>
+            </span>
+          </template>
+          <span class="wh-hub-row">
+            <span class="wh-hub-row__title">Выдача</span>
+            <span class="wh-hub-row__sub">Выдать товар со склада</span>
           </span>
-        </template>
-        <span class="wh-hub-row">
-          <span class="wh-hub-row__title">Выдача</span>
-          <span class="wh-hub-row__sub">Выдать товар со склада</span>
-        </span>
-      </ErpListRow>
-      <ErpListRow chevron @click="router.push('/warehouse-balance')">
-        <template #leading>
-          <span class="wh-hub-ic wh-hub-ic--balance">
-            <Icon name="heroicons:scale" size="20"/>
+        </ErpListRow>
+      </ErpGroupedList>
+      <ErpGroupedList>
+        <ErpListRow chevron @click="router.push('/warehouse-balance')">
+          <template #leading>
+            <span class="wh-hub-ic wh-hub-ic--balance">
+              <Icon name="heroicons:scale" size="20"/>
+            </span>
+          </template>
+          <span class="wh-hub-row">
+            <span class="wh-hub-row__title">Баланс</span>
+            <span class="wh-hub-row__sub">Остатки по вашей площадке</span>
           </span>
-        </template>
-        <span class="wh-hub-row">
-          <span class="wh-hub-row__title">Баланс</span>
-          <span class="wh-hub-row__sub">Остатки по вашей площадке</span>
-        </span>
-      </ErpListRow>
-    </ErpGroupedList>
+        </ErpListRow>
+      </ErpGroupedList>
+    </div>
   </ErpScreen>
 </template>
 
 <style scoped lang="sass">
+.wh-hub-actions
+  display: flex
+  flex-direction: column
+  gap: 12px
+
 .wh-hub-ic
   display: flex
   align-items: center
