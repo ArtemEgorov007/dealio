@@ -63,8 +63,8 @@ onMounted(() => {
         class="wh-bal-platform-toggle"
         @click="isPickerOpen = true"
     >
-      Площадка: {{ selectedPlatform }}
-      <Icon name="heroicons:chevron-down" size="14"/>
+      {{ selectedPlatform }}
+      <Icon name="heroicons:chevron-down" size="12"/>
     </button>
     <p v-else class="wh-bal-subtitle">Площадка: {{ selectedPlatform }}</p>
 
@@ -166,14 +166,15 @@ onMounted(() => {
 .wh-bal-platform-toggle
   display: inline-flex
   align-items: center
-  gap: 4px
+  gap: 5px
   align-self: flex-start
-  padding: 0
+  padding: 6px 12px
   border: none
-  background: none
+  border-radius: var(--radius-full)
+  background: var(--color-primary-light)
   color: var(--color-primary)
-  font-size: var(--font-size-sm)
-  font-weight: 600
+  font-size: 12px
+  font-weight: 700
   cursor: pointer
 
 .wh-bal-subtitle
