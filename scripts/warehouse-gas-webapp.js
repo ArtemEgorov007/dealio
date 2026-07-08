@@ -5,6 +5,7 @@
  * GET  ?action=categories
  * GET  ?action=items&category=...
  * GET  ?action=stock&platform=...&category=...   (category опционален)
+ * GET  ?action=platforms
  * POST { action: 'receiveItem', platform, cell, name, type, qty, unit, fio }
  * POST { action: 'issueItem',   platform, cell, name, type, qty, unit, fio, recipientFio }
  */
@@ -29,6 +30,10 @@ function doGet(e) {
 
         if (action === 'stock') {
             return jsonResponse_({ok: true, items: getStock_(e.parameter.platform || '', e.parameter.category || '')})
+        }
+
+        if (action === 'platforms') {
+            return jsonResponse_({ok: true, platforms: getPlatforms_()})
         }
 
         return jsonResponse_({ok: false, error: 'Unknown action'})
@@ -81,6 +86,23 @@ function getCategories_() {
         }
     }
     return categories
+}
+
+// Склад: A ID | B Площадка | ...
+function getPlatforms_() {
+    const sheet = getSheet_(STOCK_SHEET)
+    const values = sheet.getDataRange().getValues()
+    const platforms = []
+    const seen = {}
+    for (let i = 1; i < values.length; i += 1) {
+        const platform = normalizeCell_(values[i][1])
+        if (platform && !seen[platform]) {
+            seen[platform] = true
+            platforms.push(platform)
+        }
+    }
+    platforms.sort((a, b) => a.localeCompare(b, 'ru'))
+    return platforms
 }
 
 function getItemsByCategory_(category) {
