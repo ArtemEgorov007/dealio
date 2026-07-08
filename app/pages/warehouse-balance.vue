@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {fetchWarehouseStock} from '~/utils/warehouse-sheets'
+import {fetchWarehouseStock, fetchWarehousePlatforms} from '~/utils/warehouse-sheets'
 import type {WarehouseStockItem} from '~~/types/warehouse.types'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 
@@ -7,6 +7,12 @@ definePageMeta({layout: 'erp'})
 useSeoMeta({title: 'Баланс | ERP'})
 
 const employeeStore = useErpEmployeeStore()
+
+const isOffice = computed(() => employeeStore.platform === 'Офис')
+
+const selectedPlatform = ref(employeeStore.platform)
+const platforms = ref<string[]>([])
+const isPickerOpen = ref(false)
 
 const items = ref<WarehouseStockItem[]>([])
 const isLoading = ref(true)
@@ -16,7 +22,7 @@ const load = async () => {
     isLoading.value = true
     error.value = ''
     try {
-        items.value = await fetchWarehouseStock(employeeStore.platform)
+        items.value = await fetchWarehouseStock(selectedPlatform.value)
     } catch (loadError) {
         error.value = loadError instanceof Error ? loadError.message : 'Ошибка загрузки остатков'
     } finally {
@@ -24,16 +30,44 @@ const load = async () => {
     }
 }
 
-onMounted(load)
+const loadPlatforms = async () => {
+    if (!isOffice.value) return
+    try {
+        platforms.value = await fetchWarehousePlatforms()
+    } catch {
+        platforms.value = []
+    }
+}
+
+const selectPlatform = (platform: string) => {
+    selectedPlatform.value = platform
+    isPickerOpen.value = false
+    load()
+}
+
+onMounted(() => {
+    load()
+    loadPlatforms()
+})
 </script>
 
 <template>
   <ErpScreen
       title="Баланс"
       icon="heroicons:scale"
-      :subtitle="`Площадка: ${employeeStore.platform}`"
       :shift-link="{ to: '/warehouse', label: 'Склад', icon: 'heroicons:chevron-left', iconSize: 13 }"
   >
+    <button
+        v-if="isOffice && platforms.length > 0"
+        type="button"
+        class="wh-bal-platform-toggle"
+        @click="isPickerOpen = true"
+    >
+      Площадка: {{ selectedPlatform }}
+      <Icon name="heroicons:chevron-down" size="14"/>
+    </button>
+    <p v-else class="wh-bal-subtitle">Площадка: {{ selectedPlatform }}</p>
+
     <ErpEmptyState v-if="isLoading" loading>
       <span>Загрузка…</span>
     </ErpEmptyState>
@@ -44,7 +78,7 @@ onMounted(load)
     </ErpEmptyState>
 
     <ErpEmptyState v-else-if="items.length === 0">
-      <p>На вашей площадке нет остатков</p>
+      <p>На этой площадке нет остатков</p>
     </ErpEmptyState>
 
     <template v-else>
@@ -64,6 +98,27 @@ onMounted(load)
         </div>
       </div>
     </template>
+
+    <ErpActionSheet
+        :open="isPickerOpen"
+        :busy="false"
+        ariaLabel="Выбор площадки"
+        @dismiss="isPickerOpen = false"
+    >
+      <template #label>Площадка</template>
+      <template #form>
+        <ErpGroupedList>
+          <ErpListRow
+              v-for="platform in platforms"
+              :key="platform"
+              :selected="platform === selectedPlatform"
+              @click="selectPlatform(platform)"
+          >
+            {{ platform }}
+          </ErpListRow>
+        </ErpGroupedList>
+      </template>
+    </ErpActionSheet>
   </ErpScreen>
 </template>
 
@@ -107,4 +162,22 @@ onMounted(load)
   color: var(--color-primary)
   display: inline-block
   width: fit-content
+
+.wh-bal-platform-toggle
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  align-self: flex-start
+  padding: 0
+  border: none
+  background: none
+  color: var(--color-primary)
+  font-size: var(--font-size-sm)
+  font-weight: 600
+  cursor: pointer
+
+.wh-bal-subtitle
+  margin: 0
+  font-size: var(--font-size-sm)
+  color: var(--color-text-secondary)
 </style>

@@ -13,6 +13,7 @@ interface WarehouseGasResponse {
     ok?: boolean
     error?: string
     categories?: string[]
+    platforms?: string[]
     items?: string[] | WarehouseStockItem[]
 }
 
@@ -73,6 +74,12 @@ export async function fetchWarehouseCategories(): Promise<string[]> {
     const result = await requestGet({action: 'categories'})
     if (!result.ok) throw new Error(result.error || 'Не удалось загрузить категории')
     return (result.categories as string[]) ?? []
+}
+
+export async function fetchWarehousePlatforms(): Promise<string[]> {
+    const result = await requestGet({action: 'platforms'})
+    if (!result.ok) throw new Error(result.error || 'Не удалось загрузить список площадок')
+    return (result.platforms as string[]) ?? []
 }
 
 export async function fetchWarehouseItems(category: string): Promise<string[]> {
