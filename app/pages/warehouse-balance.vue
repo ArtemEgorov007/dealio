@@ -105,7 +105,6 @@ onMounted(() => {
       </ErpEmptyState>
 
       <template v-else>
-        <ErpSectionLabel>Остатки · {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'позиция' : 'позиций' }}</ErpSectionLabel>
         <div class="wh-bal-table">
           <div class="wh-bal-row wh-bal-row--head">
             <span>Кат.</span>
