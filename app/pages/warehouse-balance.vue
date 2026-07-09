@@ -17,6 +17,15 @@ const isPickerOpen = ref(false)
 const items = ref<WarehouseStockItem[]>([])
 const isLoading = ref(true)
 const error = ref('')
+const query = ref('')
+
+const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim()
+
+const filteredItems = computed(() => {
+    const needle = normalize(query.value)
+    if (!needle) return items.value
+    return items.value.filter(item => normalize(item.name).includes(needle))
+})
 
 const load = async () => {
     isLoading.value = true
@@ -42,6 +51,7 @@ const loadPlatforms = async () => {
 const selectPlatform = (platform: string) => {
     selectedPlatform.value = platform
     isPickerOpen.value = false
+    query.value = ''
     load()
 }
 
@@ -82,21 +92,35 @@ onMounted(() => {
     </ErpEmptyState>
 
     <template v-else>
-      <ErpSectionLabel>Остатки · {{ items.length }} {{ items.length === 1 ? 'позиция' : 'позиций' }}</ErpSectionLabel>
-      <div class="wh-bal-table">
-        <div class="wh-bal-row wh-bal-row--head">
-          <span>Кат.</span>
-          <span>Наименование</span>
-          <span class="wh-bal-row__num">Остаток</span>
-          <span>Ед.</span>
+      <ErpSearchBar
+          v-model="query"
+          on-light
+          placeholder="Поиск по наименованию"
+          :count-label="`Найдено ${filteredItems.length} из ${items.length}`"
+      />
+
+      <ErpEmptyState v-if="filteredItems.length === 0">
+        <p>Ничего не найдено по запросу «{{ query }}»</p>
+        <UiButton variant="outline" @click="query = ''">Очистить поиск</UiButton>
+      </ErpEmptyState>
+
+      <template v-else>
+        <ErpSectionLabel>Остатки · {{ filteredItems.length }} {{ filteredItems.length === 1 ? 'позиция' : 'позиций' }}</ErpSectionLabel>
+        <div class="wh-bal-table">
+          <div class="wh-bal-row wh-bal-row--head">
+            <span>Кат.</span>
+            <span>Наименование</span>
+            <span class="wh-bal-row__num">Остаток</span>
+            <span>Ед.</span>
+          </div>
+          <div v-for="item in filteredItems" :key="`${item.cell}-${item.name}-${item.type}`" class="wh-bal-row">
+            <span class="wh-bal-cat">{{ item.category }}</span>
+            <span>{{ item.name }}</span>
+            <span class="wh-bal-row__num">{{ item.balance }}</span>
+            <span>{{ item.unit }}</span>
+          </div>
         </div>
-        <div v-for="item in items" :key="`${item.cell}-${item.name}-${item.type}`" class="wh-bal-row">
-          <span class="wh-bal-cat">{{ item.category }}</span>
-          <span>{{ item.name }}</span>
-          <span class="wh-bal-row__num">{{ item.balance }}</span>
-          <span>{{ item.unit }}</span>
-        </div>
-      </div>
+      </template>
     </template>
 
     <ErpActionSheet

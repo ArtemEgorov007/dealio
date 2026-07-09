@@ -75,6 +75,21 @@ onBeforeUnmount(() => {
 watch(access, () => nextTick(updateScrollState), {deep: true})
 watch(() => route.fullPath, () => nextTick(() => scrollActiveIntoView(true)))
 
+// Сворачивание рельса до одних иконок — только десктоп (см. медиа-запрос
+// в стилях, класс применяется независимо от ширины экрана, но эффекта
+// на мобильном баре не даёт). Состояние переживает перезагрузку страницы.
+const RAIL_COLLAPSE_KEY = 'erp-rail-collapsed'
+const isRailCollapsed = ref(false)
+
+onMounted(() => {
+  isRailCollapsed.value = localStorage.getItem(RAIL_COLLAPSE_KEY) === '1'
+})
+
+const toggleRailCollapse = () => {
+  isRailCollapsed.value = !isRailCollapsed.value
+  localStorage.setItem(RAIL_COLLAPSE_KEY, isRailCollapsed.value ? '1' : '0')
+}
+
 const FADE_SIZE = '14px'
 
 const tabbarMaskStyle = computed(() => {
@@ -99,23 +114,39 @@ const goApprovals = () => router.push('/approvals')
 const goSupply = () => router.push('/supply')
 const goOrders = () => router.push('/orders')
 const goWarehouse = () => router.push('/warehouse')
+
+const goLogout = () => {
+  employeeStore.logout()
+  router.push('/register')
+}
 </script>
 
 <template>
   <nav
       ref="tabbarEl"
       class="erp-tabbar"
+      :class="{ 'erp-tabbar--collapsed': isRailCollapsed }"
       :style="tabbarMaskStyle"
       aria-label="Разделы ERP"
   >
     <button
         type="button"
+        class="erp-tabbar__collapse"
+        :aria-label="isRailCollapsed ? 'Развернуть меню' : 'Свернуть меню'"
+        @click="toggleRailCollapse"
+    >
+      <Icon name="heroicons:chevron-double-left" size="16" class="erp-tabbar__collapse-icon"/>
+    </button>
+
+    <button
+        type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isProfileSection }"
+        :title="isRailCollapsed ? 'Профиль' : undefined"
         @click="goProfile"
     >
       <Icon name="heroicons:user-circle" size="22"/>
-      <span>Профиль</span>
+      <span class="erp-tabbar__label">Профиль</span>
     </button>
 
     <button
@@ -123,10 +154,11 @@ const goWarehouse = () => router.push('/warehouse')
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isBadgesSection }"
+        :title="isRailCollapsed ? 'Бирки' : undefined"
         @click="goBadges"
     >
       <Icon name="heroicons:tag" size="22"/>
-      <span>Бирки</span>
+      <span class="erp-tabbar__label">Бирки</span>
     </button>
 
     <button
@@ -134,10 +166,11 @@ const goWarehouse = () => router.push('/warehouse')
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isMeasurementSection }"
+        :title="isRailCollapsed ? 'Промеры' : undefined"
         @click="goMeasurements"
     >
       <Icon name="heroicons:beaker" size="22"/>
-      <span>Промеры</span>
+      <span class="erp-tabbar__label">Промеры</span>
     </button>
 
     <button
@@ -145,10 +178,11 @@ const goWarehouse = () => router.push('/warehouse')
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isPackingSection }"
+        :title="isRailCollapsed ? 'Упаковка' : undefined"
         @click="goPacking"
     >
       <Icon name="heroicons:qr-code" size="22"/>
-      <span>Упаковка</span>
+      <span class="erp-tabbar__label">Упаковка</span>
     </button>
 
     <button
@@ -156,10 +190,11 @@ const goWarehouse = () => router.push('/warehouse')
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isHandoverSection }"
+        :title="isRailCollapsed ? 'Сдача' : undefined"
         @click="goHandover"
     >
       <Icon name="heroicons:check-badge" size="22"/>
-      <span>Сдача</span>
+      <span class="erp-tabbar__label">Сдача</span>
     </button>
 
     <button
@@ -167,10 +202,11 @@ const goWarehouse = () => router.push('/warehouse')
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isReportsSection }"
+        :title="isRailCollapsed ? 'Отчеты' : undefined"
         @click="goReports"
     >
       <Icon name="heroicons:chart-bar" size="22"/>
-      <span>Отчеты</span>
+      <span class="erp-tabbar__label">Отчеты</span>
     </button>
 
     <button
@@ -178,10 +214,11 @@ const goWarehouse = () => router.push('/warehouse')
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isApprovalsSection }"
+        :title="isRailCollapsed ? 'Согласования' : undefined"
         @click="goApprovals"
     >
       <Icon name="heroicons:check-circle" size="22"/>
-      <span>Согласования</span>
+      <span class="erp-tabbar__label">Согласования</span>
     </button>
 
     <button
@@ -189,10 +226,11 @@ const goWarehouse = () => router.push('/warehouse')
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isSupplySection }"
+        :title="isRailCollapsed ? 'Снабжение' : undefined"
         @click="goSupply"
     >
       <Icon name="heroicons:truck" size="22"/>
-      <span>Снабжение</span>
+      <span class="erp-tabbar__label">Снабжение</span>
     </button>
 
     <button
@@ -200,10 +238,11 @@ const goWarehouse = () => router.push('/warehouse')
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isOrdersSection }"
+        :title="isRailCollapsed ? 'Заказы' : undefined"
         @click="goOrders"
     >
       <Icon name="heroicons:shopping-bag" size="22"/>
-      <span>Заказы</span>
+      <span class="erp-tabbar__label">Заказы</span>
     </button>
 
     <button
@@ -211,10 +250,22 @@ const goWarehouse = () => router.push('/warehouse')
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isWarehouseSection }"
+        :title="isRailCollapsed ? 'Склад' : undefined"
         @click="goWarehouse"
     >
       <Icon name="heroicons:archive-box" size="22"/>
-      <span>Склад</span>
+      <span class="erp-tabbar__label">Склад</span>
+    </button>
+
+    <button
+        v-if="employeeStore.hasFio"
+        type="button"
+        class="erp-tabbar__item erp-tabbar__item--logout"
+        :title="isRailCollapsed ? 'Выйти' : undefined"
+        @click="goLogout"
+    >
+      <Icon name="heroicons:arrow-right-on-rectangle" size="22"/>
+      <span class="erp-tabbar__label">Выйти</span>
     </button>
   </nav>
 </template>
@@ -255,12 +306,21 @@ const goWarehouse = () => router.push('/warehouse')
   white-space: nowrap
   transition: color 0.15s ease, background-color 0.15s ease
 
-  &:active
+  &:hover
     background-color: rgba(1, 110, 215, 0.06)
+
+  &:active
+    background-color: rgba(1, 110, 215, 0.10)
 
   &--active
     color: var(--color-primary)
     background-color: var(--color-primary-light)
+
+  &--logout
+    display: none
+
+.erp-tabbar__collapse
+  display: none
 
 /* На широком экране бар снизу превращается в вертикальный рельс слева —
    контент выше уже сам центрируется в оставшейся ширине (ErpScreen
@@ -282,6 +342,7 @@ const goWarehouse = () => router.push('/warehouse')
     order: -1
     mask-image: none !important
     -webkit-mask-image: none !important
+    transition: width 0.2s ease
 
   .erp-tabbar__item
     // Базовое flex: 1 0 auto растягивает каждый пункт на равную долю
@@ -293,7 +354,57 @@ const goWarehouse = () => router.push('/warehouse')
     justify-content: flex-start
     width: 100%
     min-width: 0
-    padding: 6px 10px
+    padding: 9px 12px
     gap: 10px
     font-size: 13px
+
+    &--logout
+      display: flex
+      margin-top: auto
+      color: #e5484d
+
+      &:hover
+        background-color: rgba(229, 72, 77, 0.06)
+
+      &:active
+        background-color: rgba(229, 72, 77, 0.10)
+
+  .erp-tabbar__collapse
+    display: flex
+    align-items: center
+    justify-content: center
+    align-self: flex-end
+    width: 28px
+    height: 28px
+    margin-bottom: 4px
+    border: none
+    border-radius: 8px
+    background: none
+    color: #8a97a8
+    cursor: pointer
+
+    &:hover
+      background-color: rgba(60, 60, 67, 0.06)
+
+  .erp-tabbar__collapse-icon
+    transition: transform 0.2s ease
+
+  // Свёрнутый рельс — одни иконки, по центру, без подписей и без
+  // кнопки «Выйти» с текстом (иконка остаётся, title вместо подписи).
+  .erp-tabbar--collapsed
+    width: 76px
+
+    .erp-tabbar__collapse
+      align-self: center
+
+    .erp-tabbar__collapse-icon
+      transform: rotate(180deg)
+
+    .erp-tabbar__item
+      justify-content: center
+      padding: 9px
+      gap: 0
+
+      .erp-tabbar__label
+        display: none
 </style>
