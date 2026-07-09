@@ -4,6 +4,7 @@ import {formatBadgeDisplay} from '~/utils/erp-csv'
 import {workshopLabel} from '~~/types/erp.types'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useErpSessionStore} from '~~/store/erp-session.store'
+import {useTabBarHidden} from '~/composables/useTabBarHidden'
 
 definePageMeta({layout: 'erp'})
 
@@ -12,6 +13,7 @@ useSeoMeta({title: 'Выбор бирки | ERP'})
 const employeeStore = useErpEmployeeStore()
 const sessionStore = useErpSessionStore()
 const router = useRouter()
+const isTabBarHidden = useTabBarHidden()
 
 const badges = ref<string[]>([])
 const isLoading = ref(true)
@@ -85,10 +87,6 @@ const onBadgeIssued = (skippedJournal: boolean) => {
     router.push('/receipt')
 }
 
-const changeWorkshop = () => {
-    router.push('/workshop')
-}
-
 onMounted(loadBadges)
 </script>
 
@@ -97,13 +95,15 @@ onMounted(loadBadges)
       title="Выбор бирки"
       :subtitle="`Цех: ${workshopTitle}`"
       icon="heroicons:tag"
-      :footer-hidden="query.trim().length > 0"
+      :shift-link="{ to: '/shift', label: 'Бирки за смену' }"
   >
     <template v-if="!isLoading && !error && badges.length > 0" #search>
       <ErpSearchBar
           v-model="query"
           placeholder="Поиск по бирке"
           :count-label="searchCountLabel"
+          @focusin="isTabBarHidden = true"
+          @focusout="isTabBarHidden = false"
       />
     </template>
 
@@ -144,15 +144,6 @@ onMounted(loadBadges)
         </span>
       </ErpListRow>
     </ErpGroupedList>
-
-    <template #footer>
-      <UiButton block @click="router.push('/shift')">
-        Бирки за смену
-      </UiButton>
-      <UiButton variant="ghost" block @click="changeWorkshop">
-        Сменить цех
-      </UiButton>
-    </template>
   </ErpScreen>
 
   <ErpBadgeConfirmSheet
