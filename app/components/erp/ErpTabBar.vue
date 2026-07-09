@@ -274,6 +274,7 @@ const goWarehouse = () => router.push('/warehouse')
     height: 100%
     margin: 0
     padding: 16px 10px
+    gap: 8px
     border-radius: 0
     box-shadow: none
     background: var(--color-card-bg, #fff)
@@ -283,11 +284,16 @@ const goWarehouse = () => router.push('/warehouse')
     -webkit-mask-image: none !important
 
   .erp-tabbar__item
+    // Базовое flex: 1 0 auto растягивает каждый пункт на равную долю
+    // всей высоты рельса (height:100% + column) — отсюда и «огромные»
+    // кнопки. В рельсе пункты должны занимать только свою естественную
+    // высоту, а лишнее место — просто пустота внизу.
+    flex: 0 0 auto
     flex-direction: row
     justify-content: flex-start
     width: 100%
     min-width: 0
-    padding: 10px 14px
+    padding: 6px 10px
     gap: 10px
     font-size: 13px
 </style>
