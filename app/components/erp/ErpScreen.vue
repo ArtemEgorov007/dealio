@@ -83,6 +83,12 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   flex-direction: column
   box-sizing: border-box
 
+  // На десктопе (рельс слева, см. ErpTabBar.vue) 480px в центре широкого
+  // окна оставляет огромные пустые поля по бокам — расширяем колонку,
+  // остаётся по-прежнему по центру, просто менее вопиюще узкая.
+  @media (min-width: 900px)
+    max-width: 720px
+
 .erp-screen__head
   flex-shrink: 0
   background: var(--erp-grad-header)

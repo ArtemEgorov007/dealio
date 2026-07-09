@@ -261,4 +261,33 @@ const goWarehouse = () => router.push('/warehouse')
   &--active
     color: var(--color-primary)
     background-color: var(--color-primary-light)
+
+/* На широком экране бар снизу превращается в вертикальный рельс слева —
+   контент выше уже сам центрируется в оставшейся ширине (ErpScreen
+   max-width:480 + margin:auto), правка нужна только самому бару. */
+@media (min-width: 900px)
+  .erp-tabbar
+    flex-direction: column
+    align-items: stretch
+    overflow: visible
+    width: 220px
+    height: 100%
+    margin: 0
+    padding: 16px 10px
+    border-radius: 0
+    box-shadow: none
+    background: var(--color-card-bg, #fff)
+    border-right: 1px solid rgba(60, 60, 67, 0.16)
+    order: -1
+    mask-image: none !important
+    -webkit-mask-image: none !important
+
+  .erp-tabbar__item
+    flex-direction: row
+    justify-content: flex-start
+    width: 100%
+    min-width: 0
+    padding: 10px 14px
+    gap: 10px
+    font-size: 13px
 </style>
