@@ -91,7 +91,11 @@ const submitError = ref('')
 const qtyError = computed(() => {
     const trimmed = qty.value.trim()
     if (!trimmed) return ''
-    return /^\d+$/.test(trimmed) ? '' : 'Только целые числа'
+    if (!/^\d+$/.test(trimmed)) return 'Только целые числа'
+    if (sheetItem.value && parseInt(trimmed, 10) > sheetItem.value.balance) {
+        return `Максимум ${sheetItem.value.balance}`
+    }
+    return ''
 })
 
 const canSubmit = computed(() =>
