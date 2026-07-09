@@ -41,7 +41,7 @@ const modules = computed(() => {
     const all = [
         {key: 'badges', to: '/workshop', icon: 'heroicons:tag', label: 'Бирки', caption: 'Выдать', tone: '#016ED7'},
         {key: 'measurements', to: '/scan-measurement', icon: 'heroicons:beaker', label: 'Промеры', caption: 'Считать', tone: '#2FB463'},
-        {key: 'packing', to: '/workshop?flow=packing', icon: 'heroicons:qr-code', label: 'Упаковка', caption: 'QR-скан', tone: '#E7920B'},
+        {key: 'packing', to: '/scan-qr', icon: 'heroicons:qr-code', label: 'Упаковка', caption: 'QR-скан', tone: '#E7920B'},
         {key: 'handover', to: '/scan-handover', icon: 'heroicons:check-badge', label: 'Сдача', caption: 'Приёмка', tone: '#8E4EC6'},
         {key: 'reports', to: '/reports', icon: 'heroicons:chart-bar', label: 'Отчёты', caption: 'В разработке', tone: '#5B6B7F'},
         {key: 'approvals', to: '/approvals', icon: 'heroicons:check-circle', label: 'Согласования', caption: 'В разработке', tone: '#5B6B7F'},

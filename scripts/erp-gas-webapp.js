@@ -11,9 +11,10 @@
  * GET  ?action=badges&workshop=kolpino|volkhonka
  * GET  ?action=issuedToday&fio=...&workshop=kolpino|volkhonka  (workshop опционален)
  * GET  ?action=handedOverToday&fio=...
+ * GET  ?action=packingToday&fio=...&machine=1..10
  * POST { action: 'issueBadge',       workshop, fio, badgeContent }
  * POST { action: 'deleteIssuedBadge', row, fio, badgeContent }
- * POST { action: 'recordPacking',    workshop, qrText }
+ * POST { action: 'recordPacking',    platform, fio, machine, qrText }
  * POST { action: 'recordHandover',   fio, badgeContent }
  * POST { action: 'undoHandover',     row, fio, badgeContent }
  * POST { action: 'recordMeasurement', fio, badge, coverage, zone1..zone5 }
@@ -61,6 +62,11 @@ function doGet(e) {
             return jsonResponse_({ok: true, entries: entries})
         }
 
+        if (action === 'packingToday') {
+            const entries = getPackingToday_(e.parameter.fio || '', e.parameter.machine || '')
+            return jsonResponse_({ok: true, packingEntries: entries})
+        }
+
         return jsonResponse_({ok: false, error: 'Unknown action'})
     } catch (error) {
         return jsonResponse_({ok: false, error: String(error.message || error)})
@@ -82,7 +88,7 @@ function doPost(e) {
         }
 
         if (payload.action === 'recordPacking') {
-            recordPacking_(payload.workshop, payload.qrText || '')
+            recordPacking_(payload.platform || '', payload.fio || '', payload.machine || '', payload.qrText || '')
             return jsonResponse_({ok: true})
         }
 
@@ -585,9 +591,14 @@ function requireColumn_(header, columnName, sheetName) {
 /**
  * Записывает считанный QR упаковки на лист «Логисты». Лист создаётся
  * автоматически при первом вызове, если его ещё нет в таблице.
+ *
+ * «Цех» заполняется площадкой из профиля сотрудника (platform), а не
+ * выбором цеха на отдельном экране — выбор цеха для упаковки убран.
+ * «Вес»/«Титул»/«Титул и марка» ничего не пишут — на реальном листе
+ * это готовые Arrayformula-колонки, считающие значения из «Бирка»
+ * автоматически при появлении новой строки.
  */
-function recordPacking_(workshop, qrText) {
-    const workshopLabel = getWorkshopSheetName_(workshop)
+function recordPacking_(platform, fio, machine, qrText) {
     const sheet = getOrCreateLogistSheet_()
 
     const lock = LockService.getScriptLock()
@@ -597,26 +608,68 @@ function recordPacking_(workshop, qrText) {
 
     try {
         assertBadgeNotRecorded_(sheet, qrText, LOGIST_SHEET)
-        const row = buildLogistRow_(sheet, workshopLabel, qrText)
+        const row = buildLogistRow_(sheet, platform, fio, machine, qrText)
         sheet.appendRow(row)
     } finally {
         lock.releaseLock()
     }
 }
 
-function buildLogistRow_(sheet, workshopLabel, qrText) {
+function buildLogistRow_(sheet, platform, fio, machine, qrText) {
     const header = getSheetHeader_(sheet)
 
     const dateIndex = requireColumn_(header, 'Дата', LOGIST_SHEET)
     const workshopIndex = requireColumn_(header, 'Цех', LOGIST_SHEET)
+    const fioIndex = requireColumn_(header, 'ФИО', LOGIST_SHEET)
     const badgeIndex = requireColumn_(header, 'Бирка', LOGIST_SHEET)
+    const machineIndex = requireColumn_(header, 'Машина', LOGIST_SHEET)
 
     const row = new Array(header.length).fill('')
     row[dateIndex] = new Date()
-    row[workshopIndex] = workshopLabel
+    row[workshopIndex] = platform
+    row[fioIndex] = fio
     row[badgeIndex] = qrText
+    row[machineIndex] = machine
 
     return row
+}
+
+/**
+ * Список упаковок сотрудника за сегодня на конкретную машину — для
+ * таблицы на экране «Упаковка» (сколько уже загружено на эту машину).
+ */
+function getPackingToday_(fio, machine) {
+    const sheet = getOrCreateLogistSheet_()
+    const header = getSheetHeader_(sheet)
+
+    const dateIndex = requireColumn_(header, 'Дата', LOGIST_SHEET)
+    const fioIndex = requireColumn_(header, 'ФИО', LOGIST_SHEET)
+    const weightIndex = requireColumn_(header, 'Вес', LOGIST_SHEET)
+    const titleMarkIndex = requireColumn_(header, 'Титул и марка', LOGIST_SHEET)
+    const machineIndex = requireColumn_(header, 'Машина', LOGIST_SHEET)
+
+    const fioNormalized = normalizeCell_(fio)
+    const machineNormalized = normalizeCell_(machine)
+    const todayKey = formatDateKey_(new Date())
+
+    const values = sheet.getDataRange().getValues()
+    const entries = []
+
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        const rowDate = row[dateIndex]
+
+        if (normalizeCell_(row[fioIndex]) !== fioNormalized) continue
+        if (normalizeCell_(row[machineIndex]) !== machineNormalized) continue
+        if (!(rowDate instanceof Date) || formatDateKey_(rowDate) !== todayKey) continue
+
+        entries.push({
+            titleAndMark: normalizeCell_(row[titleMarkIndex]),
+            weight: Number(row[weightIndex]) || 0,
+        })
+    }
+
+    return entries
 }
 
 function getOrCreateLogistSheet_() {

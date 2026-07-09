@@ -77,34 +77,25 @@ export default defineNuxtRouteMiddleware((to) => {
         return
     }
 
-    // Бирки (/workshop без flow=packing, /badges, /receipt, /shift) требуют
-    // access.badges; упаковка (/workshop?flow=packing, /scan-qr) — access.packing.
-    // Таб-бар уже прячет эти разделы без доступа, но прямой переход по URL
-    // раньше не проверялся вовсе — не ранний return, ниже ещё есть проверки
-    // hasWorkshop/packingWorkshopConfirmed/hasSelectedBadge для этих же путей.
-    const BADGES_OR_PACKING_ROUTES = new Set(['/workshop', '/badges', '/receipt', '/shift', '/scan-qr'])
-    if (BADGES_OR_PACKING_ROUTES.has(path)) {
-        const isPackingRoute = path === '/scan-qr' || (path === '/workshop' && to.query.flow === 'packing')
-        const requiredFlag = isPackingRoute ? 'packing' : 'badges'
-        if (!employeeStore.access[requiredFlag]) {
-            return navigateTo('/register')
-        }
+    // Бирки (/workshop, /badges, /receipt, /shift) требуют access.badges;
+    // упаковка (/scan-qr) — access.packing. Таб-бар уже прячет эти разделы
+    // без доступа, но прямой переход по URL раньше не проверялся вовсе.
+    const BADGES_ROUTES = new Set(['/workshop', '/badges', '/receipt', '/shift'])
+    if (BADGES_ROUTES.has(path) && !employeeStore.access.badges) {
+        return navigateTo('/register')
+    }
+    if (path === '/scan-qr' && !employeeStore.access.packing) {
+        return navigateTo('/register')
     }
 
-    if (path === '/workshop' || path === '/shift') {
+    // /scan-qr не требует выбора цеха — упаковка пишет площадку из профиля
+    // сотрудника напрямую, отдельного экрана выбора цеха для неё нет.
+    if (path === '/workshop' || path === '/shift' || path === '/scan-qr') {
         return
     }
 
     if (!employeeStore.hasWorkshop) {
-        return navigateTo(path === '/scan-qr' ? '/workshop?flow=packing' : '/workshop')
-    }
-
-    // hasWorkshop — общее персистентное поле для обоих потоков, поэтому
-    // для /scan-qr дополнительно требуем явное подтверждение цеха именно
-    // для упаковки за эту сессию — иначе цех, выбранный для бирок,
-    // открывал бы сканер без повторного выбора (по прямой ссылке, back/forward).
-    if (path === '/scan-qr' && !sessionStore.packingWorkshopConfirmed) {
-        return navigateTo('/workshop?flow=packing')
+        return navigateTo('/workshop')
     }
 
     if (path === '/receipt' && !sessionStore.hasSelectedBadge) {

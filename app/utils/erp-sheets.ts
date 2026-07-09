@@ -1,4 +1,4 @@
-import type {ErpAccessFlags, ErpBadgeIssue, ErpIssuedBadgeEntry, WorkshopId} from '~~/types/erp.types'
+import type {ErpAccessFlags, ErpBadgeIssue, ErpIssuedBadgeEntry, ErpPackingEntry, WorkshopId} from '~~/types/erp.types'
 import {DEFAULT_ACCESS_FLAGS, workshopById} from '~~/types/erp.types'
 import {parseCsv} from '~/utils/erp-csv'
 
@@ -34,6 +34,7 @@ interface GasResponse {
     ok?: boolean
     badges?: string[]
     entries?: ErpIssuedBadgeEntry[]
+    packingEntries?: ErpPackingEntry[]
     error?: string
     fio?: string
     department?: string
@@ -392,7 +393,7 @@ export async function recordMeasurement(
     }
 }
 
-export async function recordPackingEntry(workshopId: WorkshopId, qrText: string): Promise<void> {
+export async function recordPackingEntry(platform: string, fio: string, machine: string, qrText: string): Promise<void> {
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -401,13 +402,35 @@ export async function recordPackingEntry(workshopId: WorkshopId, qrText: string)
 
     const result = await requestGasPost(config, {
         action: 'recordPacking',
-        workshop: workshopId,
+        platform,
+        fio,
+        machine,
         qrText,
     })
 
     if (!result.ok) {
         throw new Error(result.error || 'Не удалось записать упаковку')
     }
+}
+
+export async function fetchPackingToday(fio: string, machine: string): Promise<ErpPackingEntry[]> {
+    const config = getConfig()
+
+    if (!isGasConfigured(config)) {
+        return []
+    }
+
+    const result = await requestGas(config, {
+        action: 'packingToday',
+        fio,
+        machine,
+    })
+
+    if (!result.ok) {
+        throw new Error(result.error || 'Не удалось загрузить упаковку за смену')
+    }
+
+    return result.packingEntries ?? []
 }
 
 export type JournalWriteResult = 'ok' | 'skipped'

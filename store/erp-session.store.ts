@@ -5,7 +5,6 @@ export const useErpSessionStore = defineStore('erp-session', {
         selectedBadge: '' as string,
         issued: false,
         journalSkipped: false,
-        packingWorkshopConfirmed: false,
         measurementBadge: '' as string,
     }),
 
@@ -15,13 +14,6 @@ export const useErpSessionStore = defineStore('erp-session', {
     },
 
     actions: {
-        // Не персистится — при прямом переходе/F5 на /scan-qr (или после
-        // выбора цеха для бирок) сбрасывается, и middleware заново гонит
-        // через /workshop?flow=packing, чтобы цех не «утекал» между потоками.
-        setPackingWorkshopConfirmed(value: boolean) {
-            this.packingWorkshopConfirmed = value
-        },
-
         selectBadge(content: string) {
             this.selectedBadge = content.trim()
             this.issued = false

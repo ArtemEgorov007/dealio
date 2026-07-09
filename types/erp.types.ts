@@ -61,6 +61,11 @@ export interface ErpIssuedBadgeEntry {
     time: string
 }
 
+export interface ErpPackingEntry {
+    titleAndMark: string
+    weight: number
+}
+
 export function workshopById(id: WorkshopId): WorkshopOption {
     const found = ERP_WORKSHOPS.find(item => item.id === id)
     if (!found) throw new Error(`Unknown workshop: ${id}`)

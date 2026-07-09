@@ -5,9 +5,7 @@ const route = useRoute()
 const router = useRouter()
 const employeeStore = useErpEmployeeStore()
 
-const isPackingSection = computed(() =>
-    route.path === '/scan-qr' || (route.path === '/workshop' && route.query.flow === 'packing'),
-)
+const isPackingSection = computed(() => route.path === '/scan-qr')
 
 const isHandoverSection = computed(() =>
     ['/scan-handover', '/handover-shift'].includes(route.path),
@@ -107,7 +105,7 @@ const tabbarMaskStyle = computed(() => {
 const goProfile = () => router.push('/register')
 const goBadges = () => router.push('/workshop')
 const goMeasurements = () => router.push('/scan-measurement')
-const goPacking = () => router.push('/workshop?flow=packing')
+const goPacking = () => router.push('/scan-qr')
 const goHandover = () => router.push('/scan-handover')
 const goReports = () => router.push('/reports')
 const goApprovals = () => router.push('/approvals')
