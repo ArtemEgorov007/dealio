@@ -22,6 +22,11 @@ const coverage = ref<Coverage | null>(null)
 const zones = ref<string[]>(['', '', '', '', ''])
 const isLoading = ref(false)
 
+// Тот же footerHidden, что на «Выбор бирки» при вводе в поиск: пока
+// клавиатура открыта на поле зоны, футер с «Записать»/«Назад» плавно
+// уезжает вниз — иначе на телефоне он поджимается прямо над клавиатурой.
+const isZoneFocused = ref(false)
+
 const zoneError = (value: string | undefined) => {
     const v = (value ?? '').trim()
     return v && !/^\d+$/.test(v) ? 'Только целые числа' : ''
@@ -81,6 +86,7 @@ onMounted(() => {
   <ErpScreen
       title="Промеры"
       icon="heroicons:beaker"
+      :footer-hidden="isZoneFocused"
   >
     <div class="measurement-badge">
       <span class="measurement-badge__label">Бирка</span>
@@ -113,6 +119,8 @@ onMounted(() => {
             label="Зона 1 *"
             inputmode="numeric"
             :error="zone1Error"
+            @focus="isZoneFocused = true"
+            @blur="isZoneFocused = false"
         />
         <UiInput
             id="zone-2"
@@ -120,6 +128,8 @@ onMounted(() => {
             label="Зона 2"
             inputmode="numeric"
             :error="zone2Error"
+            @focus="isZoneFocused = true"
+            @blur="isZoneFocused = false"
         />
         <UiInput
             id="zone-3"
@@ -127,6 +137,8 @@ onMounted(() => {
             label="Зона 3"
             inputmode="numeric"
             :error="zone3Error"
+            @focus="isZoneFocused = true"
+            @blur="isZoneFocused = false"
         />
         <UiInput
             id="zone-4"
@@ -134,6 +146,8 @@ onMounted(() => {
             label="Зона 4"
             inputmode="numeric"
             :error="zone4Error"
+            @focus="isZoneFocused = true"
+            @blur="isZoneFocused = false"
         />
         <UiInput
             id="zone-5"
@@ -141,6 +155,8 @@ onMounted(() => {
             label="Зона 5"
             inputmode="numeric"
             :error="zone5Error"
+            @focus="isZoneFocused = true"
+            @blur="isZoneFocused = false"
         />
       </div>
     </div>
