@@ -93,7 +93,9 @@ const onDragEnd = () => {
         </article>
 
         <p v-if="$slots.meta" class="erp-sheet-meta"><slot name="meta"/></p>
-        <p v-if="$slots.error" class="erp-sheet-error"><slot name="error"/></p>
+        <Transition name="erp-sheet-error">
+          <p v-if="$slots.error" class="erp-sheet-error"><slot name="error"/></p>
+        </Transition>
 
         <div v-if="$slots.form" class="erp-sheet-form">
           <slot name="form"/>
@@ -195,6 +197,15 @@ const onDragEnd = () => {
   font-size: 15px
   line-height: 1.4
 
+.erp-sheet-error-enter-active,
+.erp-sheet-error-leave-active
+  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.22s ease
+
+.erp-sheet-error-enter-from,
+.erp-sheet-error-leave-to
+  transform: translateY(-6px)
+  opacity: 0
+
 .erp-sheet-form
   display: flex
   flex-direction: column
@@ -208,13 +219,15 @@ const onDragEnd = () => {
   width: 100%
   margin-top: 4px
 
+// Своя, более заметная длительность — только для этой шторки (не трогаем
+// общий --dealio-motion-duration, которым делятся тосты и другие панели).
 .erp-sheet-enter-active,
 .erp-sheet-leave-active
   .erp-sheet-backdrop
-    transition: opacity var(--dealio-motion-duration) var(--dealio-motion-ease)
+    transition: opacity 0.36s var(--dealio-motion-ease)
 
   .erp-sheet-panel
-    transition: transform var(--dealio-motion-duration) var(--dealio-motion-ease)
+    transition: transform 0.36s var(--dealio-motion-ease)
 
 .erp-sheet-enter-from,
 .erp-sheet-leave-to
