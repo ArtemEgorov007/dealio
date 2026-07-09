@@ -50,8 +50,19 @@ const updateScrollState = () => {
   canScrollRight.value = el.scrollLeft < maxScroll - SCROLL_EDGE_THRESHOLD
 }
 
+// Активная вкладка может оказаться за пределами видимой области бара
+// (например, «Согласования»/«Склад» при прямом переходе по ссылке —
+// прокрутка тогда остаётся в начале) — снаружи выглядит так, будто ничего
+// не выбрано. Подтягиваем активный пункт во вьюпорт бара при каждом
+// маунте и смене раздела.
+const scrollActiveIntoView = (smooth: boolean) => {
+  const active = tabbarEl.value?.querySelector('.erp-tabbar__item--active')
+  active?.scrollIntoView({inline: 'center', block: 'nearest', behavior: smooth ? 'smooth' : 'instant'})
+}
+
 onMounted(() => {
   updateScrollState()
+  scrollActiveIntoView(false)
   tabbarEl.value?.addEventListener('scroll', updateScrollState, {passive: true})
   window.addEventListener('resize', updateScrollState)
 })
@@ -62,6 +73,7 @@ onBeforeUnmount(() => {
 })
 
 watch(access, () => nextTick(updateScrollState), {deep: true})
+watch(() => route.fullPath, () => nextTick(() => scrollActiveIntoView(true)))
 
 const FADE_SIZE = '14px'
 
