@@ -57,7 +57,6 @@ const iconFor = (category: string) => CATEGORY_ICONS[category] || 'heroicons:tag
   gap: 6px
   min-height: 76px
   padding: 10px 9px
-  border: 1px solid var(--color-border)
   border-radius: 14px
   background: var(--color-card-bg)
   box-shadow: var(--erp-shadow-tile, var(--erp-shadow-card, 0 1px 0 rgba(0, 0, 0, 0.04)))

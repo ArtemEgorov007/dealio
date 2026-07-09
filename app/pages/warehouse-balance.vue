@@ -146,11 +146,14 @@ onMounted(() => {
 </template>
 
 <style scoped lang="sass">
+// Тот же язык карточки, что у ErpGroupedList (мягкая тень, без рамки) —
+// раньше здесь была плоская рамка border+13px, выбивавшаяся из общего
+// стиля карточек по всему приложению.
 .wh-bal-table
-  border-radius: 13px
+  border-radius: 14px
   overflow: hidden
-  border: 1px solid var(--color-border)
   background: var(--color-card-bg)
+  box-shadow: var(--erp-shadow-card, 0 1px 0 rgba(0, 0, 0, 0.04))
 
 .wh-bal-row
   display: grid
@@ -158,7 +161,7 @@ onMounted(() => {
   gap: 6px
   padding: 9px 12px
   font-size: 12.5px
-  border-bottom: 1px solid var(--color-border)
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.15)
   align-items: center
 
   &:last-child

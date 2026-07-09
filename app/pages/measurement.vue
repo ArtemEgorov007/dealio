@@ -176,7 +176,7 @@ onMounted(() => {
   font-size: 11px
   font-weight: 600
   text-transform: uppercase
-  letter-spacing: 0.5px
+  letter-spacing: 0.3px
   color: var(--color-text-secondary)
 
 .measurement-badge__value
