@@ -246,7 +246,7 @@ const copyText = async (text: string, label: string) => {
 
 .hub-stats
   display: flex
-  gap: 10px
+  gap: var(--spacing-3)
 
 .hub-stat
   flex: 1
@@ -271,7 +271,7 @@ const copyText = async (text: string, label: string) => {
 .hub-grid
   display: grid
   grid-template-columns: 1fr 1fr
-  gap: 10px
+  gap: var(--spacing-3)
 
 .profile-kv
   display: flex

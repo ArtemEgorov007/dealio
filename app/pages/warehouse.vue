@@ -63,7 +63,7 @@ const employeeStore = useErpEmployeeStore()
 .wh-hub-actions
   display: flex
   flex-direction: column
-  gap: 12px
+  gap: var(--spacing-3)
 
 /* Крупнее стандартного ErpListRow — на хабе только 3 действия, крупный тап-таргет
    ближе к макету, чем плотный список (как в /register «Профиль») */
