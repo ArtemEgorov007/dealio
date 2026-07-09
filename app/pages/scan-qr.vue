@@ -124,6 +124,25 @@ onBeforeUnmount(() => {
       :subtitle="`Упаковка · Площадка: ${employeeStore.platform}`"
       icon="heroicons:qr-code"
   >
+    <div class="scan-sticky">
+      <div class="erp-scan-viewport erp-scan-viewport--compact">
+        <video ref="videoEl" class="erp-scan-video" muted playsinline/>
+
+        <div v-if="status === 'saving'" class="erp-scan-overlay">
+          <ErpEmptyState loading/>
+          <span>Записываем…</span>
+        </div>
+
+        <div v-if="status === 'unsupported'" class="erp-scan-overlay">
+          <p>Камера не найдена на этом устройстве</p>
+        </div>
+
+        <div v-if="status === 'denied'" class="erp-scan-overlay">
+          <p>Нет доступа к камере — разрешите доступ в настройках браузера и обновите страницу</p>
+        </div>
+      </div>
+    </div>
+
     <ErpSectionLabel>Машина</ErpSectionLabel>
     <div class="machine-row">
       <button
@@ -136,23 +155,6 @@ onBeforeUnmount(() => {
       >
         {{ opt }}
       </button>
-    </div>
-
-    <div class="erp-scan-viewport erp-scan-viewport--compact">
-      <video ref="videoEl" class="erp-scan-video" muted playsinline/>
-
-      <div v-if="status === 'saving'" class="erp-scan-overlay">
-        <ErpEmptyState loading/>
-        <span>Записываем…</span>
-      </div>
-
-      <div v-if="status === 'unsupported'" class="erp-scan-overlay">
-        <p>Камера не найдена на этом устройстве</p>
-      </div>
-
-      <div v-if="status === 'denied'" class="erp-scan-overlay">
-        <p>Нет доступа к камере — разрешите доступ в настройках браузера и обновите страницу</p>
-      </div>
     </div>
 
     <p class="erp-scan-hint">Наведите камеру на QR-код бирки на упаковке</p>
@@ -206,19 +208,31 @@ onBeforeUnmount(() => {
   max-width: 200px
   margin: 0 auto
 
+// Остаётся на виду при прокрутке таблицы записей ниже — сплошной фон
+// нужен, иначе строки таблицы просвечивают по бокам от видео при скролле.
+// top/margin-top/padding-top: -18px/18px гасят верхний паддинг
+// .erp-screen__body (ErpScreen.vue), иначе сквозь него виден край
+// прокручиваемого контента до того, как сам блок «прилипнет».
+.scan-sticky
+  position: sticky
+  top: -18px
+  z-index: 1
+  margin: -18px calc(-1 * var(--spacing-4)) 0
+  padding: 18px var(--spacing-4) var(--spacing-3)
+  background: var(--color-bg)
+
 .machine-row
   display: flex
-  flex-wrap: wrap
+  flex-wrap: nowrap
   gap: 2px
   background: var(--color-bg)
   border-radius: 9px
   padding: 2px
-  margin-bottom: var(--spacing-3)
 
 .machine-opt
-  flex: 1 1 18%
-  min-width: 40px
-  padding: 7px 8px
+  flex: 1 1 0
+  min-width: 0
+  padding: 7px 2px
   border: none
   border-radius: 7px
   background: transparent
