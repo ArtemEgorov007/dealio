@@ -20,6 +20,7 @@ const ERP_ROUTES = new Set([
     '/warehouse-receive',
     '/warehouse-issue',
     '/warehouse-balance',
+    '/notifications-guide',
 ])
 
 const DEALIO_PREFIXES = ['/board', '/login', '/archive', '/settings', '/dashboard', '/ideas', '/tasks', '/wishlist', '/help']
@@ -90,7 +91,9 @@ export default defineNuxtRouteMiddleware((to) => {
 
     // /scan-qr не требует выбора цеха — упаковка пишет площадку из профиля
     // сотрудника напрямую, отдельного экрана выбора цеха для неё нет.
-    if (path === '/workshop' || path === '/shift' || path === '/scan-qr') {
+    // /notifications-guide — общая справка, доступна любому вошедшему
+    // сотруднику независимо от цеха/прав доступа к разделам.
+    if (path === '/workshop' || path === '/shift' || path === '/scan-qr' || path === '/notifications-guide') {
         return
     }
 

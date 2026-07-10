@@ -192,6 +192,16 @@ const copyText = async (text: string, label: string) => {
         </template>
       </ErpListRow>
     </ErpGroupedList>
+
+    <ErpSectionLabel>Помощь</ErpSectionLabel>
+    <ErpGroupedList>
+      <ErpListRow chevron @click="router.push('/notifications-guide')">
+        <template #leading>
+          <Icon name="heroicons:bell" size="18" class="profile-kv__icon"/>
+        </template>
+        Как включить уведомления
+      </ErpListRow>
+    </ErpGroupedList>
   </ErpScreen>
 
   <ErpScreen
