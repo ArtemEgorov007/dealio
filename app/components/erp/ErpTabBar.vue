@@ -27,6 +27,7 @@ const isApprovalsSection = computed(() => route.path === '/approvals')
 const isSupplySection = computed(() => route.path === '/supply')
 const isOrdersSection = computed(() => route.path === '/orders')
 const isWarehouseSection = computed(() => route.path.startsWith('/warehouse'))
+const isPersonnelSection = computed(() => route.path === '/personnel')
 
 const access = computed(() => employeeStore.access)
 
@@ -112,6 +113,7 @@ const goApprovals = () => router.push('/approvals')
 const goSupply = () => router.push('/supply')
 const goOrders = () => router.push('/orders')
 const goWarehouse = () => router.push('/warehouse')
+const goPersonnel = () => router.push('/personnel')
 
 const goLogout = () => {
   employeeStore.logout()
@@ -253,6 +255,18 @@ const goLogout = () => {
     >
       <Icon name="heroicons:archive-box" size="22"/>
       <span class="erp-tabbar__label">Склад</span>
+    </button>
+
+    <button
+        v-if="!employeeStore.hasFio || access.personnel"
+        type="button"
+        class="erp-tabbar__item"
+        :class="{ 'erp-tabbar__item--active': isPersonnelSection }"
+        :title="isRailCollapsed ? 'Кадры' : undefined"
+        @click="goPersonnel"
+    >
+      <Icon name="heroicons:user-group" size="22"/>
+      <span class="erp-tabbar__label">Кадры</span>
     </button>
 
     <button

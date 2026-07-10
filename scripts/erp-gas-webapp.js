@@ -488,6 +488,7 @@ function login_(loginValue, password) {
     const accessSupplyIndex = header.indexOf('Заказ снабжения')
     const accessOrdersIndex = header.indexOf('Работа со снабжением')
     const accessWarehouseIndex = header.indexOf('Доступ к складу')
+    const accessPersonnelIndex = header.indexOf('Управление кадрами')
 
     const loginNormalized = normalizeCell_(loginValue).toLowerCase()
     const values = sheet.getDataRange().getValues()
@@ -521,6 +522,7 @@ function login_(loginValue, password) {
                 supply: isYes(accessSupplyIndex),
                 orders: isYes(accessOrdersIndex),
                 warehouse: isYes(accessWarehouseIndex),
+                personnel: isYes(accessPersonnelIndex),
             },
         }
     }

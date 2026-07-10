@@ -21,6 +21,7 @@ const ERP_ROUTES = new Set([
     '/warehouse-issue',
     '/warehouse-balance',
     '/notifications-guide',
+    '/personnel',
 ])
 
 const DEALIO_PREFIXES = ['/board', '/login', '/archive', '/settings', '/dashboard', '/ideas', '/tasks', '/wishlist', '/help']
@@ -68,6 +69,7 @@ export default defineNuxtRouteMiddleware((to) => {
         '/warehouse-receive': 'warehouse',
         '/warehouse-issue': 'warehouse',
         '/warehouse-balance': 'warehouse',
+        '/personnel': 'personnel',
     }
 
     const guardedFlag = ACCESS_GUARDED[path]
