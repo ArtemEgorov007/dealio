@@ -84,6 +84,8 @@ const sheetItem = ref<WarehouseStockItem | null>(null)
 const qty = ref('')
 const unit = ref<typeof WAREHOUSE_UNITS[number] | null>(null)
 const type = ref<typeof WAREHOUSE_TYPES[number] | null>(null)
+const TYPE_OPTIONS = WAREHOUSE_TYPES.map(value => ({value}))
+const setType = (value: string) => { type.value = value as typeof WAREHOUSE_TYPES[number] }
 const recipientFio = ref('')
 const isSaving = ref(false)
 const submitError = ref('')
@@ -265,18 +267,7 @@ const submit = async () => {
 
         <div class="wh-sheet-field">
           <p class="wh-sheet-field__label">Тип</p>
-          <div class="wh-toggle-row">
-            <button
-                v-for="opt in WAREHOUSE_TYPES"
-                :key="opt"
-                type="button"
-                class="wh-toggle-opt"
-                :class="{ 'wh-toggle-opt--active': type === opt }"
-                @click="type = opt"
-            >
-              {{ opt }}
-            </button>
-          </div>
+          <UiSegmentedControl :model-value="type ?? ''" :options="TYPE_OPTIONS" @update:model-value="setType"/>
         </div>
 
         <div class="wh-sheet-field">
@@ -380,28 +371,4 @@ const submit = async () => {
     background: var(--color-primary)
     border-color: var(--color-primary)
     color: #fff
-
-.wh-toggle-row
-  display: flex
-  gap: 2px
-  background: var(--color-bg)
-  border-radius: 9px
-  padding: 2px
-
-.wh-toggle-opt
-  flex: 1
-  padding: 7px 8px
-  border: none
-  border-radius: 7px
-  background: transparent
-  color: var(--color-text)
-  font-size: var(--font-size-sm)
-  font-weight: 500
-  cursor: pointer
-
-  &--active
-    background: var(--color-card-bg)
-    color: var(--color-text)
-    font-weight: 600
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 0.5px 1px rgba(0, 0, 0, 0.06)
 </style>

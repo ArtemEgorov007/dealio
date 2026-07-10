@@ -9,6 +9,11 @@ interface Step {
   caption: string
 }
 
+const PLATFORM_OPTIONS = [
+  {value: 'android', label: 'Android', icon: 'mdi:android'},
+  {value: 'ios', label: 'iPhone', icon: 'mdi:apple'},
+]
+
 const ANDROID_STEPS: Step[] = [
   {caption: 'Откройте ERP в Chrome и нажмите значок <b>⋮</b> справа от адресной строки'},
   {caption: 'В меню выберите <b>«Настройки» → «Настройки сайтов» → «Уведомления»</b>'},
@@ -26,8 +31,8 @@ const index = ref(0)
 
 const steps = computed(() => platform.value === 'android' ? ANDROID_STEPS : IOS_STEPS)
 
-const setPlatform = (value: Platform) => {
-  platform.value = value
+const setPlatform = (value: string) => {
+  platform.value = value as Platform
   index.value = 0
 }
 
@@ -43,24 +48,12 @@ const go = (direction: number) => {
       icon="heroicons:bell"
   >
     <template #hero>
-      <div class="platform-row">
-        <button
-            type="button"
-            class="platform-opt"
-            :class="{ 'platform-opt--active': platform === 'android' }"
-            @click="setPlatform('android')"
-        >
-          <Icon name="mdi:android" size="15" class="platform-opt__icon"/> Android
-        </button>
-        <button
-            type="button"
-            class="platform-opt"
-            :class="{ 'platform-opt--active': platform === 'ios' }"
-            @click="setPlatform('ios')"
-        >
-          <Icon name="mdi:apple" size="15" class="platform-opt__icon"/> iPhone
-        </button>
-      </div>
+      <UiSegmentedControl
+          :model-value="platform"
+          :options="PLATFORM_OPTIONS"
+          align="start"
+          @update:model-value="setPlatform"
+      />
     </template>
 
     <div class="slider">
@@ -256,36 +249,21 @@ const go = (direction: number) => {
 </template>
 
 <style scoped lang="sass">
-.platform-row
-  display: flex
-  gap: 2px
-  background: var(--color-bg)
+// Крупнее, чем дефолт UiSegmentedControl — этот переключатель сидит в
+// синей шапке экрана, а не в компактном ряду фильтров, как остальные
+// его использования.
+:deep(.ui-segmented)
   border-radius: 11px
   padding: 3px
 
-.platform-opt
-  display: flex
-  align-items: start
-  justify-content: flex-start
-  gap: 6px
-  flex: 1
-  padding: 9px 0 9px 14px
-  border: none
-  border-radius: 9px
-  background: transparent
-  font-size: 13px
-  font-weight: 600
-  color: var(--color-text)
-  cursor: pointer
-
-  &--active
-    background: var(--color-card-bg)
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 0.5px 1px rgba(0, 0, 0, 0.06)
+:deep(.ui-segmented__opt)
+  padding: 9px
 
 // mdi:android/mdi:apple рисуют глиф в верхней части своего вьюбокса —
 // геометрически по центру кнопки, но на глаз выглядит задранным над
-// подписью без ручной подстройки вниз.
-.platform-opt__icon
+// подписью без ручной подстройки вниз. :deep() достаёт иконку внутри
+// UiSegmentedControl только для этого конкретного его использования.
+:deep(.ui-segmented__icon)
   transform: translateY(2px)
 
 .slider

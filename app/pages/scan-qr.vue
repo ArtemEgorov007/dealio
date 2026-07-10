@@ -15,6 +15,7 @@ const {showSuccess, showError} = useAppToast()
 const {vibrate} = useHaptics()
 
 const MACHINE_NUMBERS = Array.from({length: 10}, (_, i) => String(i + 1))
+const MACHINE_OPTIONS = MACHINE_NUMBERS.map(value => ({value}))
 const machine = ref(MACHINE_NUMBERS[0])
 
 const packingEntries = ref<ErpPackingEntry[]>([])
@@ -144,18 +145,7 @@ onBeforeUnmount(() => {
     </div>
 
     <ErpSectionLabel>Машина</ErpSectionLabel>
-    <div class="machine-row">
-      <button
-          v-for="opt in MACHINE_NUMBERS"
-          :key="opt"
-          type="button"
-          class="machine-opt"
-          :class="{ 'machine-opt--active': machine === opt }"
-          @click="machine = opt"
-      >
-        {{ opt }}
-      </button>
-    </div>
+    <UiSegmentedControl v-model="machine" :options="MACHINE_OPTIONS"/>
 
     <p class="erp-scan-hint">Наведите камеру на QR-код бирки на упаковке</p>
 
@@ -221,31 +211,10 @@ onBeforeUnmount(() => {
   padding: 18px var(--spacing-4) var(--spacing-3)
   background: var(--color-bg)
 
-.machine-row
-  display: flex
-  flex-wrap: nowrap
-  gap: 2px
-  background: var(--color-bg)
-  border-radius: 9px
-  padding: 2px
-
-.machine-opt
-  flex: 1 1 0
-  min-width: 0
+// 10 цифр в один ряд не помещаются с дефолтным горизонтальным паддингом
+// UiSegmentedControl (7px 8px) — сжимаем до 7px 2px, чтобы не переносились.
+:deep(.ui-segmented__opt)
   padding: 7px 2px
-  border: none
-  border-radius: 7px
-  background: transparent
-  color: var(--color-text)
-  font-size: var(--font-size-sm)
-  font-weight: 500
-  cursor: pointer
-
-  &--active
-    background: var(--color-card-bg)
-    color: var(--color-text)
-    font-weight: 600
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 0.5px 1px rgba(0, 0, 0, 0.06)
 
 // Тот же язык карточки, что у таблицы Баланс (мягкая тень, без рамки)
 .pack-table
