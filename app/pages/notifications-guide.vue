@@ -161,7 +161,7 @@ const go = (direction: number) => {
                 <div class="safari-bar">
                   <span class="dim"><Icon name="heroicons:chevron-left" size="16"/></span>
                   <span class="dim"><Icon name="heroicons:chevron-right" size="16"/></span>
-                  <span style="position: relative">
+                  <span style="position: relative; display: inline-flex">
                     <Icon name="heroicons:arrow-up-on-square" size="17"/>
                     <span class="tap-ring"/>
                   </span>
@@ -265,7 +265,7 @@ const go = (direction: number) => {
 
 .platform-opt
   display: flex
-  align-items: center
+  align-items: start
   justify-content: flex-start
   gap: 6px
   flex: 1
