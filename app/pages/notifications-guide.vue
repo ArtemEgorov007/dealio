@@ -50,7 +50,7 @@ const go = (direction: number) => {
             :class="{ 'platform-opt--active': platform === 'android' }"
             @click="setPlatform('android')"
         >
-          Android
+          <Icon name="mdi:android" size="15"/> Android
         </button>
         <button
             type="button"
@@ -58,7 +58,7 @@ const go = (direction: number) => {
             :class="{ 'platform-opt--active': platform === 'ios' }"
             @click="setPlatform('ios')"
         >
-          iPhone
+          <Icon name="mdi:apple" size="15"/> iPhone
         </button>
       </div>
     </template>
@@ -272,6 +272,10 @@ const go = (direction: number) => {
   padding: 3px
 
 .platform-opt
+  display: flex
+  align-items: center
+  justify-content: center
+  gap: 6px
   flex: 1
   padding: 9px 0
   border: none
