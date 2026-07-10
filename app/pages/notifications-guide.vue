@@ -297,7 +297,7 @@ const go = (direction: number) => {
   // поэтому сверху ограничиваем ширину самого мокапа, а не всей страницы.
   @media (min-width: 900px)
     .slide-viewport
-      max-width: 210px
+      max-width: 260px
       flex: 0 0 auto
 
 .arrow-btn
