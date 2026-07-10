@@ -50,7 +50,7 @@ const go = (direction: number) => {
             :class="{ 'platform-opt--active': platform === 'android' }"
             @click="setPlatform('android')"
         >
-          <Icon name="mdi:android" size="15"/> Android
+          <Icon name="mdi:android" size="15" class="platform-opt__icon"/> Android
         </button>
         <button
             type="button"
@@ -58,7 +58,7 @@ const go = (direction: number) => {
             :class="{ 'platform-opt--active': platform === 'ios' }"
             @click="setPlatform('ios')"
         >
-          <Icon name="mdi:apple" size="15"/> iPhone
+          <Icon name="mdi:apple" size="15" class="platform-opt__icon"/> iPhone
         </button>
       </div>
     </template>
@@ -86,11 +86,7 @@ const go = (direction: number) => {
                   <span class="chrome-icon-btn"><Icon name="heroicons:squares-2x2" size="14"/></span>
                   <span class="chrome-icon-btn">
                     <Icon name="heroicons:ellipsis-vertical" size="15"/>
-                    <span class="pointer-anchor" style="top: 24px; left: 50%; transform: translateX(-50%)">
-                      <span class="pointer">
-                        <Icon name="heroicons:play" size="14" style="transform: rotate(-90deg)"/>
-                      </span>
-                    </span>
+                    <span class="tap-ring"/>
                   </span>
                 </div>
                 <div class="page-body">
@@ -138,9 +134,7 @@ const go = (direction: number) => {
                     </span>
                     <span style="position: relative; display: inline-flex">
                       <span class="toggle toggle--on"/>
-                      <span class="pointer" style="top: -18px; right: -2px">
-                        <Icon name="heroicons:play" size="14" style="transform: rotate(90deg)"/>
-                      </span>
+                      <span class="tap-ring tap-ring--pill"/>
                     </span>
                   </div>
                   <div class="settings-row">
@@ -169,9 +163,7 @@ const go = (direction: number) => {
                   <span class="dim"><Icon name="heroicons:chevron-right" size="16"/></span>
                   <span style="position: relative">
                     <Icon name="heroicons:arrow-up-on-square" size="17"/>
-                    <span class="pointer" style="top: -28px; left: 0">
-                      <Icon name="heroicons:play" size="14" style="transform: rotate(90deg)"/>
-                    </span>
+                    <span class="tap-ring"/>
                   </span>
                   <span class="dim"><Icon name="heroicons:bookmark" size="16"/></span>
                   <span class="dim"><Icon name="heroicons:squares-2x2" size="16"/></span>
@@ -274,10 +266,10 @@ const go = (direction: number) => {
 .platform-opt
   display: flex
   align-items: center
-  justify-content: center
+  justify-content: flex-start
   gap: 6px
   flex: 1
-  padding: 9px 0
+  padding: 9px 0 9px 14px
   border: none
   border-radius: 9px
   background: transparent
@@ -289,6 +281,12 @@ const go = (direction: number) => {
   &--active
     background: var(--color-card-bg)
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 0.5px 1px rgba(0, 0, 0, 0.06)
+
+// mdi:android/mdi:apple рисуют глиф в верхней части своего вьюбокса —
+// геометрически по центру кнопки, но на глаз выглядит задранным над
+// подписью без ручной подстройки вниз.
+.platform-opt__icon
+  transform: translateY(2px)
 
 .slider
   display: flex
@@ -576,28 +574,37 @@ const go = (direction: number) => {
     font-weight: 700
     color: var(--color-primary)
 
-// Обёртка нужна там, где указателю требуется статичное центрирование
-// через transform: translateX(-50%) — CSS-анимация ниже тоже двигает
-// transform (translateY), а один элемент не может держать оба одновременно.
-.pointer-anchor
+// Пульсирующее кольцо прямо вокруг нужной кнопки/тумблера — inset
+// центрирует его на родителе (position: relative на самой иконке)
+// автоматически, независимо от размера иконки, так что не нужно
+// вручную подбирать top/left под каждую цель.
+.tap-ring
   position: absolute
+  inset: -5px
+  border-radius: 50%
+  border: 2px solid var(--erp-warn)
+  pointer-events: none
+  animation: tap-pulse 1.5s ease-out infinite
 
-.pointer
-  position: absolute
-  color: var(--erp-warn)
-  animation: point 1.4s ease-in-out infinite
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25))
+  &--pill
+    border-radius: 999px
 
-@keyframes point
-  0%, 100%
-    transform: translateY(0)
+@keyframes tap-pulse
+  0%
+    transform: scale(0.75)
+    opacity: 1
 
-  50%
-    transform: translateY(5px)
+  75%
+    transform: scale(1.35)
+    opacity: 0
+
+  100%
+    opacity: 0
 
 @media (prefers-reduced-motion: reduce)
-  .pointer
+  .tap-ring
     animation: none
+    opacity: 0.9
 
 .caption
   margin-top: 14px
