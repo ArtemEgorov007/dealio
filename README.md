@@ -101,7 +101,7 @@ types/cards.types.ts    — типы (Appwrite collection `deals`)
 |---------|--------|
 | Toast | `app/composables/useAppToast.ts`, `app/assets/css/toast-overrides.css`, `app/app.vue` |
 | Архив | `app/pages/archive.vue`, `store/board.store.ts`, `store/auth-archive.store.ts` |
-| Drag | `app/components/kanban/kanban-drag.ts`, `kanban-effects.css` |
+| Drag | `app/components/kanban/kanban-drag-context.ts`, `kanban-pointer-drag.ts`, `kanban-effects.css` |
 | Layout | `app/layouts/default.vue`, `Slideover.vue` |
 | Overflow | `KanbanCard.vue`, `KanbanColumn.vue`, `archive.vue`, `Comments.vue`, `Top.vue` |
 
@@ -145,6 +145,20 @@ types/cards.types.ts    — типы (Appwrite collection `deals`)
 | PWA | `public/manifest.json`, `public/icon-192.png`, `public/icon-512.png` |
 | Подключение журнала на устройстве | `app/pages/erp-setup.vue` |
 
+## Склад (warehouse) — расширение той же ERP
+
+Тот же коммерческий заказчик, отдельный модуль поверх той же ERP-оболочки (логин, тема, `erp-flow.global.ts`): приём и выдача товара со склада, промеры, сдача работ ОКК и упаковка (QR-скан) — в отличие от исходных «4 экранов без логина» эти разделы требуют входа по логину/паролю и открываются только сотрудникам с соответствующим флагом доступа (`store/erp-employee.store.ts: access.*`), которые сервер (`login_` в GAS) выдаёт по листу «Сотрудники».
+
+### Ключевые файлы
+
+| Область | Файлы |
+|---------|-------|
+| Приём/выдача/остатки склада | `app/pages/warehouse.vue`, `warehouse-receive.vue`, `warehouse-issue.vue`, `warehouse-balance.vue` |
+| Упаковка (QR-скан) | `app/pages/scan-qr.vue` |
+| Промеры, сдача ОКК | `app/pages/scan-measurement.vue`, `measurement.vue`, `scan-handover.vue`, `handover-shift.vue` |
+| Google Sheets / GAS (склад) | `app/utils/warehouse-sheets.ts`, `scripts/warehouse-gas-webapp.js` — отдельный задеплоенный Apps Script-проект от `erp-gas-webapp.js` |
+| Общие переиспользуемые компоненты ERP | `app/components/erp/*` |
+
 ## Скрипты
 
 | Команда | Описание |
@@ -153,3 +167,5 @@ types/cards.types.ts    — типы (Appwrite collection `deals`)
 | `npm run build` | Production-сборка |
 | `npm run generate` | Static export |
 | `npm run preview` | Preview сборки |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | vue-tsc --noEmit |

@@ -8,7 +8,9 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@nuxt/icon": "^2.0.0",
@@ -28,6 +30,9 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "sass-embedded": "^1.90.0"
+    "@nuxt/eslint": "^1.16.0",
+    "eslint": "^10.6.0",
+    "sass-embedded": "^1.90.0",
+    "vue-tsc": "^3.3.7"
   }
 }
