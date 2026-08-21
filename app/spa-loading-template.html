@@ -1,0 +1,72 @@
+<!doctype html>
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: #EAF2FD;
+  }
+  .spa-loader {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: #EAF2FD;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+  }
+  .spa-loader__mark {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #016ED7 0%, #3897ED 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px -8px rgba(1, 110, 215, 0.45);
+  }
+  .spa-loader__mark svg {
+    width: 30px;
+    height: 30px;
+  }
+  .spa-loader__title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0B1B2B;
+    letter-spacing: -0.2px;
+  }
+  .spa-loader__spinner {
+    position: relative;
+    width: 26px;
+    height: 26px;
+  }
+  .spa-loader__spinner::before,
+  .spa-loader__spinner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+  }
+  .spa-loader__spinner::before {
+    border: 2.5px solid rgba(1, 110, 215, 0.18);
+  }
+  .spa-loader__spinner::after {
+    border: 2.5px solid transparent;
+    border-top-color: #016ED7;
+    animation: spa-loader-spin 0.75s linear infinite;
+  }
+  @keyframes spa-loader-spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+<div class="spa-loader">
+  <div class="spa-loader__mark">
+    <svg viewBox="-4 -4 98 98" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#FBFBFB" d="M69.32,21.313H57.773L45.638,0.292L33.503,21.313H21.956v11.549L0.931,45l21.025,12.139v11.539h11.54 l12.142,21.029L57.78,68.678h11.54V57.139L90.346,45L69.32,32.861V21.313z M21.949,51.062L11.447,45l10.502-6.063V51.062z M45.638,10.809l6.063,10.518l-6.063,10.505l-6.063-10.505L45.638,10.809z M64.058,63.422h-9.323V42.411l-9.097,15.755 l6.063,10.518l-6.063,10.502l-6.063-10.502l6.063-10.518l-9.097-15.755v21.005h-9.322V26.579h9.322l9.097,15.771l9.097-15.765 h9.323V63.422z M69.326,38.937L79.829,45l-10.503,6.063V38.937z"></path>
+    </svg>
+  </div>
+  <div class="spa-loader__title">Морфлот Технология</div>
+  <div class="spa-loader__spinner"></div>
+</div>
