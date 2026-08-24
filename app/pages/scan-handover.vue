@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type QrScanner from 'qr-scanner'
-import {recordHandoverEntry} from '~/utils/erp-sheets'
+import {recordHandoverEntry, fetchHandedOverBadgesToday} from '~/utils/erp-sheets'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useAppToast} from '~/composables/useAppToast'
 import {useHaptics} from '~/composables/useHaptics'
@@ -12,6 +12,20 @@ useSeoMeta({title: 'Сдача работ | ERP'})
 const employeeStore = useErpEmployeeStore()
 const {showSuccess, showError} = useAppToast()
 const {vibrate} = useHaptics()
+
+// Живой счётчик сданных за смену работ — перенесён сюда из Профиля по правке руководства
+const handedCount = ref<number | null>(null)
+
+const loadHandedCount = async () => {
+    if (!employeeStore.hasFio) return
+    try {
+        handedCount.value = (await fetchHandedOverBadgesToday(employeeStore.fio)).length
+    } catch {
+        handedCount.value = null
+    }
+}
+
+onMounted(loadHandedCount)
 
 type Status = 'starting' | 'scanning' | 'saving' | 'unsupported' | 'denied'
 
@@ -44,6 +58,7 @@ const onDecode = async (qrText: string) => {
         await recordHandoverEntry(employeeStore.fio, qrText)
         vibrate(200)
         showSuccess('Сдача записана', qrText)
+        if (handedCount.value != null) handedCount.value += 1
     } catch (error) {
         vibrate([100, 50, 100])
         showError(error, 'Не удалось записать сдачу')
@@ -95,6 +110,15 @@ onBeforeUnmount(() => {
       :shift-link="{ to: '/handover-shift', label: 'Сдачи' }"
       icon="heroicons:check-badge"
   >
+    <template v-if="handedCount != null" #hero>
+      <div class="erp-screen__stats">
+        <div class="erp-screen__stat">
+          <span class="erp-screen__stat-num">{{ handedCount }}</span>
+          <span class="erp-screen__stat-label">сдач за смену</span>
+        </div>
+      </div>
+    </template>
+
     <div class="erp-scan-viewport">
       <video ref="videoEl" class="erp-scan-video" muted playsinline/>
 

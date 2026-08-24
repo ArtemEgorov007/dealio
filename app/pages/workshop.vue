@@ -2,6 +2,7 @@
 import {ERP_WORKSHOPS} from '~~/types/erp.types'
 import type {WorkshopId} from '~~/types/erp.types'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+import {fetchIssuedBadgesToday} from '~/utils/erp-sheets'
 
 definePageMeta({layout: 'erp'})
 
@@ -14,6 +15,18 @@ const selectWorkshop = (workshopId: WorkshopId) => {
     employeeStore.setWorkshop(workshopId)
     router.push('/badges')
 }
+
+// Живой счётчик выданных за смену бирок — перенесён сюда из Профиля по правке руководства
+const issuedCount = ref<number | null>(null)
+
+onMounted(async () => {
+    if (!employeeStore.hasFio || !employeeStore.access.badges) return
+    try {
+        issuedCount.value = (await fetchIssuedBadgesToday(employeeStore.fio, null)).length
+    } catch {
+        issuedCount.value = null
+    }
+})
 </script>
 
 <template>
@@ -23,6 +36,15 @@ const selectWorkshop = (workshopId: WorkshopId) => {
       :shift-link="{ to: '/shift', label: 'Бирки за смену' }"
       icon="heroicons:tag"
   >
+    <template v-if="issuedCount != null" #hero>
+      <div class="erp-screen__stats">
+        <div class="erp-screen__stat">
+          <span class="erp-screen__stat-num">{{ issuedCount }}</span>
+          <span class="erp-screen__stat-label">бирок за смену</span>
+        </div>
+      </div>
+    </template>
+
     <ErpSectionLabel>Доступные цеха</ErpSectionLabel>
 
     <ErpGroupedList>
