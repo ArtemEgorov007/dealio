@@ -15,7 +15,7 @@
 В переменных окружения задать:
 
 - `SFTP_PORT`: `22`;
-- `SFTP_SERVER_DIR`: `/www/erp-mt.online/` для staging, `/www/erp-mt.ru/` для production;
+- `SFTP_SERVER_DIR`: `www/erp-mt.online/` для staging, `www/erp-mt.ru/` для production. Это относительные пути от SFTP-root данной учётной записи;
 - `DEPLOY_URL`: соответственно `https://erp-mt.online` и `https://erp-mt.ru`.
 
 Для обоих окружений включить правило **Selected branches and tags → main**: staging-секреты не должны быть доступны коду из произвольной ветки. Для `production` дополнительно включить **Required reviewers**. Без этих ограничений GitHub Environment допускает запуск с другой ветки, а без reviewers production не требует ручного подтверждения.
