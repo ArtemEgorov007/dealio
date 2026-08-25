@@ -1,4 +1,15 @@
-import type {ErpAccessFlags, ErpBadgeIssue, ErpIssuedBadgeEntry, ErpPackingEntry, WorkshopId} from '~~/types/erp.types'
+import type {
+    ErpAccessFlags,
+    ErpBadgeIssue,
+    ErpIssuedBadgeEntry,
+    ErpPackingEntry,
+    ErpPersonnelDepartment,
+    ErpPersonnelDraft,
+    ErpPersonnelEmployee,
+    ErpPersonnelRow,
+    ErpPersonnelRight,
+    WorkshopId,
+} from '~~/types/erp.types'
 import {DEFAULT_ACCESS_FLAGS, workshopById} from '~~/types/erp.types'
 import {parseCsv} from '~/utils/erp-csv'
 
@@ -44,6 +55,11 @@ interface GasResponse {
     login?: string
     password?: string
     access?: ErpAccessFlags
+    departments?: ErpPersonnelDepartment[]
+    platforms?: string[]
+    rights?: ErpPersonnelRight[]
+    employees?: ErpPersonnelRow[]
+    employee?: ErpPersonnelEmployee
 }
 
 export interface ErpLoginProfile {
@@ -55,6 +71,11 @@ export interface ErpLoginProfile {
     login: string
     password: string
     access: ErpAccessFlags
+}
+
+export interface PersonnelActor {
+    login: string
+    password: string
 }
 
 function getConfig(): SheetsRuntimeConfig {
@@ -106,7 +127,7 @@ async function requestGas(config: SheetsRuntimeConfig, params: Record<string, st
     }
 }
 
-async function requestGasPost(config: SheetsRuntimeConfig, payload: Record<string, string>): Promise<GasResponse> {
+async function requestGasPost(config: SheetsRuntimeConfig, payload: Record<string, unknown>): Promise<GasResponse> {
     let response: Response
 
     try {
@@ -363,6 +384,104 @@ export async function loginErpEmployee(login: string, password: string): Promise
             ? {...DEFAULT_ACCESS_FLAGS, ...result.access}
             : {...DEFAULT_ACCESS_FLAGS},
     }
+}
+
+function assertPersonnelActor(actor: PersonnelActor): void {
+    if (!actor.login.trim() || !actor.password) {
+        throw new Error('Войдите заново, чтобы управлять кадрами')
+    }
+}
+
+function personnelPayload(action: string, actor: PersonnelActor, fields: Record<string, unknown> = {}): Record<string, unknown> {
+    assertPersonnelActor(actor)
+    return {
+        action,
+        actorLogin: actor.login,
+        actorPassword: actor.password,
+        ...fields,
+    }
+}
+
+function normalizePersonnelEmployee(employee: ErpPersonnelEmployee): ErpPersonnelEmployee {
+    return {
+        ...employee,
+        role: employee.role === 'Менеджер' ? 'Менеджер' : 'Исполнитель',
+        rights: (employee.rights ?? []).map((right): ErpPersonnelRight => ({
+            name: right.name,
+            value: right.value === 'Да' ? 'Да' : 'Нет',
+        })),
+    }
+}
+
+async function requestPersonnel(config: SheetsRuntimeConfig, action: string, actor: PersonnelActor, fields: Record<string, unknown> = {}): Promise<GasResponse> {
+    const payload = personnelPayload(action, actor, fields)
+    const result = await requestGasPost(config, payload)
+    if (!result.ok) throw new Error(result.error || 'Не удалось обновить данные сотрудников')
+    return result
+}
+
+export async function fetchPersonnelDepartments(actor: PersonnelActor): Promise<{ departments: ErpPersonnelDepartment[]; platforms: string[]; rights: ErpPersonnelRight[] }> {
+    const config = getConfig()
+    if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
+    const result = await requestPersonnel(config, 'personnelDepartments', actor)
+    return {departments: result.departments ?? [], platforms: result.platforms ?? [], rights: result.rights ?? []}
+}
+
+export async function fetchPersonnelEmployees(actor: PersonnelActor, department: string): Promise<ErpPersonnelRow[]> {
+    const config = getConfig()
+    if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
+    const result = await requestPersonnel(config, 'personnelEmployees', actor, {department})
+    return result.employees ?? []
+}
+
+export async function fetchPersonnelEmployee(actor: PersonnelActor, row: number, fio: string): Promise<ErpPersonnelEmployee> {
+    const config = getConfig()
+    if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
+    const result = await requestPersonnel(config, 'personnelEmployee', actor, {row, fio})
+    if (!result.employee) throw new Error('Сотрудник не найден')
+    return normalizePersonnelEmployee(result.employee)
+}
+
+function rightsPayload(rights: ErpPersonnelRight[]): Record<string, 'Да' | 'Нет'> {
+    return Object.fromEntries(rights.map((right) => [right.name, right.value]))
+}
+
+export async function savePersonnelEmployee(actor: PersonnelActor, row: number, fio: string, draft: ErpPersonnelDraft): Promise<ErpPersonnelEmployee> {
+    const config = getConfig()
+    if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
+    const result = await requestPersonnel(config, 'personnelSave', actor, {
+        row,
+        fio,
+        platform: draft.platform,
+        role: draft.role,
+        login: draft.login,
+        password: draft.password ?? '',
+        rights: rightsPayload(draft.rights),
+    })
+    if (!result.employee) throw new Error('Не удалось сохранить карточку сотрудника')
+    return normalizePersonnelEmployee(result.employee)
+}
+
+export async function createPersonnelEmployee(actor: PersonnelActor, draft: ErpPersonnelDraft): Promise<ErpPersonnelEmployee> {
+    const config = getConfig()
+    if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
+    const result = await requestPersonnel(config, 'personnelCreate', actor, {
+        fio: draft.fio,
+        department: draft.department,
+        position: draft.position,
+        platform: draft.platform,
+        role: draft.role,
+        login: draft.login,
+        rights: rightsPayload(draft.rights),
+    })
+    if (!result.employee) throw new Error('Не удалось добавить сотрудника')
+    return normalizePersonnelEmployee(result.employee)
+}
+
+export async function dismissPersonnelEmployee(actor: PersonnelActor, row: number, fio: string): Promise<void> {
+    const config = getConfig()
+    if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
+    await requestPersonnel(config, 'personnelDismiss', actor, {row, fio})
 }
 
 export async function recordMeasurement(
