@@ -3,6 +3,7 @@ import {ERP_WORKSHOPS} from '~~/types/erp.types'
 import type {WorkshopId} from '~~/types/erp.types'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {fetchIssuedBadgesToday} from '~/utils/erp-sheets'
+import {getShiftCounterScope} from '~/utils/shift-counter-scope'
 
 definePageMeta({layout: 'erp'})
 
@@ -22,7 +23,8 @@ const issuedCount = ref<number | null>(null)
 onMounted(async () => {
     if (!employeeStore.hasFio || !employeeStore.access.badges) return
     try {
-        issuedCount.value = (await fetchIssuedBadgesToday(employeeStore.fio, null)).length
+        const scope = getShiftCounterScope(employeeStore.role, employeeStore.fio)
+        issuedCount.value = (await fetchIssuedBadgesToday(scope.fio ?? '', null)).length
     } catch {
         issuedCount.value = null
     }

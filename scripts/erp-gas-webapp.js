@@ -9,8 +9,8 @@
  * 4. URL → NUXT_PUBLIC_CRM_GAS_URL
  *
  * GET  ?action=badges&workshop=kolpino|volkhonka
- * GET  ?action=issuedToday&fio=...&workshop=kolpino|volkhonka  (workshop опционален)
- * GET  ?action=handedOverToday&fio=...
+ * GET  ?action=issuedToday&fio=...&workshop=kolpino|volkhonka  (fio/workshop опциональны)
+ * GET  ?action=handedOverToday&fio=...                            (fio опционален)
  * GET  ?action=packingToday&fio=...&machine=1..10
  * POST { action: 'issueBadge',       workshop, fio, badgeContent }
  * POST { action: 'deleteIssuedBadge', row, fio, badgeContent }
@@ -124,6 +124,7 @@ function doPost(e) {
                 department: profile.department,
                 position: profile.position,
                 platform: profile.platform,
+                role: profile.role,
                 login: profile.login,
                 password: profile.password,
                 access: profile.access,
@@ -218,8 +219,8 @@ function issueBadge_(workshop, fio, badgeContent) {
 }
 
 /**
- * Бирки, выданные сотрудником сегодня — для экрана «Бирки за смену».
- * workshop опционален: без него отдаёт бирки по всем цехам.
+ * Бирки, выданные сегодня — для экрана «Бирки за смену».
+ * fio опционален для счётчика менеджера; workshop — для списка цеха.
  */
 function getIssuedBadgesToday_(fio, workshop) {
     const sheet = getJournalSheet_()
@@ -241,7 +242,7 @@ function getIssuedBadgesToday_(fio, workshop) {
         const row = values[rowIndex]
         const rowDate = row[dayIndex]
 
-        if (normalizeCell_(row[engineerIndex]) !== fioNormalized) continue
+        if (fioNormalized && normalizeCell_(row[engineerIndex]) !== fioNormalized) continue
         if (workshopLabelFilter && normalizeCell_(row[workshopIndex]) !== workshopLabelFilter) continue
         if (!(rowDate instanceof Date) || formatDateKey_(rowDate) !== todayKey) continue
 
@@ -320,8 +321,7 @@ function recordHandover_(fio, badgeContent) {
 }
 
 /**
- * Бирки, сданные сотрудником ОКК сегодня — для экрана «Сдачи».
- * Читает лист «Сдача».
+ * Бирки, сданные сегодня — для экрана «Сдачи». fio опционален для менеджера.
  */
 function getHandedOverBadgesToday_(fio) {
     const sheet = getOrCreateHandoverSheet_()
@@ -341,7 +341,7 @@ function getHandedOverBadgesToday_(fio) {
         const row = values[rowIndex]
         const dateVal = row[dateIndex]
 
-        if (normalizeCell_(row[engineerIndex]) !== fioNormalized) continue
+        if (fioNormalized && normalizeCell_(row[engineerIndex]) !== fioNormalized) continue
         if (!(dateVal instanceof Date) || formatDateKey_(dateVal) !== todayKey) continue
 
         entries.push({
@@ -477,6 +477,7 @@ function login_(loginValue, password) {
     // «Доступ к сдаче» в таблице пока нет — раздел «Сдача» закрыт у всех, пока
     // столбец не добавят со значением «Да» нужным людям.
     const platformIndex = header.indexOf('Площадка')
+    const roleIndex = header.indexOf('Роль')
     const accessBadgesIndex = header.indexOf('Доступ к биркам')
     const accessMeasurementsIndex = header.indexOf('Доступ к промерам')
     const accessPackingIndex = header.indexOf('Доступ к упаковкам')
@@ -510,6 +511,7 @@ function login_(loginValue, password) {
             department: normalizeCell_(row[departmentIndex]),
             position: normalizeCell_(row[positionIndex]),
             platform: strAt(platformIndex),
+            role: strAt(roleIndex),
             login: normalizeCell_(row[loginIndex]),
             password: normalizeCell_(row[passwordIndex]),
             access: {

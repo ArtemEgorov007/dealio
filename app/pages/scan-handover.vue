@@ -4,6 +4,7 @@ import {recordHandoverEntry, fetchHandedOverBadgesToday} from '~/utils/erp-sheet
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useAppToast} from '~/composables/useAppToast'
 import {useHaptics} from '~/composables/useHaptics'
+import {getShiftCounterScope} from '~/utils/shift-counter-scope'
 
 definePageMeta({layout: 'erp'})
 
@@ -19,7 +20,8 @@ const handedCount = ref<number | null>(null)
 const loadHandedCount = async () => {
     if (!employeeStore.hasFio) return
     try {
-        handedCount.value = (await fetchHandedOverBadgesToday(employeeStore.fio)).length
+        const scope = getShiftCounterScope(employeeStore.role, employeeStore.fio)
+        handedCount.value = (await fetchHandedOverBadgesToday(scope.fio ?? '')).length
     } catch {
         handedCount.value = null
     }
