@@ -9,8 +9,8 @@
 - `SFTP_HOST` — хост SFTP хостинга;
 - `SFTP_USERNAME` и `SFTP_PASSWORD` — учётная запись SFTP;
 - `SFTP_KNOWN_HOSTS` — проверенный публичный ключ сервера в формате `known_hosts`;
-- `NUXT_PUBLIC_ERP_GAS_URL` — URL основного GAS web app;
-- `NUXT_PUBLIC_WAREHOUSE_GAS_URL` — URL складского GAS web app.
+- `NUXT_PUBLIC_ERP_GAS_URL` — URL основного GAS web app, если он отличается от текущего repository secret `NUXT_PUBLIC_CRM_GAS_URL`;
+- `NUXT_PUBLIC_WAREHOUSE_GAS_URL` — URL складского GAS web app, если он отличается от текущего repository secret с тем же именем.
 
 В переменных окружения задать:
 
@@ -20,7 +20,7 @@
 
 Для обоих окружений включить правило **Selected branches and tags → main**: staging-секреты не должны быть доступны коду из произвольной ветки. Для `production` дополнительно включить **Required reviewers**. Без этих ограничений GitHub Environment допускает запуск с другой ветки, а без reviewers production не требует ручного подтверждения.
 
-`NUXT_PUBLIC_*` попадают в статический клиентский bundle. Их можно хранить в GitHub Secrets, чтобы не класть URL в репозиторий, но в них нельзя передавать логины, пароли и другие приватные данные.
+`NUXT_PUBLIC_*` попадают в статический клиентский bundle. Их можно хранить в GitHub Secrets, чтобы не класть URL в репозиторий, но в них нельзя передавать логины, пароли и другие приватные данные. Пока staging и production используют те же GAS web apps, отдельные environment secrets для этих двух URL не обязательны: workflow берёт уже существующие repository secrets.
 
 ## Процесс
 
