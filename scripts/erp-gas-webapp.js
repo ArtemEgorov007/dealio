@@ -137,6 +137,7 @@ function doPost(e) {
                 ok: true,
                 departments: personnelDepartments_(context),
                 platforms: personnelPlatforms_(),
+                rights: personnelRights_(context),
             })
         }
 
@@ -624,6 +625,10 @@ function personnelDepartments_(context) {
         counts[department] = (counts[department] || 0) + 1
     }
     return Object.keys(counts).map((department) => ({department: department, activeCount: counts[department]}))
+}
+
+function personnelRights_(context) {
+    return context.schema.rightsHeaders.filter((name) => Boolean(name)).map((name) => ({name: name, value: 'Нет'}))
 }
 
 function personnelPlatforms_() {

@@ -57,6 +57,7 @@ interface GasResponse {
     access?: ErpAccessFlags
     departments?: ErpPersonnelDepartment[]
     platforms?: string[]
+    rights?: ErpPersonnelRight[]
     employees?: ErpPersonnelRow[]
     employee?: ErpPersonnelEmployee
 }
@@ -419,11 +420,11 @@ async function requestPersonnel(config: SheetsRuntimeConfig, action: string, act
     return result
 }
 
-export async function fetchPersonnelDepartments(actor: PersonnelActor): Promise<{ departments: ErpPersonnelDepartment[]; platforms: string[] }> {
+export async function fetchPersonnelDepartments(actor: PersonnelActor): Promise<{ departments: ErpPersonnelDepartment[]; platforms: string[]; rights: ErpPersonnelRight[] }> {
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelDepartments', actor)
-    return {departments: result.departments ?? [], platforms: result.platforms ?? []}
+    return {departments: result.departments ?? [], platforms: result.platforms ?? [], rights: result.rights ?? []}
 }
 
 export async function fetchPersonnelEmployees(actor: PersonnelActor, department: string): Promise<ErpPersonnelRow[]> {
