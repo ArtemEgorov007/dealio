@@ -13,7 +13,8 @@ const VERSION_KEY = 'erp-profile-version'
 // Бампать при смене модели доступа. Профиль старой версии сбрасывается —
 // сотрудник входит заново и получает актуальные флаги из таблицы.
 // v2: переход на fail-closed доступы (пустой флаг = нет доступа).
-const PROFILE_VERSION = '2'
+// v3: роль для области счётчиков за смену.
+const PROFILE_VERSION = '3'
 
 function loadProfile(): ErpEmployeeProfile | null {
     if (typeof window === 'undefined') return null
@@ -49,6 +50,7 @@ interface EmployeeState {
     department: string
     position: string
     platform: string
+    role: string
     login: string
     password: string
     access: ErpAccessFlags
@@ -61,6 +63,7 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
         department: '',
         position: '',
         platform: '',
+        role: '',
         login: '',
         password: '',
         access: {...DEFAULT_ACCESS_FLAGS},
@@ -80,6 +83,7 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
             this.department = stored.department ?? ''
             this.position = stored.position ?? ''
             this.platform = stored.platform ?? ''
+            this.role = stored.role ?? ''
             this.login = stored.login ?? ''
             this.password = stored.password ?? ''
             this.access = {...DEFAULT_ACCESS_FLAGS, ...(stored.access ?? {})}
@@ -95,6 +99,7 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
             department: string
             position: string
             platform: string
+            role: string
             login: string
             password: string
             access: ErpAccessFlags
@@ -103,6 +108,7 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
             this.department = profile.department
             this.position = profile.position
             this.platform = profile.platform
+            this.role = profile.role
             this.login = profile.login
             this.password = profile.password
             this.access = profile.access
@@ -141,6 +147,7 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
             this.department = ''
             this.position = ''
             this.platform = ''
+            this.role = ''
             this.login = ''
             this.password = ''
             this.access = {...DEFAULT_ACCESS_FLAGS}

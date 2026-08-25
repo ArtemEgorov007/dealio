@@ -40,6 +40,7 @@ interface GasResponse {
     department?: string
     position?: string
     platform?: string
+    role?: string
     login?: string
     password?: string
     access?: ErpAccessFlags
@@ -50,6 +51,7 @@ export interface ErpLoginProfile {
     department: string
     position: string
     platform: string
+    role: string
     login: string
     password: string
     access: ErpAccessFlags
@@ -354,6 +356,7 @@ export async function loginErpEmployee(login: string, password: string): Promise
         department: result.department ?? '',
         position: result.position ?? '',
         platform: result.platform ?? '',
+        role: result.role ?? '',
         login: result.login ?? login,
         password: result.password ?? '',
         access: result.access

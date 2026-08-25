@@ -46,6 +46,7 @@ export interface ErpEmployeeProfile {
     department?: string
     position?: string
     platform?: string
+    role?: string
     login?: string
     password?: string
     access?: ErpAccessFlags
