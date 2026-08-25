@@ -1,25 +1,38 @@
-# Build and deploy the Nuxt SPA to GitHub Pages
-name: Deploy Nuxt site to Pages
+# Build and deploy the Nuxt SPA to the ERP hosting environments.
+name: Build and deploy ERP static site
 
 on:
   push:
     branches: ['main']
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Куда развернуть сборку'
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-  actions: read
-
-concurrency:
-  group: 'pages'
-  cancel-in-progress: false
 
 jobs:
+  resolve-target:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.target.outputs.environment }}
+    steps:
+      - id: target
+        run: echo "environment=${{ github.event_name == 'workflow_dispatch' && inputs.target || 'staging' }}" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: resolve-target
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment:
+      name: ${{ needs.resolve-target.outputs.environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,9 +49,7 @@ jobs:
       - name: Generate static site
         env:
           NUXT_APP_BASE_URL: /
-          # Секрет в GitHub пока называется NUXT_PUBLIC_CRM_GAS_URL (переименование
-          # секрета требует прав к секрет-хранилищу) — маппим его в ERP-переменную.
-          NUXT_PUBLIC_ERP_GAS_URL: ${{ secrets.NUXT_PUBLIC_CRM_GAS_URL }}
+          NUXT_PUBLIC_ERP_GAS_URL: ${{ secrets.NUXT_PUBLIC_ERP_GAS_URL }}
           NUXT_PUBLIC_WAREHOUSE_GAS_URL: ${{ secrets.NUXT_PUBLIC_WAREHOUSE_GAS_URL }}
         run: npm run generate
 
@@ -48,38 +59,53 @@ jobs:
           test "$(find .output/public -type l | wc -l)" -eq 0
           du -sh .output/public
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload static artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: erp-static-site
           path: ./.output/public
+          if-no-files-found: error
+          retention-days: 7
 
   deploy:
-    needs: build
+    needs: [resolve-target, build]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    concurrency:
+      group: erp-deploy-${{ needs.resolve-target.outputs.environment }}
+      cancel-in-progress: false
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
+      name: ${{ needs.resolve-target.outputs.environment }}
+      url: ${{ vars.DEPLOY_URL }}
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
-        continue-on-error: true
+      - name: Download static artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: erp-static-site
+          path: ./site
 
-      - name: Wait before retry
-        if: steps.deployment.outcome == 'failure'
-        run: sleep 60
+      - name: Install SFTP client
+        run: sudo apt-get update && sudo apt-get install -y sshpass
 
-      - name: Retry deploy to GitHub Pages
-        if: steps.deployment.outcome == 'failure'
-        id: deployment_retry
-        uses: actions/deploy-pages@v5
-
-      - name: Fail if all deploy attempts failed
-        if: steps.deployment.outcome == 'failure' && steps.deployment_retry.outcome == 'failure'
+      - name: Configure trusted SFTP host
+        env:
+          SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
         run: |
-          echo "GitHub Pages deployment failed after 2 attempts."
-          exit 1
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SFTP_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Upload static site without remote deletion
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_PORT: ${{ vars.SFTP_PORT }}
+          SFTP_SERVER_DIR: ${{ vars.SFTP_SERVER_DIR }}
+        run: |
+          export SSHPASS="$SFTP_PASSWORD"
+          sshpass -e scp -pr \
+            -P "$SFTP_PORT" \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            ./site/. "$SFTP_USERNAME@$SFTP_HOST:$SFTP_SERVER_DIR"
