@@ -69,6 +69,43 @@ export interface ErpPackingEntry {
     weight: number
 }
 
+export interface ErpPersonnelDepartment {
+    department: string
+    activeCount: number
+}
+
+export interface ErpPersonnelRow {
+    row: number
+    fio: string
+    position: string
+}
+
+export interface ErpPersonnelRight {
+    name: string
+    value: 'Да' | 'Нет'
+}
+
+export interface ErpPersonnelEmployee extends ErpPersonnelRow {
+    department: string
+    platform: string
+    role: 'Исполнитель' | 'Менеджер'
+    login: string
+    password: string
+    status: string
+    rights: ErpPersonnelRight[]
+}
+
+export interface ErpPersonnelDraft {
+    fio: string
+    department: string
+    position: string
+    platform: string
+    role: 'Исполнитель' | 'Менеджер'
+    login: string
+    password?: string
+    rights: ErpPersonnelRight[]
+}
+
 export function workshopById(id: WorkshopId): WorkshopOption {
     const found = ERP_WORKSHOPS.find(item => item.id === id)
     if (!found) throw new Error(`Unknown workshop: ${id}`)
