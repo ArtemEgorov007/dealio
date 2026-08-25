@@ -131,6 +131,47 @@ function doPost(e) {
             })
         }
 
+        if (payload.action === 'personnelDepartments') {
+            const context = requirePersonnelActor_(payload.actorLogin || '', payload.actorPassword || '')
+            return jsonResponse_({
+                ok: true,
+                departments: personnelDepartments_(context),
+                platforms: personnelPlatforms_(),
+            })
+        }
+
+        if (payload.action === 'personnelEmployees') {
+            const context = requirePersonnelActor_(payload.actorLogin || '', payload.actorPassword || '')
+            return jsonResponse_({
+                ok: true,
+                employees: personnelEmployees_(context, payload.department || ''),
+            })
+        }
+
+        if (payload.action === 'personnelEmployee') {
+            const context = requirePersonnelActor_(payload.actorLogin || '', payload.actorPassword || '')
+            return jsonResponse_({
+                ok: true,
+                employee: personnelEmployee_(context, payload.row, payload.fio || ''),
+            })
+        }
+
+        if (payload.action === 'personnelSave') {
+            const context = requirePersonnelActor_(payload.actorLogin || '', payload.actorPassword || '')
+            return jsonResponse_({ok: true, employee: savePersonnelEmployee_(context, payload)})
+        }
+
+        if (payload.action === 'personnelCreate') {
+            const context = requirePersonnelActor_(payload.actorLogin || '', payload.actorPassword || '')
+            return jsonResponse_({ok: true, employee: createPersonnelEmployee_(context, payload)})
+        }
+
+        if (payload.action === 'personnelDismiss') {
+            const context = requirePersonnelActor_(payload.actorLogin || '', payload.actorPassword || '')
+            dismissPersonnelEmployee_(context, payload.row, payload.fio || '')
+            return jsonResponse_({ok: true})
+        }
+
         return jsonResponse_({ok: false, error: 'Unknown action'})
     } catch (error) {
         return jsonResponse_({ok: false, error: String(error.message || error)})
@@ -530,6 +571,231 @@ function login_(loginValue, password) {
     }
 
     throw new Error('Неверный логин или пароль')
+}
+
+function getStaffSchema_(sheet) {
+    const header = getSheetHeader_(sheet)
+    return {
+        header: header,
+        fioIndex: requireColumn_(header, 'ФИО', STAFF_SHEET),
+        departmentIndex: requireColumn_(header, 'Отдел', STAFF_SHEET),
+        positionIndex: requireColumn_(header, 'Должность', STAFF_SHEET),
+        platformIndex: requireColumn_(header, 'Площадка', STAFF_SHEET),
+        roleIndex: requireColumn_(header, 'Роль', STAFF_SHEET),
+        loginIndex: requireColumn_(header, 'Логин', STAFF_SHEET),
+        passwordIndex: requireColumn_(header, 'Пароль', STAFF_SHEET),
+        statusIndex: requireColumn_(header, 'Статус', STAFF_SHEET),
+        personnelAccessIndex: requireColumn_(header, 'Управление кадрами', STAFF_SHEET),
+        rightsHeaders: header.slice(10),
+    }
+}
+
+function requirePersonnelActor_(loginValue, password) {
+    const sheet = SpreadsheetApp.openById(ACCESS_SPREADSHEET_ID).getSheetByName(STAFF_SHEET)
+    if (!sheet) throw new Error('Не найден лист «' + STAFF_SHEET + '»')
+
+    const schema = getStaffSchema_(sheet)
+    const loginNormalized = normalizeCell_(loginValue).toLowerCase()
+    const values = sheet.getDataRange().getValues()
+
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        if (normalizeCell_(row[schema.loginIndex]).toLowerCase() !== loginNormalized) continue
+        if (normalizeCell_(row[schema.passwordIndex]) !== password) continue
+        if (normalizeCell_(row[schema.statusIndex]) !== ACTIVE_STATUS) {
+            throw new Error('Учётная запись отключена — обратитесь к руководителю')
+        }
+        if (normalizeCell_(row[schema.personnelAccessIndex]).toLowerCase() !== 'да') {
+            throw new Error('Нет доступа к управлению кадрами')
+        }
+        return {sheet: sheet, schema: schema}
+    }
+
+    throw new Error('Неверный логин или пароль')
+}
+
+function personnelDepartments_(context) {
+    const values = context.sheet.getDataRange().getValues()
+    const counts = {}
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        const department = normalizeCell_(row[context.schema.departmentIndex])
+        if (!department || normalizeCell_(row[context.schema.statusIndex]) !== ACTIVE_STATUS) continue
+        counts[department] = (counts[department] || 0) + 1
+    }
+    return Object.keys(counts).map((department) => ({department: department, activeCount: counts[department]}))
+}
+
+function personnelPlatforms_() {
+    const sheet = SpreadsheetApp.openById(ACCESS_SPREADSHEET_ID).getSheetByName('Площадки')
+    if (!sheet) throw new Error('Не найден лист «Площадки»')
+    const values = sheet.getDataRange().getValues()
+    const found = {}
+    const platforms = []
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        for (let columnIndex = 0; columnIndex < values[rowIndex].length; columnIndex += 1) {
+            const value = normalizeCell_(values[rowIndex][columnIndex])
+            if (!value || found[value]) continue
+            found[value] = true
+            platforms.push(value)
+        }
+    }
+    return platforms
+}
+
+function personnelEmployees_(context, departmentValue) {
+    const department = normalizeCell_(departmentValue)
+    const values = context.sheet.getDataRange().getValues()
+    const employees = []
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        if (normalizeCell_(row[context.schema.departmentIndex]) !== department) continue
+        employees.push({
+            row: rowIndex + 1,
+            fio: normalizeCell_(row[context.schema.fioIndex]),
+            position: normalizeCell_(row[context.schema.positionIndex]),
+        })
+    }
+    return employees
+}
+
+function personnelEmployee_(context, rowNumber, fio) {
+    const row = requirePersonnelRow_(context, rowNumber, fio)
+    const rights = []
+    for (let index = 10; index < context.schema.header.length; index += 1) {
+        const name = context.schema.header[index]
+        if (!name) continue
+        rights.push({name: name, value: normalizeCell_(row[index]).toLowerCase() === 'да' ? 'Да' : 'Нет'})
+    }
+    return {
+        row: Number(rowNumber),
+        fio: normalizeCell_(row[context.schema.fioIndex]),
+        department: normalizeCell_(row[context.schema.departmentIndex]),
+        position: normalizeCell_(row[context.schema.positionIndex]),
+        platform: normalizeCell_(row[context.schema.platformIndex]),
+        role: normalizeCell_(row[context.schema.roleIndex]),
+        login: normalizeCell_(row[context.schema.loginIndex]),
+        password: normalizeCell_(row[context.schema.passwordIndex]),
+        status: normalizeCell_(row[context.schema.statusIndex]),
+        rights: rights,
+    }
+}
+
+function requirePersonnelRow_(context, rowNumber, fio) {
+    const row = Number(rowNumber)
+    if (!Number.isInteger(row) || row < 2 || row > context.sheet.getLastRow()) throw new Error('Сотрудник не найден')
+    const values = context.sheet.getRange(row, 1, 1, context.schema.header.length).getValues()
+    const employee = values[0]
+    if (normalizeCell_(employee[context.schema.fioIndex]) !== normalizeCell_(fio)) throw new Error('Данные сотрудника изменились — обновите список')
+    return employee
+}
+
+function ensurePersonnelLoginUnique_(context, login, ownRow) {
+    const normalized = normalizeCell_(login).toLowerCase()
+    if (!normalized) throw new Error('Укажите логин')
+    const values = context.sheet.getDataRange().getValues()
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        if (rowIndex + 1 === ownRow) continue
+        if (normalizeCell_(values[rowIndex][context.schema.loginIndex]).toLowerCase() === normalized) {
+            throw new Error('Такой логин уже существует')
+        }
+    }
+}
+
+function setPersonnelValue_(sheet, row, columnIndex, value) {
+    sheet.getRange(row, columnIndex + 1).setValue(value)
+}
+
+function writePersonnelRights_(context, row, rights) {
+    const values = rights && typeof rights === 'object' ? rights : {}
+    for (let index = 10; index < context.schema.header.length; index += 1) {
+        const name = context.schema.header[index]
+        if (!name || !Object.prototype.hasOwnProperty.call(values, name)) continue
+        setPersonnelValue_(context.sheet, row, index, normalizeCell_(values[name]).toLowerCase() === 'да' ? 'Да' : 'Нет')
+    }
+}
+
+function savePersonnelEmployee_(context, payload) {
+    const lock = LockService.getScriptLock()
+    if (!lock.tryLock(5000)) throw new Error('busy')
+    try {
+        const row = Number(payload.row)
+        requirePersonnelRow_(context, row, payload.fio || '')
+        ensurePersonnelLoginUnique_(context, payload.login || '', row)
+        setPersonnelValue_(context.sheet, row, context.schema.platformIndex, normalizeCell_(payload.platform))
+        setPersonnelValue_(context.sheet, row, context.schema.roleIndex, normalizePersonnelRole_(payload.role))
+        setPersonnelValue_(context.sheet, row, context.schema.loginIndex, normalizeCell_(payload.login))
+        if (normalizeCell_(payload.password)) setPersonnelValue_(context.sheet, row, context.schema.passwordIndex, normalizeCell_(payload.password))
+        writePersonnelRights_(context, row, payload.rights)
+        return personnelEmployee_(context, row, payload.fio || '')
+    } finally {
+        lock.releaseLock()
+    }
+}
+
+function createPersonnelEmployee_(context, payload) {
+    const fio = normalizeCell_(payload.fio)
+    const department = normalizeCell_(payload.department)
+    const position = normalizeCell_(payload.position)
+    if (!fio || !department || !position) throw new Error('Заполните ФИО, отдел и должность')
+
+    const lock = LockService.getScriptLock()
+    if (!lock.tryLock(5000)) throw new Error('busy')
+    try {
+        ensurePersonnelLoginUnique_(context, payload.login || '', 0)
+        const row = new Array(context.schema.header.length).fill('')
+        row[context.schema.fioIndex] = fio
+        row[context.schema.departmentIndex] = department
+        row[context.schema.positionIndex] = position
+        row[context.schema.platformIndex] = normalizeCell_(payload.platform)
+        row[context.schema.roleIndex] = normalizePersonnelRole_(payload.role)
+        row[context.schema.loginIndex] = normalizeCell_(payload.login)
+        row[context.schema.passwordIndex] = generatePersonnelPassword_()
+        row[context.schema.statusIndex] = ACTIVE_STATUS
+        for (let index = 10; index < context.schema.header.length; index += 1) {
+            const name = context.schema.header[index]
+            if (!name || !payload.rights || !Object.prototype.hasOwnProperty.call(payload.rights, name)) continue
+            row[index] = normalizeCell_(payload.rights[name]).toLowerCase() === 'да' ? 'Да' : 'Нет'
+        }
+        context.sheet.appendRow(row)
+        return personnelEmployee_(context, context.sheet.getLastRow(), fio)
+    } finally {
+        lock.releaseLock()
+    }
+}
+
+function dismissPersonnelEmployee_(context, rowNumber, fio) {
+    const lock = LockService.getScriptLock()
+    if (!lock.tryLock(5000)) throw new Error('busy')
+    try {
+        const row = Number(rowNumber)
+        requirePersonnelRow_(context, row, fio)
+        setPersonnelValue_(context.sheet, row, context.schema.statusIndex, 'Уволен')
+    } finally {
+        lock.releaseLock()
+    }
+}
+
+function normalizePersonnelRole_(value) {
+    const role = normalizeCell_(value)
+    if (role !== 'Исполнитель' && role !== 'Менеджер') throw new Error('Выберите роль')
+    return role
+}
+
+function generatePersonnelPassword_() {
+    const lower = 'abcdefghijklmnopqrstuvwxyz'
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const digits = '0123456789'
+    const alphabet = lower + upper + digits
+    const chars = [lower.charAt(Math.floor(Math.random() * lower.length)), upper.charAt(Math.floor(Math.random() * upper.length)), digits.charAt(Math.floor(Math.random() * digits.length))]
+    while (chars.length < 10) chars.push(alphabet.charAt(Math.floor(Math.random() * alphabet.length)))
+    for (let index = chars.length - 1; index > 0; index -= 1) {
+        const target = Math.floor(Math.random() * (index + 1))
+        const value = chars[index]
+        chars[index] = chars[target]
+        chars[target] = value
+    }
+    return chars.join('')
 }
 
 function getJournalSheet_() {
