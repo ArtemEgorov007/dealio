@@ -37,6 +37,72 @@
 | `docs/operations/auth-migration.md` | Fixed contract for the later identity migration; no password migration now. |
 | `docs/operations/mobile-regression-checklist.md` | Manual acceptance steps for the existing operator flow. |
 
+## Task 0: Isolate staging data before any mutation test
+
+**Files:**
+- Modify: `docs/deployment.md`
+- Modify: `docs/operations/backup-and-rollback.md` (created in Task 5; add staging inventory section there)
+- Test: `tests/ci-deploy-workflow.test.mjs`
+
+**External resources:**
+- Create one non-production copy of the operational spreadsheet and one non-production copy of the access spreadsheet, both inside an access-restricted Drive folder.
+- Create separate staging deployments for the ERP and warehouse GAS projects. Their Script Properties must point only to the copied spreadsheet IDs.
+- Set the `staging` GitHub Environment public URLs to the staging deployments. Production URLs and deployments must remain unchanged.
+
+**Interfaces:**
+- `erp-mt.online` communicates only with staging GAS and staging spreadsheet copies.
+- `erp-mt.ru` continues communicating only with production GAS and production spreadsheets.
+- A staging write cannot create or modify a row in the production spreadsheets.
+
+- [ ] **Step 1: Record the current deployment mapping without exposing credentials**
+
+Read existing GitHub Environment variable names, GAS deployment IDs and Script Property *names*. Record only labels, target type and version in `docs/deployment.md`; do not commit URLs, spreadsheet IDs, passwords or known-host values.
+
+Required table shape:
+
+```markdown
+| Environment | Static host | ERP GAS target | Warehouse GAS target | Data target |
+|---|---|---|---|---|
+| staging | erp-mt.online | staging deployment | staging deployment | copied staging sheets |
+| production | erp-mt.ru | production deployment | production deployment | production sheets |
+```
+
+- [ ] **Step 2: Create safe copies in Drive**
+
+1. In the administrator Drive account, create a folder named `ERP — staging data — restricted`.
+2. Copy the operational and access spreadsheets into that folder.
+3. Remove every editor/viewer who does not require staging access.
+4. Replace employee names, logins, passwords, QR values and operational history with synthetic records before testing writes.
+5. Note only copy timestamps and owner role in the private release log; no IDs or data values go to Git.
+
+- [ ] **Step 3: Create separate GAS staging deployments**
+
+1. Clone the reviewed GAS source into new Apps Script projects; do not change the production deployment IDs.
+2. Set `SPREADSHEET_ID` and `ACCESS_SPREADSHEET_ID` only in the staging project properties to the corresponding copied data sources.
+3. Configure staging deployments using the minimum access that lets the static staging site run; production access settings remain unchanged.
+4. Create a versioned deployment description containing `staging` and the Git commit short SHA.
+
+- [ ] **Step 4: Point the staging environment at staging-only GAS**
+
+Update only `staging` environment secrets `NUXT_PUBLIC_ERP_GAS_URL` and `NUXT_PUBLIC_WAREHOUSE_GAS_URL`. Do not alter the production environment or repository fallback secret. Run the existing workflow with `target=staging` and verify that the generated bundle contains the staging URL only through its configured runtime value; do not print the bundle value in CI output.
+
+- [ ] **Step 5: Prove the separation safely**
+
+1. Run the read-only smoke check against staging and production endpoints.
+2. Run one deliberately pre-approved staging write using synthetic data.
+3. Confirm only the staging sheet changed and production row counts/timestamps did not change.
+4. Add the confirmation, tester role and timestamp to the private release log.
+
+- [ ] **Step 6: Update the deployment contract test and commit**
+
+Extend `tests/ci-deploy-workflow.test.mjs` to require both environment-specific URL secret names in the workflow, then run:
+
+```bash
+node --test tests/ci-deploy-workflow.test.mjs
+git add docs/deployment.md tests/ci-deploy-workflow.test.mjs
+git commit -m "docs(erp): isolate staging data and GAS deployments"
+```
+
 ## Task 1: Make verification a mandatory delivery gate
 
 **Files:**
