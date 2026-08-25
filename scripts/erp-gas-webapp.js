@@ -708,7 +708,7 @@ function ensurePersonnelLoginUnique_(context, login, ownRow) {
 }
 
 function setPersonnelValue_(sheet, row, columnIndex, value) {
-    sheet.getRange(row, columnIndex + 1).setValue(value)
+    sheet.getRange(row, columnIndex + 1).setValue(toSheetLiteral_(value))
 }
 
 function writePersonnelRights_(context, row, rights) {
@@ -730,7 +730,11 @@ function savePersonnelEmployee_(context, payload) {
         setPersonnelValue_(context.sheet, row, context.schema.platformIndex, normalizeCell_(payload.platform))
         setPersonnelValue_(context.sheet, row, context.schema.roleIndex, normalizePersonnelRole_(payload.role))
         setPersonnelValue_(context.sheet, row, context.schema.loginIndex, normalizeCell_(payload.login))
-        if (normalizeCell_(payload.password)) setPersonnelValue_(context.sheet, row, context.schema.passwordIndex, normalizeCell_(payload.password))
+        const password = normalizeCell_(payload.password)
+        if (password && !isPersonnelPassword_(password)) {
+            throw new Error('Пароль должен содержать 10 латинских букв и цифр, включая строчную, прописную букву и цифру')
+        }
+        if (password) setPersonnelValue_(context.sheet, row, context.schema.passwordIndex, password)
         writePersonnelRights_(context, row, payload.rights)
         return personnelEmployee_(context, row, payload.fio || '')
     } finally {
@@ -749,18 +753,18 @@ function createPersonnelEmployee_(context, payload) {
     try {
         ensurePersonnelLoginUnique_(context, payload.login || '', 0)
         const row = new Array(context.schema.header.length).fill('')
-        row[context.schema.fioIndex] = fio
-        row[context.schema.departmentIndex] = department
-        row[context.schema.positionIndex] = position
-        row[context.schema.platformIndex] = normalizeCell_(payload.platform)
-        row[context.schema.roleIndex] = normalizePersonnelRole_(payload.role)
-        row[context.schema.loginIndex] = normalizeCell_(payload.login)
-        row[context.schema.passwordIndex] = generatePersonnelPassword_()
-        row[context.schema.statusIndex] = ACTIVE_STATUS
+        row[context.schema.fioIndex] = toSheetLiteral_(fio)
+        row[context.schema.departmentIndex] = toSheetLiteral_(department)
+        row[context.schema.positionIndex] = toSheetLiteral_(position)
+        row[context.schema.platformIndex] = toSheetLiteral_(normalizeCell_(payload.platform))
+        row[context.schema.roleIndex] = toSheetLiteral_(normalizePersonnelRole_(payload.role))
+        row[context.schema.loginIndex] = toSheetLiteral_(normalizeCell_(payload.login))
+        row[context.schema.passwordIndex] = toSheetLiteral_(generatePersonnelPassword_())
+        row[context.schema.statusIndex] = toSheetLiteral_(ACTIVE_STATUS)
         for (let index = 10; index < context.schema.header.length; index += 1) {
             const name = context.schema.header[index]
             if (!name || !payload.rights || !Object.prototype.hasOwnProperty.call(payload.rights, name)) continue
-            row[index] = normalizeCell_(payload.rights[name]).toLowerCase() === 'да' ? 'Да' : 'Нет'
+            row[index] = toSheetLiteral_(normalizeCell_(payload.rights[name]).toLowerCase() === 'да' ? 'Да' : 'Нет')
         }
         context.sheet.appendRow(row)
         return personnelEmployee_(context, context.sheet.getLastRow(), fio)
@@ -801,6 +805,10 @@ function generatePersonnelPassword_() {
         chars[target] = value
     }
     return chars.join('')
+}
+
+function isPersonnelPassword_(value) {
+    return /^[A-Za-z0-9]{10}$/.test(value) && /[a-z]/.test(value) && /[A-Z]/.test(value) && /[0-9]/.test(value)
 }
 
 function getJournalSheet_() {
@@ -987,6 +995,11 @@ function formatDateKey_(date) {
 
 function normalizeCell_(value) {
     return String(value == null ? '' : value).trim()
+}
+
+function toSheetLiteral_(value) {
+    const text = String(value == null ? '' : value)
+    return /^[=+\-@]/.test(text) ? "'" + text : text
 }
 
 function jsonResponse_(payload) {

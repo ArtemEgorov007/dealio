@@ -78,7 +78,11 @@ const saveEmployee = async (draft: ErpPersonnelDraft) => {
   if (!selectedEmployee.value) return
   isBusy.value = true
   try {
-    selectedEmployee.value = await savePersonnelEmployee(actor.value, selectedEmployee.value.row, selectedEmployee.value.fio, draft)
+    const saved = await savePersonnelEmployee(actor.value, selectedEmployee.value.row, selectedEmployee.value.fio, draft)
+    if (saved.fio === employeeStore.fio && draft.password && draft.password !== employeeStore.password) {
+      employeeStore.updatePassword(draft.password)
+    }
+    selectedEmployee.value = saved
     await refreshCurrent()
     showSuccess('Карточка сотрудника сохранена')
   } catch (saveError) {

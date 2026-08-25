@@ -13,6 +13,7 @@ const emit = defineEmits<{ submit: [draft: ErpPersonnelDraft]; cancel: [] }>()
 const roleOptions = [{value: 'Исполнитель', label: 'Исполнитель'}, {value: 'Менеджер', label: 'Менеджер'}]
 const platformOptions = computed(() => props.platforms.map((platform) => ({value: platform, label: platform})))
 const draft = reactive<ErpPersonnelDraft>({fio: '', department: '', position: '', platform: '', role: 'Исполнитель', login: '', password: '', rights: []})
+const initialPassword = ref('')
 
 const reset = () => {
   const employee = props.employee
@@ -23,18 +24,22 @@ const reset = () => {
   draft.role = employee?.role ?? 'Исполнитель'
   draft.login = employee?.login ?? ''
   draft.password = employee?.password ?? ''
+  initialPassword.value = employee?.password ?? ''
   draft.rights = (employee?.rights ?? []).map((right): ErpPersonnelRight => ({...right}))
 }
 
 watch(() => [props.employee, props.create], reset, {immediate: true})
 
+const isPasswordChanged = computed(() => !props.create && draft.password !== initialPassword.value)
+const isPasswordValid = computed(() => !isPasswordChanged.value || (/^[A-Za-z0-9]{10}$/.test(draft.password) && /[a-z]/.test(draft.password) && /[A-Z]/.test(draft.password) && /[0-9]/.test(draft.password)))
+const passwordError = computed(() => isPasswordChanged.value && !isPasswordValid.value ? '10 символов: A–Z, a–z и цифры' : undefined)
 const canSubmit = computed(() => Boolean(
-  draft.login.trim() && draft.platform && draft.role && (!props.create || (draft.fio.trim() && draft.department.trim() && draft.position.trim())),
+  draft.login.trim() && draft.platform && draft.role && isPasswordValid.value && (!props.create || (draft.fio.trim() && draft.department.trim() && draft.position.trim())),
 ))
 
 const submit = () => {
   if (!canSubmit.value || props.busy) return
-  emit('submit', {...draft, rights: draft.rights.map((right) => ({...right}))})
+  emit('submit', {...draft, password: isPasswordChanged.value ? draft.password : '', rights: draft.rights.map((right) => ({...right}))})
 }
 </script>
 
@@ -54,7 +59,7 @@ const submit = () => {
     <UiSelect v-model="draft.platform" label="Площадка" :options="platformOptions" required flush/>
     <UiSegmentedControl v-model="draft.role" :options="roleOptions" align="start"/>
     <UiInput v-model="draft.login" label="Логин" required flush/>
-    <UiInput v-if="!create" v-model="draft.password" label="Пароль" type="password" show-password-toggle flush/>
+    <UiInput v-if="!create" v-model="draft.password" label="Пароль" type="password" :error="passwordError" show-password-toggle flush/>
 
     <section v-if="draft.rights.length" class="personnel-form__rights">
       <p>Права и доступы</p>

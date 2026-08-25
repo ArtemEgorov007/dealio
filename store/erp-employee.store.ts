@@ -136,6 +136,11 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
             saveProfile(this.$state as ErpEmployeeProfile)
         },
 
+        updatePassword(password: string) {
+            this.password = password
+            saveProfile(this.$state as ErpEmployeeProfile)
+        },
+
         clearWorkshop() {
             this.workshopId = null
             saveProfile(this.$state as ErpEmployeeProfile)
