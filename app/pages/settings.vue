@@ -56,9 +56,9 @@ const saveRetention = (days: number) => {
                 name="retention"
                 :value="days"
                 :checked="retentionDays === days"
-                @change="saveRetention(days)"
                 class="retention-radio"
-            />
+                @change="saveRetention(days)"
+            >
             <span class="retention-label">
               <span class="retention-days">{{ days }}</span>
               <span class="retention-unit">дней</span>

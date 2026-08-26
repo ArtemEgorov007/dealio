@@ -72,7 +72,7 @@ export function useUpdateCard() {
                     customerName: fields.category,
                 })
             } catch (error) {
-                throw new Error(mapAppwriteError(error, 'Не удалось сохранить изменения'))
+                throw new Error(mapAppwriteError(error, 'Не удалось сохранить изменения'), {cause: error})
             }
 
             return payload

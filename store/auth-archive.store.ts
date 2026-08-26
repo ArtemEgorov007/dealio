@@ -3,7 +3,7 @@ import {v4 as uuid} from 'uuid'
 
 import type {ICard} from '../app/components/kanban/kanban.types'
 import type {Priority} from './board.store'
-import {EnumStatus} from '../types/cards.types'
+import type {EnumStatus} from '../types/cards.types'
 
 const AUTH_ARCHIVE_KEY = 'dealio-auth-archive'
 const SETTINGS_STORAGE_KEY = 'dealio-settings'

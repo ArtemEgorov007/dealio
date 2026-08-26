@@ -56,11 +56,9 @@ export async function updateCard(
 ) {
     const patch: Record<string, unknown> = {}
     const needsExisting = data.price !== undefined || data.customerName !== undefined
-    let category = data.customerName
-
     if (needsExisting) {
         const existing = await DB.getDocument<ICardDocument>(DB_ID, COLLECTION_CARDS, documentId)
-        category = data.customerName ?? existing.customer.name
+        const category = data.customerName ?? existing.customer.name
 
         if (data.customerName !== undefined) {
             patch.customer = {

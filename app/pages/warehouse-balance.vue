@@ -125,7 +125,7 @@ onMounted(() => {
     <ErpActionSheet
         :open="isPickerOpen"
         :busy="false"
-        ariaLabel="Выбор площадки"
+        aria-label="Выбор площадки"
         @dismiss="isPickerOpen = false"
     >
       <template #label>Площадка</template>

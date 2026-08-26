@@ -22,19 +22,19 @@ const card = computed(() => data.value ?? null)
           class="comments__field"
           placeholder="Добавить заметку..."
           @keyup.enter="writeComment"
-      />
+      >
       <button
           class="comments__submit"
           :disabled="!commentRef"
-          @click="writeComment"
           aria-label="Сохранить заметку"
+          @click="writeComment"
       >
         <Icon name="heroicons:paper-airplane" size="15"/>
       </button>
     </div>
 
     <div v-if="isLoading" class="comments__loading">
-      <div v-for="i in 2" :key="i" class="comment-skeleton"></div>
+      <div v-for="i in 2" :key="i" class="comment-skeleton"/>
     </div>
 
     <div v-else-if="card?.comments?.length" class="comments__list">

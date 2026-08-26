@@ -176,7 +176,7 @@ const handleArchive = () => {
       {{ (error as Error).message }}
     </div>
 
-    <div class="card-info__divider"></div>
+    <div class="card-info__divider"/>
 
     <div class="card-info__fields">
       <UiSelect

@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { MOCK_CARDS } from '../app/components/kanban/kanban.mock'
-import type { ICardRecord } from '../types/cards.types'
-import { EnumStatus } from '../types/cards.types'
+import type { ICardRecord, EnumStatus  } from '../types/cards.types'
 
 export type Priority = 'low' | 'medium' | 'high'
 

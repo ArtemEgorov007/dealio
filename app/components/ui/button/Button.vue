@@ -41,7 +41,7 @@ const handleClick = (event: MouseEvent) => {
       :aria-busy="loading"
       @click="handleClick"
   >
-    <span v-if="loading" class="ui-btn__spinner"></span>
+    <span v-if="loading" class="ui-btn__spinner"/>
     <span class="ui-btn__content">
       <slot/>
     </span>

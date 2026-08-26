@@ -60,26 +60,26 @@ const formatPrice = (price: number) =>
         `kanban-card--${columnId}`,
         { 'kanban-card--dragging': isDragging, 'kanban-card--enter': !isEntered },
       ]"
-      @pointerdown="handlePointerDown"
-      @animationend="handleEnterAnimationEnd"
-      @click="handleOpenSlideover"
       role="button"
       :aria-label="`Карточка: ${card.name}`"
       tabindex="0"
+      @pointerdown="handlePointerDown"
+      @animationend="handleEnterAnimationEnd"
+      @click="handleOpenSlideover"
       @keydown.enter="handleOpenSlideover"
   >
     <span class="card-name">{{ card.name }}</span>
 
     <div class="card-right">
       <span v-if="isWishlistItem" class="card-price tabular-nums">{{ formatPrice(card.price) }}</span>
-      <span v-else class="card-dot" :class="`card-dot--${columnId}`"></span>
+      <span v-else class="card-dot" :class="`card-dot--${columnId}`"/>
 
       <button
           class="card-archive-btn"
           :disabled="isArchiving"
-          @click.stop="handleArchive"
           aria-label="В архив"
           title="В архив"
+          @click.stop="handleArchive"
       >
         <Icon name="heroicons:archive-box-arrow-down" size="13"/>
       </button>

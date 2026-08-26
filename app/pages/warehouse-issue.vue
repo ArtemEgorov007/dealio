@@ -237,7 +237,7 @@ const submit = async () => {
     <ErpActionSheet
         :open="!!sheetItem"
         :busy="isSaving"
-        ariaLabel="Выдача товара"
+        aria-label="Выдача товара"
         @dismiss="closeSheet"
     >
       <template #label>Выдача товара</template>

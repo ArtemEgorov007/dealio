@@ -5,7 +5,7 @@ interface Props {
   isCollapsed?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isCollapsed: false
 })
 </script>
@@ -13,10 +13,10 @@ const props = withDefaults(defineProps<Props>(), {
 <template>
   <div class="menu">
     <NuxtLink
-        class="menu-item"
-        :class="{ 'menu-item--collapsed': isCollapsed }"
         v-for="item in MENU_DATA"
         :key="item.name"
+        class="menu-item"
+        :class="{ 'menu-item--collapsed': isCollapsed }"
         :to="item.url"
         active-class="menu-item--active"
     >

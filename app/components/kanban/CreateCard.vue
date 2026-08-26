@@ -6,9 +6,8 @@ import {useForm} from 'vee-validate'
 
 import type {ICardRecord} from '~~/types/cards.types'
 import {EnumStatus} from '~~/types/cards.types'
-import {isGuestSession} from '~~/store/auth.store'
-import {useBoardStore, type Priority} from '~~/store/board.store'
-import type {IBoardCard} from '~~/store/board.store'
+import {isGuestSession,useAuthStore} from '~~/store/auth.store'
+import type {IBoardCard,useBoardStore, type Priority} from '~~/store/board.store';
 import {CATEGORY_OPTIONS, WISHLIST_CATEGORY} from '~/components/kanban/kanban.labels'
 import {CARDS_QUERY_KEY, CARDS_STATS_QUERY_KEY} from '~/components/kanban/kanban.types'
 import {createCard} from '~/utils/appwrite-cards'
@@ -19,7 +18,6 @@ import {
     mapAppwriteError,
     isWishlistCategory,
 } from '~/utils/card-priority'
-import {useAuthStore} from '~~/store/auth.store'
 
 interface ICardFormState {
   name: string
@@ -162,7 +160,7 @@ const {mutate, isPending, isError, error} = useMutation({
     try {
       return await createCard(documentId, payload)
     } catch (err) {
-      throw new Error(mapAppwriteError(err, 'Не удалось создать карточку'))
+      throw new Error(mapAppwriteError(err, 'Не удалось создать карточку'), {cause: err})
     }
   },
   onSuccess: (result) => {
@@ -189,8 +187,8 @@ const onSubmit = handleSubmit(values => mutate(values))
     <button
         v-if="!isOpenForm"
         class="create-card__trigger"
-        @click="toggleForm"
         aria-label="Добавить карточку"
+        @click="toggleForm"
     >
       <Icon name="heroicons:plus" size="14"/>
       <span>Добавить</span>
@@ -200,16 +198,16 @@ const onSubmit = handleSubmit(values => mutate(values))
       <form
           v-if="isOpenForm"
           class="create-card__form"
-          @submit.prevent="onSubmit"
           novalidate
+          @submit.prevent="onSubmit"
       >
         <div class="create-card__header">
           <span class="create-card__title">Новый элемент</span>
           <button
               type="button"
               class="create-card__close"
-              @click="toggleForm"
               aria-label="Закрыть форму"
+              @click="toggleForm"
           >
             <Icon name="heroicons:x-mark" size="16"/>
           </button>

@@ -186,7 +186,7 @@ provide(KANBAN_DRAG_KEY, {
         <div class="kanban-header__left">
           <h1 class="kanban-title">Мой трекер</h1>
           <div v-if="authStore.isGuest" class="kanban-demo-badge">
-            <span class="demo-dot"></span>
+            <span class="demo-dot"/>
             Демо-режим
           </div>
         </div>
@@ -199,7 +199,7 @@ provide(KANBAN_DRAG_KEY, {
     <div class="kanban-surface">
     <div v-if="isLoading" class="kanban-state">
       <div class="kanban-spinner">
-        <div class="spinner-ring"></div>
+        <div class="spinner-ring"/>
       </div>
       <p class="kanban-state__text">Загрузка данных...</p>
     </div>

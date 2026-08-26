@@ -1,8 +1,3 @@
-<script setup lang="ts">
-const { app } = useRuntimeConfig()
-const baseURL = app.baseURL
-</script>
-
 <template>
   <div class="loader-wrapper">
     <div class="loader-container">
@@ -11,8 +6,8 @@ const baseURL = app.baseURL
         <span class="loader-logo-text">Dealio</span>
       </div>
       <div class="loader-spinner">
-        <div class="spinner-track"></div>
-        <div class="spinner-thumb"></div>
+        <div class="spinner-track"/>
+        <div class="spinner-thumb"/>
       </div>
       <p class="loader-text">Загружаем данные...</p>
     </div>

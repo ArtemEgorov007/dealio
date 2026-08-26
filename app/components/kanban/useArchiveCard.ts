@@ -37,7 +37,7 @@ export function useArchiveCard() {
             try {
                 await deleteCard(card.id)
             } catch (error) {
-                throw new Error(mapAppwriteError(error, 'Не удалось отправить карточку в архив'))
+                throw new Error(mapAppwriteError(error, 'Не удалось отправить карточку в архив'), {cause: error})
             }
 
             authArchiveStore.archiveFromCard(card)

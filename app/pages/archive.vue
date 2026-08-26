@@ -125,7 +125,7 @@ const {mutate: restoreCard, isPending: isRestoring} = useMutation({
         priority: card.priority,
         $createdAt: card.$createdAt,
       })
-      throw new Error(mapAppwriteError(error, 'Не удалось восстановить карточку'))
+      throw new Error(mapAppwriteError(error, 'Не удалось восстановить карточку'), {cause: error})
     }
   },
   onSuccess: () => {
@@ -225,7 +225,7 @@ const formatPrice = (price: number) =>
                   v-else
                   class="archive-row__dot"
                   :class="`archive-row__dot--${columnIdFromCategory(card.category)}`"
-              ></span>
+              />
 
               <div class="archive-row__actions">
                 <button

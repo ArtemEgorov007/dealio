@@ -81,7 +81,7 @@ const statTiles = computed((): StatTile[] => {
 
 <template>
   <div v-if="isLoading" class="stats-chips">
-    <span v-for="i in 4" :key="i" class="chip chip--skeleton"></span>
+    <span v-for="i in 4" :key="i" class="chip chip--skeleton"/>
   </div>
 
   <div v-else-if="stats" class="stats-chips">
@@ -91,7 +91,7 @@ const statTiles = computed((): StatTile[] => {
         class="chip"
         :class="`chip--${tile.id}`"
     >
-      <span class="chip__dot" :class="`chip__dot--${tile.id}`"></span>
+      <span class="chip__dot" :class="`chip__dot--${tile.id}`"/>
       <strong class="chip__value tabular-nums">{{ tile.value }}</strong>
       <span class="chip__label">{{ tile.label }}</span>
     </span>

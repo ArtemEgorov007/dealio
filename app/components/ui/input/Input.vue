@@ -142,7 +142,7 @@ const handleFileChange = (event: Event) => {
           class="ui-input__field"
           :class="inputClasses"
           @change="type === 'file' ? handleFileChange($event) : undefined"
-      />
+      >
       <button
           v-if="showPasswordToggle && type === 'password'"
           type="button"

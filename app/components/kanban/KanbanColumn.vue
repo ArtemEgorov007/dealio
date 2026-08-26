@@ -47,7 +47,7 @@ const onCardCreated = () => {
 
     <div class="column-content">
       <div v-if="isMovingHere" class="loading-indicator">
-        <div class="spinner-mini"></div>
+        <div class="spinner-mini"/>
         <span>Перемещение...</span>
       </div>
 

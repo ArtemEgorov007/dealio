@@ -58,7 +58,7 @@ const cancel = () => {
   <ErpActionSheet
       :open="!!entry"
       :busy="phase === 'undoing'"
-      ariaLabel="Подтверждение отмены сдачи"
+      aria-label="Подтверждение отмены сдачи"
       @dismiss="cancel"
   >
     <template #label>{{ phase === 'error' ? 'Ошибка отмены' : 'Отменить сдачу' }}</template>

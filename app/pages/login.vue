@@ -85,7 +85,7 @@ const validateForm = (): boolean => {
 
 const clearError = (field: string) => {
   if (errors.value[field]) {
-    delete errors.value[field]
+    Reflect.deleteProperty(errors.value, field)
   }
 }
 
@@ -160,7 +160,7 @@ const loginAsGuest = async () => {
 <template>
   <section class="login">
     <div class="login__bg">
-      <div class="login__bg-mesh"></div>
+      <div class="login__bg-mesh"/>
     </div>
 
     <div class="login__container">
@@ -187,39 +187,39 @@ const loginAsGuest = async () => {
         <span>{{ errors.general }}</span>
       </div>
 
-      <form class="login__form" @submit.prevent="handleSubmit" novalidate>
+      <form class="login__form" novalidate @submit.prevent="handleSubmit">
         <div v-if="!isLoginMode" class="form-group">
           <UiInput
-              v-model="name"
               id="register-name"
+              v-model="name"
               label="Полное имя"
               placeholder="Ваше имя"
               type="text"
               autocomplete="name"
               :error="errors.name"
-              @input="clearError('name')"
               required
+              @input="clearError('name')"
           />
         </div>
 
         <div class="form-group">
           <UiInput
-              v-model="email"
               id="login-email"
+              v-model="email"
               label="Email"
               placeholder="you@example.com"
               type="email"
               autocomplete="email"
               :error="errors.email"
-              @input="clearError('email')"
               required
+              @input="clearError('email')"
           />
         </div>
 
         <div class="form-group">
           <UiInput
-              v-model="password"
               id="login-password"
+              v-model="password"
               label="Пароль"
               placeholder="Минимум 6 символов"
               type="password"
@@ -227,23 +227,23 @@ const loginAsGuest = async () => {
               show-password-toggle
               :error="errors.password"
               :hint="!errors.password && !isLoginMode ? 'Не короче 6 символов' : undefined"
-              @input="clearError('password')"
               required
+              @input="clearError('password')"
           />
         </div>
 
         <div v-if="!isLoginMode" class="form-group">
           <UiInput
-              v-model="confirmPassword"
               id="register-confirm-password"
+              v-model="confirmPassword"
               label="Подтвердите пароль"
               placeholder="Повторите пароль"
               type="password"
               autocomplete="new-password"
               show-password-toggle
               :error="errors.confirmPassword"
-              @input="clearError('confirmPassword')"
               required
+              @input="clearError('confirmPassword')"
           />
         </div>
 

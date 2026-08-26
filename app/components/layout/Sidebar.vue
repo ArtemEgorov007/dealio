@@ -32,8 +32,8 @@ const {logout} = useLogout()
       <button
           v-if="isOpen"
           class="toggle-btn"
-          @click="toggleSidebar"
           :aria-label="'Свернуть меню'"
+          @click="toggleSidebar"
       >
         <Icon
             name="heroicons:chevron-left"
@@ -47,7 +47,7 @@ const {logout} = useLogout()
     </nav>
 
     <div class="sidebar__footer">
-      <div class="sidebar__user" v-if="isOpen && authStore.user">
+      <div v-if="isOpen && authStore.user" class="sidebar__user">
         <div class="user-avatar">
           {{ authStore.user.name?.charAt(0)?.toUpperCase() || 'U' }}
         </div>
@@ -57,9 +57,9 @@ const {logout} = useLogout()
         </div>
       </div>
 
-      <button class="logout-btn" @click="logout" aria-label="Выйти из аккаунта">
+      <button class="logout-btn" aria-label="Выйти из аккаунта" @click="logout">
         <Icon name="heroicons:arrow-left-on-rectangle" class="logout-icon"/>
-        <span class="logout-label" v-if="isOpen">Выйти</span>
+        <span v-if="isOpen" class="logout-label">Выйти</span>
       </button>
     </div>
   </aside>
