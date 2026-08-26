@@ -55,7 +55,6 @@ const returnToDepartments = () => {
   selectedDepartment.value = ''
   employees.value = []
   selectedEmployeeRow.value = null
-  loadDepartments()
 }
 
 const openEmployee = async (row: ErpPersonnelRow) => {

@@ -127,11 +127,16 @@ const onDragEnd = () => {
   position: relative
   width: 100%
   max-width: 480px
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px))
   display: flex
   flex-direction: column
   align-items: stretch
   gap: 8px
   padding: 0 16px calc(16px + env(safe-area-inset-bottom))
+  box-sizing: border-box
+  overflow-y: auto
+  overscroll-behavior: contain
+  -webkit-overflow-scrolling: touch
   background-color: #F2F2F7
   border: none
   border-bottom: none
