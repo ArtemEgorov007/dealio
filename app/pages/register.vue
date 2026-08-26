@@ -48,7 +48,7 @@ const modules = computed(() => {
         {key: 'supply', to: '/supply', icon: 'heroicons:truck', label: 'Снабжение', caption: 'В разработке', tone: '#5B6B7F'},
         {key: 'orders', to: '/orders', icon: 'heroicons:shopping-bag', label: 'Заказы', caption: 'В разработке', tone: '#5B6B7F'},
         {key: 'warehouse', to: '/warehouse', icon: 'heroicons:archive-box', label: 'Склад', caption: 'Приём/выдача', tone: '#4F46E5'},
-        {key: 'personnel', to: '/personnel', icon: 'heroicons:user-group', label: 'Кадры', caption: 'В разработке', tone: '#5B6B7F'},
+        {key: 'personnel', to: '/personnel', icon: 'heroicons:user-group', label: 'Кадры', tone: '#016ED7'},
     ]
     return all.filter(m => a[m.key as keyof typeof a])
 })

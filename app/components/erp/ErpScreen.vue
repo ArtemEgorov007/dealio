@@ -3,7 +3,7 @@ defineProps<{
   title: string
   subtitle?: string
   overline?: string
-  shiftLink?: { to: string; label: string; icon?: string; iconSize?: number }
+  shiftLink?: { to?: string; label: string; icon?: string; iconSize?: number; onClick?: () => void }
   icon?: string
   centerBrand?: boolean
   footerHidden?: boolean
@@ -32,7 +32,11 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
               <img :src="logoSrc" alt="Морфлот Технология" class="erp-screen__brand-mark">
             </div>
             <div class="erp-screen__head-actions">
-              <NuxtLink v-if="shiftLink" :to="shiftLink.to" class="erp-screen__shift-link">
+              <button v-if="shiftLink?.onClick" type="button" class="erp-screen__shift-link" @click="shiftLink.onClick">
+                <Icon :name="shiftLink.icon || 'heroicons:clipboard-document-list'" :size="shiftLink.iconSize || 16"/>
+                {{ shiftLink.label }}
+              </button>
+              <NuxtLink v-else-if="shiftLink?.to" :to="shiftLink.to" class="erp-screen__shift-link">
                 <Icon :name="shiftLink.icon || 'heroicons:clipboard-document-list'" :size="shiftLink.iconSize || 16"/>
                 {{ shiftLink.label }}
               </NuxtLink>

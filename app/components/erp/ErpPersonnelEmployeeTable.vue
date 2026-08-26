@@ -22,6 +22,10 @@ defineEmits<{ select: [employee: ErpPersonnelRow] }>()
     >
       <span role="cell">{{ employee.position }}</span>
       <span role="cell" class="personnel-table__fio">{{ employee.fio }}</span>
+      <span class="personnel-table__open" aria-hidden="true">
+        <span>Открыть</span>
+        <Icon name="heroicons:chevron-right" size="16"/>
+      </span>
     </button>
   </div>
 </template>
@@ -36,7 +40,7 @@ defineEmits<{ select: [employee: ErpPersonnelRow] }>()
 .personnel-table__row
   width: 100%
   display: grid
-  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr)
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr) auto
   gap: 12px
   align-items: center
   padding: 12px 14px
@@ -62,10 +66,31 @@ defineEmits<{ select: [employee: ErpPersonnelRow] }>()
 
   &--button
     cursor: pointer
+    transition: background-color .15s ease, transform .15s ease
+
+    &:hover
+      background: rgba(1, 110, 215, .055)
+
+    &:focus-visible
+      position: relative
+      z-index: 1
+      outline: 2px solid var(--color-primary)
+      outline-offset: -2px
 
     &:active
       background: rgba(60, 60, 67, .08)
+      transform: scale(.99)
 
 .personnel-table__fio
   font-weight: 650
+
+.personnel-table__open
+  display: inline-flex
+  align-items: center
+  justify-content: flex-end
+  gap: 2px
+  color: var(--color-primary)
+  font-size: 11px
+  font-weight: 650
+  white-space: nowrap
 </style>

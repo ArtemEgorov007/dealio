@@ -131,7 +131,7 @@ onMounted(loadDepartments)
       :title="selectedDepartment || 'Кадры'"
       icon="heroicons:user-group"
       :subtitle="selectedDepartment ? 'Сотрудники отдела' : 'Структура и доступы'"
-      :shift-link="selectedDepartment ? {to: '/personnel', label: 'Все отделы', icon: 'heroicons:chevron-left', iconSize: 13} : undefined"
+      :shift-link="selectedDepartment ? {label: 'Все отделы', icon: 'heroicons:chevron-left', iconSize: 13, onClick: returnToDepartments} : undefined"
   >
     <ErpEmptyState v-if="isLoading" loading>Загрузка…</ErpEmptyState>
 
