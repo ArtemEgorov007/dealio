@@ -8,8 +8,10 @@ const loadProfileStart = store.indexOf('function loadProfile()')
 const loadProfileEnd = store.indexOf('function saveProfile()', loadProfileStart)
 const loadProfile = store.slice(loadProfileStart, loadProfileEnd)
 
-test('ERP redirects every non-canonical browser origin before session initialization', () => {
+test('ERP canonicalizes production aliases without redirecting staging hosts', () => {
   assert.match(canonicalPlugin, /const CANONICAL_ORIGIN = 'https:\/\/erp-mt\.ru'/)
+  assert.match(canonicalPlugin, /PRODUCTION_HOSTS/)
+  assert.match(canonicalPlugin, /PRODUCTION_HOSTS\.has\(location\.hostname\)/)
   assert.match(canonicalPlugin, /location\.replace\(/)
   assert.match(canonicalPlugin, /location\.pathname[\s\S]*location\.search[\s\S]*location\.hash/)
 })
