@@ -18,7 +18,14 @@ test('personnel endpoints require staff-management access and handle dynamic rig
 
   assert.match(source, /header\.indexOf\('Управление кадрами'\)/)
   assert.match(source, /getSheetByName\('Площадки'\)/)
-  assert.match(source, /slice\(10\)/)
+  assert.match(source, /rightsHeaders: header\.slice\(PERSONNEL_RIGHTS_START_INDEX\)/)
   assert.match(source, /'Уволен'/)
   assert.match(source, /LockService\.getScriptLock\(\)/)
+})
+
+test('personnel rights always start at column K and include badge access', () => {
+  assert.match(source, /const PERSONNEL_RIGHTS_START_INDEX = 10/)
+  assert.match(source, /rightsHeaders: header\.slice\(PERSONNEL_RIGHTS_START_INDEX\)/)
+  assert.match(source, /for \(let index = PERSONNEL_RIGHTS_START_INDEX;/)
+  assert.match(source, /'Доступ к биркам'/)
 })

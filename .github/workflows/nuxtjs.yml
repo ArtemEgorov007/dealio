@@ -53,9 +53,14 @@ jobs:
           NUXT_PUBLIC_WAREHOUSE_GAS_URL: ${{ secrets.NUXT_PUBLIC_WAREHOUSE_GAS_URL }}
         run: npm run generate
 
+      - name: Write release marker
+        run: |
+          printf '%s\n' "$GITHUB_SHA" > .output/public/release.txt
+
       - name: Verify static output
         run: |
           test -f .output/public/index.html
+          test -f .output/public/release.txt
           test "$(find .output/public -type l | wc -l)" -eq 0
           du -sh .output/public
 
