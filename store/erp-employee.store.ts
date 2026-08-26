@@ -19,16 +19,23 @@ const PROFILE_VERSION = '3'
 function loadProfile(): ErpEmployeeProfile | null {
     if (typeof window === 'undefined') return null
 
-    if (localStorage.getItem(VERSION_KEY) !== PROFILE_VERSION) {
-        clearProfile()
-        return null
-    }
-
     try {
         const raw = localStorage.getItem(STORAGE_KEY)
         if (!raw) return null
-        return JSON.parse(raw) as ErpEmployeeProfile
+        const profile = JSON.parse(raw) as ErpEmployeeProfile
+
+        if (!isValidFio(profile.fio)) {
+            clearProfile()
+            return null
+        }
+
+        // Версия описывает форму локального кэша, а не действительность
+        // учётной записи. Сброс по версии разлогинивал сотрудника после
+        // обычной выкладки. Валидный профиль мигрируем без потери сессии.
+        localStorage.setItem(VERSION_KEY, PROFILE_VERSION)
+        return profile
     } catch {
+        clearProfile()
         return null
     }
 }
