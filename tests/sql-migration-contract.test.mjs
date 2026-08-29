@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import test from 'node:test'
 
-const migration = await readFile(new URL('../database/migrations/001_erp_identity.sql', import.meta.url), 'utf8').catch(() => '')
+// Без подстановки пустой строки при ошибке чтения: пропавший файл миграции
+// должен падать понятной ошибкой, а не десятком невнятных «не совпало с
+// регуляркой» ниже.
+const migration = await readFile(new URL('../public/api/migrations/001_erp_identity.sql', import.meta.url), 'utf8')
 
 test('identity migration creates only namespaced tables with protected credentials', () => {
   assert.match(migration, /CREATE TABLE IF NOT EXISTS erp_users/i)

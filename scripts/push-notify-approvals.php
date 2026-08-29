@@ -1,9 +1,15 @@
 <?php
 declare(strict_types=1);
 
-$root = dirname(__DIR__, 2);
-$apiSrc = getenv('ERP_API_SRC') ?: ($root . '/public/api/src');
-$migrationsDir = getenv('ERP_MIGRATIONS_DIR') ?: ($root . '/database/migrations');
+// Пути берём из общего помощника: он одинаково находит исходники и миграции
+// и в репозитории, и на сервере, и уважает ERP_API_SRC / ERP_MIGRATIONS_DIR.
+// Раньше здесь считался собственный $root на уровень выше репозитория —
+// дефолты были нерабочими и держались только на переменных окружения,
+// которые подставляла python-обёртка.
+require_once __DIR__ . '/erp-cli-paths.php';
+
+$apiSrc = erp_cli_api_src();
+$migrationsDir = erp_cli_migrations_dir();
 
 require_once $apiSrc . '/Bootstrap.php';
 

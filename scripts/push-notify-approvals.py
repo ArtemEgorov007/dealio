@@ -21,7 +21,7 @@ def main() -> int:
 
     env = os.environ.copy()
     env.setdefault('ERP_API_SRC', str(ROOT / 'public' / 'api' / 'src'))
-    env.setdefault('ERP_MIGRATIONS_DIR', str(ROOT / 'database' / 'migrations'))
+    env.setdefault('ERP_MIGRATIONS_DIR', str(ROOT / 'public' / 'api' / 'migrations'))
 
     result = subprocess.run([PHP, str(runner)], env=env, capture_output=True, text=True)
     if result.stdout.strip():

@@ -16,7 +16,7 @@ function expect_migration(bool $actual, string $message): void {
     }
 }
 
-$paths = erp_migration_paths(dirname(__DIR__, 2) . '/database/migrations');
+$paths = erp_migration_paths(dirname(__DIR__, 2) . '/public/api/migrations');
 $names = array_map('basename', $paths);
 
 expect_migration($names === [
@@ -24,6 +24,8 @@ expect_migration($names === [
     '002_erp_badges.sql',
     '003_erp_handover.sql',
     '004_erp_catalog_sync.sql',
+    '005_erp_push.sql',
+    '006_erp_approval_notifications.sql',
 ], 'All ERP migrations must run once in numeric order');
 
 foreach ($paths as $path) {

@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "typecheck": "vue-tsc --noEmit",
     "test:contract": "node --test tests/*.test.mjs",
-    "verify": "npm run test:contract && npm run typecheck && npm run lint"
+    "test:php": "bash scripts/run-php-tests.sh",
+    "verify": "npm run test:contract && npm run test:php && npm run typecheck && npm run lint"
   },
   "dependencies": {
     "@nuxt/icon": "^2.0.0",

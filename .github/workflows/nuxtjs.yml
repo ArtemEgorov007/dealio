@@ -46,6 +46,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # npm run verify гоняет и тесты PHP-бэкенда (авторизация, сессии,
+      # согласования, миграции). Проверяем интерпретатор заранее, чтобы
+      # отсутствие PHP на раннере падало здесь с понятной причиной,
+      # а не в середине verify.
+      - name: Check PHP toolchain
+        run: php --version
+
       - name: Verify application
         run: npm run verify
 
