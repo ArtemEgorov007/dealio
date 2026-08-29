@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {fetchWorkshopBadges} from '~/utils/erp-sheets'
 import {formatBadgeDisplay} from '~/utils/erp-csv'
+import {filterByQuery} from '~/utils/text-search'
 import {workshopLabel} from '~~/types/erp.types'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useErpSessionStore} from '~~/store/erp-session.store'
@@ -25,8 +26,6 @@ const workshopTitle = computed(() =>
     employeeStore.workshopId ? workshopLabel(employeeStore.workshopId) : '',
 )
 
-const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim()
-
 // Заголовок + подтекст строки: первая строка (или часть до «·») — жирная,
 // остальное — серым под ней, как в макете «Корпоративный синий»
 const badgeParts = (badge: string): { title: string; sub: string } => {
@@ -45,11 +44,7 @@ const badgeParts = (badge: string): { title: string; sub: string } => {
     return {title: display, sub: ''}
 }
 
-const filteredBadges = computed(() => {
-    const needle = normalize(query.value)
-    if (!needle) return badges.value
-    return badges.value.filter(badge => normalize(badge).includes(needle))
-})
+const filteredBadges = computed(() => filterByQuery(badges.value, query.value, badge => badge))
 
 const searchCountLabel = computed(() => {
     if (!badges.value.length) return ''
