@@ -1,0 +1,89 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * @return array{0:string,1?:int}|null
+ */
+function erp_route(string $method, string $path): ?array
+{
+    if ($method === 'POST' && $path === '/auth/login') {
+        return ['auth_login'];
+    }
+    if ($method === 'POST' && $path === '/auth/logout') {
+        return ['auth_logout'];
+    }
+    if ($method === 'GET' && $path === '/auth/me') {
+        return ['auth_me'];
+    }
+    if ($method === 'GET' && $path === '/reports/current') {
+        return ['reports_current'];
+    }
+    if ($method === 'GET' && $path === '/approvals') {
+        return ['approvals_current'];
+    }
+    if ($method === 'POST' && $path === '/approvals/decisions') {
+        return ['approvals_decide'];
+    }
+    if ($method === 'GET' && $path === '/push/vapid-key') {
+        return ['push_vapid_key'];
+    }
+    if ($method === 'POST' && $path === '/push/subscribe') {
+        return ['push_subscribe'];
+    }
+    if ($method === 'POST' && $path === '/push/unsubscribe') {
+        return ['push_unsubscribe'];
+    }
+    if ($method === 'POST' && $path === '/internal/push-notify') {
+        return ['push_notify_cron'];
+    }
+    if ($method === 'POST' && $path === '/internal/approvals-notify-all') {
+        return ['approvals_notify_all_cron'];
+    }
+    if ($method === 'GET' && $path === '/approvals/notifications') {
+        return ['approvals_notifications'];
+    }
+    if ($method === 'POST' && $path === '/approvals/notifications/read') {
+        return ['approvals_notifications_read'];
+    }
+    if ($method === 'GET' && $path === '/personnel/departments') {
+        return ['personnel_departments'];
+    }
+    if ($method === 'GET' && $path === '/personnel/employees') {
+        return ['personnel_employees'];
+    }
+    if ($method === 'GET' && preg_match('#^/personnel/employees/(\d+)$#', $path, $matches) === 1) {
+        return ['personnel_employee', (int) $matches[1]];
+    }
+    if ($method === 'POST' && $path === '/personnel/employees') {
+        return ['personnel_create'];
+    }
+    if ($method === 'PATCH' && preg_match('#^/personnel/employees/(\d+)$#', $path, $matches) === 1) {
+        return ['personnel_save', (int) $matches[1]];
+    }
+    if ($method === 'POST' && preg_match('#^/personnel/employees/(\d+)/dismiss$#', $path, $matches) === 1) {
+        return ['personnel_dismiss', (int) $matches[1]];
+    }
+    if ($method === 'GET' && $path === '/badges') {
+        return ['badges_list'];
+    }
+    if ($method === 'POST' && $path === '/badges/issues') {
+        return ['badges_issue'];
+    }
+    if ($method === 'GET' && $path === '/badges/issues/today') {
+        return ['badges_issues_today'];
+    }
+    if ($method === 'DELETE' && preg_match('#^/badges/issues/(\d+)$#', $path, $matches) === 1) {
+        return ['badges_delete_issue', (int) $matches[1]];
+    }
+    if ($method === 'POST' && $path === '/handover/entries') {
+        return ['handover_create'];
+    }
+    if ($method === 'GET' && $path === '/handover/entries/today') {
+        return ['handover_today'];
+    }
+    if ($method === 'DELETE' && preg_match('#^/handover/entries/(\d+)$#', $path, $matches) === 1) {
+        return ['handover_undo', (int) $matches[1]];
+    }
+
+    return null;
+}

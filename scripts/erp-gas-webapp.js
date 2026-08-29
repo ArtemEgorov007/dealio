@@ -29,6 +29,9 @@ const JOURNAL_SHEET = 'Журнал выдачи бирок'
 const LOGIST_SHEET = 'Логисты'
 const HANDOVER_SHEET = 'Сдача'
 const MEASUREMENT_SHEET = 'Промеры'
+const REPORTS_SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('REPORTS_SPREADSHEET_ID')
+const REPORTS_SHEET_NAME = PropertiesService.getScriptProperties().getProperty('REPORTS_SHEET_NAME') || 'Лист15'
+const REPORTS_BRIDGE_TOKEN = PropertiesService.getScriptProperties().getProperty('REPORTS_BRIDGE_TOKEN') || ''
 
 // Имя цеха = имя колонки на листе «Выдача» = имя исходного листа с бирками.
 const WORKSHOP_SHEETS = {
@@ -68,6 +71,10 @@ function doGet(e) {
         if (action === 'packingToday') {
             const entries = getPackingToday_(e.parameter.fio || '', e.parameter.machine || '')
             return jsonResponse_({ok: true, packingEntries: entries})
+        }
+
+        if (action === 'reportsCurrent') {
+            return jsonResponse_({ok: true, data: reportsCurrent_(e.parameter.token || '')})
         }
 
         return jsonResponse_({ok: false, error: 'Unknown action'})
@@ -184,6 +191,61 @@ function doPost(e) {
 
 function getSpreadsheet_() {
     return SpreadsheetApp.openById(SPREADSHEET_ID)
+}
+
+function reportsCurrent_(token) {
+    if (!REPORTS_BRIDGE_TOKEN || token !== REPORTS_BRIDGE_TOKEN) {
+        throw new Error('Нет доступа к отчётам')
+    }
+    if (!REPORTS_SPREADSHEET_ID) {
+        throw new Error('Не настроен источник отчётов')
+    }
+
+    const sheet = SpreadsheetApp.openById(REPORTS_SPREADSHEET_ID).getSheetByName(REPORTS_SHEET_NAME)
+    if (!sheet) {
+        throw new Error('Не найден лист отчётов: ' + REPORTS_SHEET_NAME)
+    }
+    return {
+        sourceReadAt: new Date().toISOString(),
+        rows: normalizeReportsRows_(sheet.getDataRange().getDisplayValues()),
+    }
+}
+
+function reportsNumber_(value) {
+    const normalized = normalizeCell_(value).replace(/[\s\u00A0]/g, '').replace(',', '.')
+    if (!normalized) return 0
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? parsed : 0
+}
+
+function normalizeReportsRows_(values) {
+    if (!values.length) return []
+
+    const header = values[0].map(normalizeCell_)
+    const customerIndex = requireColumn_(header, 'Заказчик', 'Отчёты')
+    const contractIndex = requireColumn_(header, 'Договор', 'Отчёты')
+    const siteIndex = requireColumn_(header, 'Площадка', 'Отчёты')
+    const productionIndex = requireColumn_(header, 'ТП за месяц, тн', 'Отчёты')
+    const shippedIndex = requireColumn_(header, 'Отгружено за месяц, тн', 'Отчёты')
+    const workshopIndex = requireColumn_(header, 'В цехе, тн', 'Отчёты')
+
+    const rows = []
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        const customer = normalizeCell_(row[customerIndex])
+        const contract = normalizeCell_(row[contractIndex])
+        const site = normalizeCell_(row[siteIndex])
+        if (!customer || !contract || !site) continue
+        rows.push({
+            customer: customer,
+            contract: contract,
+            site: site,
+            productionRub: reportsNumber_(row[productionIndex]),
+            shippedTons: reportsNumber_(row[shippedIndex]),
+            inWorkshopTons: reportsNumber_(row[workshopIndex]),
+        })
+    }
+    return rows
 }
 
 function getWorkshopSheetName_(workshop) {

@@ -83,17 +83,10 @@ const onDecode = async (qrText: string) => {
     }
 }
 
-onMounted(async () => {
+const startScanner = async () => {
     if (!import.meta.client || !videoEl.value) return
-
+    scanner?.destroy()
     const {default: QrScannerCtor} = await import('qr-scanner')
-
-    const hasCamera = await QrScannerCtor.hasCamera()
-    if (!hasCamera) {
-        status.value = 'unsupported'
-        return
-    }
-
     scanner = new QrScannerCtor(
         videoEl.value,
         result => onDecode(result.data),
@@ -111,7 +104,9 @@ onMounted(async () => {
     } catch {
         status.value = 'denied'
     }
-})
+}
+
+onMounted(startScanner)
 
 onBeforeUnmount(() => {
     scanner?.destroy()
@@ -139,7 +134,8 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-if="status === 'denied'" class="erp-scan-overlay">
-          <p>Нет доступа к камере — разрешите доступ в настройках браузера и обновите страницу</p>
+          <p>Разрешите камеру для erp-mt.online в Яндекс Браузере</p>
+          <UiButton variant="outline" @click="startScanner">Повторить</UiButton>
         </div>
       </div>
     </div>
@@ -200,20 +196,28 @@ onBeforeUnmount(() => {
 
 // Остаётся на виду при прокрутке таблицы записей ниже — сплошной фон
 // нужен, иначе строки таблицы просвечивают по бокам от видео при скролле.
-// top/margin-top/padding-top: -18px/18px гасят верхний паддинг
-// .erp-screen__body (ErpScreen.vue), иначе сквозь него виден край
-// прокручиваемого контента до того, как сам блок «прилипнет».
+// Горизонтальный отрицательный margin убираем — на iPhone давал overflow-x.
 .scan-sticky
   position: sticky
   top: -18px
   z-index: 1
-  margin: -18px calc(-1 * var(--spacing-4)) 0
-  padding: 18px var(--spacing-4) var(--spacing-3)
+  margin: -18px 0 0
+  padding: 18px 0 var(--spacing-3)
   background: var(--color-bg)
 
-// 10 цифр в один ряд не помещаются с дефолтным горизонтальным паддингом
-// UiSegmentedControl (7px 8px) — сжимаем до 7px 2px, чтобы не переносились.
+// 10 цифр в один ряд — на узком экране горизонтальный скролл сегмента,
+// а не всей страницы.
+:deep(.ui-segmented)
+  overflow-x: auto
+  scrollbar-width: none
+  -webkit-overflow-scrolling: touch
+
+  &::-webkit-scrollbar
+    display: none
+
 :deep(.ui-segmented__opt)
+  flex: 0 0 34px
+  min-width: 34px
   padding: 7px 2px
 
 // Тот же язык карточки, что у таблицы Баланс (мягкая тень, без рамки)
@@ -225,12 +229,16 @@ onBeforeUnmount(() => {
 
 .pack-row
   display: grid
-  grid-template-columns: 1.8fr 0.7fr
+  grid-template-columns: minmax(0, 1fr) minmax(56px, 0.45fr)
   gap: 6px
   padding: 9px 12px
   font-size: 12.5px
   border-bottom: 0.5px solid rgba(60, 60, 67, 0.15)
   align-items: center
+
+  > span:first-child
+    min-width: 0
+    overflow-wrap: anywhere
 
   &:last-child
     border-bottom: none

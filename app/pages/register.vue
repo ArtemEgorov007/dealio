@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+import {useErpApprovalsStore} from '~~/store/erp-approvals.store'
 import {loginErpEmployee} from '~/utils/erp-sheets'
 import {useAppToast} from '~/composables/useAppToast'
 
 definePageMeta({layout: 'erp'})
 
 const employeeStore = useErpEmployeeStore()
+const approvalsStore = useErpApprovalsStore()
 
 const pageTitle = ref(employeeStore.hasFio ? 'Профиль | ERP' : 'Вход | ERP')
 watch(() => employeeStore.hasFio, (hasFio) => {
@@ -43,8 +45,8 @@ const modules = computed(() => {
         {key: 'measurements', to: '/scan-measurement', icon: 'heroicons:beaker', label: 'Промеры', caption: 'Считать', tone: '#2FB463'},
         {key: 'packing', to: '/scan-qr', icon: 'heroicons:qr-code', label: 'Упаковка', caption: 'QR-скан', tone: '#E7920B'},
         {key: 'handover', to: '/scan-handover', icon: 'heroicons:check-badge', label: 'Сдача', caption: 'Приёмка', tone: '#8E4EC6'},
-        {key: 'reports', to: '/reports', icon: 'heroicons:chart-bar', label: 'Отчёты', caption: 'В разработке', tone: '#5B6B7F'},
-        {key: 'approvals', to: '/approvals', icon: 'heroicons:check-circle', label: 'Согласования', caption: 'В разработке', tone: '#5B6B7F'},
+        {key: 'reports', to: '/reports', icon: 'heroicons:chart-bar', label: 'Отчёты', caption: 'Оперативный срез', tone: '#016ED7'},
+        {key: 'approvals', to: '/approvals', icon: 'heroicons:check-circle', label: 'Согласования', caption: 'Счета', tone: '#0F766E', count: a.approvals && approvalsStore.pendingCount > 0 ? approvalsStore.pendingCount : null},
         {key: 'supply', to: '/supply', icon: 'heroicons:truck', label: 'Снабжение', caption: 'В разработке', tone: '#5B6B7F'},
         {key: 'orders', to: '/orders', icon: 'heroicons:shopping-bag', label: 'Заказы', caption: 'В разработке', tone: '#5B6B7F'},
         {key: 'warehouse', to: '/warehouse', icon: 'heroicons:archive-box', label: 'Склад', caption: 'Приём/выдача', tone: '#4F46E5'},
@@ -111,6 +113,7 @@ const copyText = async (text: string, label: string) => {
           :icon="m.icon"
           :label="m.label"
           :caption="m.caption"
+          :count="m.count"
           :tone="m.tone"
       />
     </div>

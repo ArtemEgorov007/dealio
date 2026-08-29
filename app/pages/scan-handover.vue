@@ -69,17 +69,10 @@ const onDecode = async (qrText: string) => {
     }
 }
 
-onMounted(async () => {
+const startScanner = async () => {
     if (!import.meta.client || !videoEl.value) return
-
+    scanner?.destroy()
     const {default: QrScannerCtor} = await import('qr-scanner')
-
-    const hasCamera = await QrScannerCtor.hasCamera()
-    if (!hasCamera) {
-        status.value = 'unsupported'
-        return
-    }
-
     scanner = new QrScannerCtor(
         videoEl.value,
         result => onDecode(result.data),
@@ -97,7 +90,9 @@ onMounted(async () => {
     } catch {
         status.value = 'denied'
     }
-})
+}
+
+onMounted(startScanner)
 
 onBeforeUnmount(() => {
     scanner?.destroy()
@@ -134,7 +129,8 @@ onBeforeUnmount(() => {
       </div>
 
       <div v-if="status === 'denied'" class="erp-scan-overlay">
-        <p>Нет доступа к камере — разрешите доступ в настройках браузера и обновите страницу</p>
+        <p>Разрешите камеру для erp-mt.online в Яндекс Браузере</p>
+        <UiButton variant="outline" @click="startScanner">Повторить</UiButton>
       </div>
     </div>
 

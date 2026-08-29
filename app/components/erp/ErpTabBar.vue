@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+import {useErpApprovalsStore} from '~~/store/erp-approvals.store'
 
 const route = useRoute()
 const router = useRouter()
 const employeeStore = useErpEmployeeStore()
+const approvalsStore = useErpApprovalsStore()
 
 const isPackingSection = computed(() => route.path === '/scan-qr')
 
@@ -27,7 +29,7 @@ const isApprovalsSection = computed(() => route.path === '/approvals')
 const isSupplySection = computed(() => route.path === '/supply')
 const isOrdersSection = computed(() => route.path === '/orders')
 const isWarehouseSection = computed(() => route.path.startsWith('/warehouse'))
-const isPersonnelSection = computed(() => route.path === '/personnel')
+const isPersonnelSection = computed(() => route.path.startsWith('/personnel'))
 
 const access = computed(() => employeeStore.access)
 
@@ -219,6 +221,12 @@ const goLogout = () => {
     >
       <Icon name="heroicons:check-circle" size="22"/>
       <span class="erp-tabbar__label">Согласования</span>
+      <span
+          v-if="access.approvals && approvalsStore.pendingCount > 0"
+          class="erp-tabbar__badge"
+      >
+        {{ approvalsStore.pendingCount }}
+      </span>
     </button>
 
     <button
@@ -315,6 +323,7 @@ const goLogout = () => {
   font-size: 10px
   font-weight: 600
   cursor: pointer
+  position: relative
   white-space: nowrap
   transition: color 0.15s ease, background-color 0.15s ease
 
@@ -330,6 +339,23 @@ const goLogout = () => {
 
   &--logout
     display: none
+
+.erp-tabbar__badge
+  position: absolute
+  top: 5px
+  right: 7px
+  min-width: 17px
+  height: 17px
+  padding: 0 4px
+  display: flex
+  align-items: center
+  justify-content: center
+  border-radius: var(--radius-full)
+  background: #0f766e
+  color: #fff
+  font-size: 10px
+  font-weight: 700
+  font-variant-numeric: tabular-nums
 
 .erp-tabbar__collapse
   display: none
@@ -369,6 +395,10 @@ const goLogout = () => {
     padding: 9px 12px
     gap: 10px
     font-size: 13px
+
+  .erp-tabbar__badge
+    top: 7px
+    right: 10px
 
     &--logout
       display: flex

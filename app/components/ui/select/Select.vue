@@ -20,8 +20,11 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: '',
+  label: '',
+  error: '',
   disabled: false,
   required: false,
+  id: '',
   size: 'md',
   tone: 'default',
   flush: false,

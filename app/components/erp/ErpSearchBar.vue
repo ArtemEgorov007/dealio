@@ -6,6 +6,8 @@ withDefaults(defineProps<{
   countLabel?: string
   onLight?: boolean
 }>(), {
+  placeholder: 'Поиск',
+  countLabel: '',
   onLight: false,
 })
 
@@ -29,7 +31,7 @@ const clear = () => {
           inputmode="search"
           enterkeyhint="search"
           class="erp-search__field"
-          :placeholder="placeholder ?? 'Поиск'"
+          :placeholder="placeholder"
       >
       <button
           v-if="query"

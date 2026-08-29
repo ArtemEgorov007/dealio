@@ -7,6 +7,8 @@ const page = await readFile(new URL('../app/pages/personnel.vue', import.meta.ur
 const screen = await readFile(new URL('../app/components/erp/ErpScreen.vue', import.meta.url), 'utf8')
 const table = await readFile(new URL('../app/components/erp/ErpPersonnelEmployeeTable.vue', import.meta.url), 'utf8')
 const actionSheet = await readFile(new URL('../app/components/erp/ErpActionSheet.vue', import.meta.url), 'utf8')
+const tabbar = await readFile(new URL('../app/components/erp/ErpTabBar.vue', import.meta.url), 'utf8')
+const layout = await readFile(new URL('../app/layouts/erp.vue', import.meta.url), 'utf8')
 const returnToDepartmentsStart = page.indexOf('const returnToDepartments = () =>')
 const returnToDepartmentsEnd = page.indexOf('const openEmployee', returnToDepartmentsStart)
 const returnToDepartments = page.slice(returnToDepartmentsStart, returnToDepartmentsEnd)
@@ -26,13 +28,36 @@ test('Personnel back control invokes the department reset instead of routing to 
 })
 
 test('employee card sheet scrolls within the viewport while the page behind stays locked', () => {
-  assert.match(actionSheet, /max-height: calc\(100dvh - env\(safe-area-inset-top, 0px\)\)/)
-  assert.match(actionSheet, /overflow-y: auto/)
+  assert.match(actionSheet, /max-height: min\(96dvh/)
+  assert.match(actionSheet, /isTabBarHidden/)
+  assert.match(actionSheet, /\.erp-sheet-form[\s\S]*overflow-y: auto/)
   assert.match(actionSheet, /document\.body\.style\.overflow = value \? 'hidden' : ''/)
 })
 
+test('Personnel hides chrome while a sheet is open', () => {
+  assert.match(page, /isSheetOpen/)
+  assert.match(page, /:head-compact="isSheetOpen"/)
+  assert.match(page, /:footer-hidden="isSheetOpen"/)
+  assert.match(screen, /headCompact/)
+  assert.match(screen, /erp-screen--sheet-open/)
+})
+
+test('ERP mobile shell keeps scroll inside screen areas, not on document', () => {
+  assert.match(layout, /htmlAttrs: \{class: 'erp-shell'\}/)
+  assert.match(layout, /\.erp-layout[\s\S]*overflow: hidden/)
+  assert.match(layout, /\.erp-layout__content[\s\S]*overflow: hidden/)
+  assert.match(screen, /\.erp-screen[\s\S]*overflow: hidden/)
+  assert.match(screen, /appearance: none/)
+  assert.match(screen, /touch-action: manipulation/)
+})
+
 test('employee rows visibly communicate that the card opens on click', () => {
-  assert.match(table, /personnel-table__open/)
-  assert.match(table, /Открыть/)
-  assert.match(table, /heroicons:chevron-right/)
+  assert.match(table, /ErpListRow/)
+  assert.match(table, /chevron/)
+  assert.match(table, /heroicons:chevron-right|chevron/)
+  assert.match(table, /Открыть карточку/)
+})
+
+test('Personnel stays active after a canonical trailing-slash refresh', () => {
+  assert.match(tabbar, /isPersonnelSection\s*=\s*computed\(\(\)\s*=>\s*route\.path\.startsWith\('\/personnel'\)\)/)
 })

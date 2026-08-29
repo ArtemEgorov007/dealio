@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useTabBarHidden} from '~/composables/useTabBarHidden'
+import {useErpApprovalsNotifications} from '~/composables/useErpApprovalsNotifications'
 
 const route = useRoute()
 const employeeStore = useErpEmployeeStore()
 const isTabBarHidden = useTabBarHidden()
+const {inAppNotification, clearInAppNotification} = useErpApprovalsNotifications()
 
 // Таб-бар прячем на входе и на главной-хабе (/register): там навигация —
 // это плитки. В разделах он плавно появляется для переключения.
@@ -51,6 +53,14 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => document.removeEventListener('visibilitychange', refreshAccess))
+
+// Блокируем document scroll — только внутренние области экрана (body/footer
+// ErpScreen, шторки). Иначе на мобилке шапка «наезжает» на контент, а footer
+// уезжает под плавающий tab bar.
+useHead({
+  htmlAttrs: {class: 'erp-shell'},
+  bodyAttrs: {class: 'erp-shell'},
+})
 </script>
 
 <template>
@@ -61,6 +71,10 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', refreshAc
     <Transition name="erp-tabbar">
       <ErpTabBar v-if="showTabBar"/>
     </Transition>
+    <ErpTransientBanner
+        :message="inAppNotification"
+        @dismissed="clearInAppNotification"
+    />
   </div>
 </template>
 
@@ -70,6 +84,9 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', refreshAc
   height: 100dvh
   display: flex
   flex-direction: column
+  overflow: hidden
+  overflow-x: clip
+  max-width: 100vw
   background-color: var(--color-bg)
   color: var(--color-text)
 
@@ -81,8 +98,17 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', refreshAc
 .erp-layout__content
   flex: 1
   min-height: 0
+  min-width: 0
   display: flex
   flex-direction: column
+  overflow: hidden
+
+  > *
+    flex: 1
+    min-height: 0
+    min-width: 0
+    display: flex
+    flex-direction: column
 
 .erp-tabbar-enter-active,
 .erp-tabbar-leave-active
@@ -96,4 +122,13 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', refreshAc
   // Рельс слева уезжает влево, а не вниз.
   @media (min-width: 900px)
     transform: translateX(-100%)
+</style>
+
+<style lang="sass">
+html.erp-shell,
+html.erp-shell body
+  overflow: hidden
+  height: 100%
+  height: 100dvh
+  overscroll-behavior: none
 </style>

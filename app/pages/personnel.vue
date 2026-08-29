@@ -123,6 +123,8 @@ const dismissEmployee = async () => {
 }
 
 onMounted(loadDepartments)
+
+const isSheetOpen = computed(() => isAddOpen.value || Boolean(selectedEmployee.value) || isDismissOpen.value)
 </script>
 
 <template>
@@ -131,6 +133,8 @@ onMounted(loadDepartments)
       icon="heroicons:user-group"
       :subtitle="selectedDepartment ? 'Сотрудники отдела' : 'Структура и доступы'"
       :shift-link="selectedDepartment ? {label: 'Все отделы', icon: 'heroicons:chevron-left', iconSize: 13, onClick: returnToDepartments} : undefined"
+      :head-compact="isSheetOpen"
+      :footer-hidden="isSheetOpen"
   >
     <ErpEmptyState v-if="isLoading" loading>Загрузка…</ErpEmptyState>
 
@@ -154,25 +158,34 @@ onMounted(loadDepartments)
     </template>
 
     <template v-else>
-      <ErpPersonnelEmployeeTable v-if="employees.length" :employees="employees" @select="openEmployee"/>
+      <template v-if="employees.length">
+        <ErpSectionLabel>Сотрудники: {{ employees.length }}</ErpSectionLabel>
+        <ErpPersonnelEmployeeTable :employees="employees" @select="openEmployee"/>
+      </template>
       <ErpEmptyState v-else>
         <p>В отделе пока нет сотрудников</p>
       </ErpEmptyState>
-      <UiButton variant="outline" @click="isAddOpen = true">Добавить сотрудника</UiButton>
+    </template>
+
+    <template v-if="selectedDepartment && !isLoading && !error" #footer>
+      <UiButton block variant="outline" @click="isAddOpen = true">Добавить сотрудника</UiButton>
     </template>
 
     <ErpActionSheet :open="isAddOpen" :busy="isBusy" aria-label="Добавление сотрудника" @dismiss="isAddOpen = false">
       <template #label>Новый сотрудник</template>
       <template #form>
-        <ErpPersonnelForm create :platforms="platforms" :employee="{row: 0, fio: '', department: selectedDepartment, position: '', platform: '', role: 'Исполнитель', login: '', password: '', status: 'Работает', rights}" :busy="isBusy" @submit="createEmployee" @cancel="isAddOpen = false"/>
+        <ErpPersonnelForm create in-sheet :platforms="platforms" :employee="{row: 0, fio: '', department: selectedDepartment, position: '', platform: '', role: 'Исполнитель', login: '', password: '', status: 'Работает', rights}" :busy="isBusy" @submit="createEmployee" @cancel="isAddOpen = false"/>
       </template>
     </ErpActionSheet>
 
     <ErpActionSheet :open="Boolean(selectedEmployee)" :busy="isBusy" aria-label="Карточка сотрудника" @dismiss="selectedEmployee = null">
       <template #label>Карточка сотрудника</template>
       <template #form>
-        <ErpPersonnelForm :employee="selectedEmployee" :platforms="platforms" :busy="isBusy" @submit="saveEmployee" @cancel="selectedEmployee = null"/>
-        <UiButton block variant="outline" class="personnel-dismiss" :disabled="isBusy" @click="isDismissOpen = true">Уволить</UiButton>
+        <ErpPersonnelForm in-sheet :employee="selectedEmployee" :platforms="platforms" :busy="isBusy" @submit="saveEmployee" @cancel="selectedEmployee = null">
+          <template #dismiss>
+            <UiButton block variant="outline" class="personnel-dismiss" :disabled="isBusy" @click="isDismissOpen = true">Уволить</UiButton>
+          </template>
+        </ErpPersonnelForm>
       </template>
     </ErpActionSheet>
 

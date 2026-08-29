@@ -12,6 +12,27 @@ import type {
 } from '~~/types/erp.types'
 import {DEFAULT_ACCESS_FLAGS, workshopById} from '~~/types/erp.types'
 import {parseCsv} from '~/utils/erp-csv'
+import {
+    createPersonnelEmployeeViaApi,
+    decideApprovalViaApi,
+    deleteIssuedBadgeViaApi,
+    dismissPersonnelEmployeeViaApi,
+    fetchApprovalsViaApi,
+    fetchHandedOverTodayViaApi,
+    fetchIssuedBadgesTodayViaApi,
+    fetchPersonnelDepartmentsViaApi,
+    fetchPersonnelEmployeeViaApi,
+    fetchPersonnelEmployeesViaApi,
+    fetchReportsCurrentViaApi,
+    fetchWorkshopBadgesViaApi,
+    getErpBackendMode,
+    issueBadgeViaApi,
+    loginErpEmployeeViaApi,
+    recordHandoverViaApi,
+    savePersonnelEmployeeViaApi,
+    undoHandoverViaApi,
+} from '~/utils/erp-api'
+import type {ErpApprovalDecisionStatus, ErpApprovalsResponse, ErpCurrentReport} from '~/utils/erp-api'
 
 const ISSUE_SHEET = 'Выдача'
 const JOURNAL_SHEET = 'Журнал выдачи бирок'
@@ -69,7 +90,7 @@ export interface ErpLoginProfile {
     platform: string
     role: string
     login: string
-    password: string
+    password?: string
     access: ErpAccessFlags
 }
 
@@ -216,6 +237,10 @@ async function fetchBadgesViaApi(config: SheetsRuntimeConfig, workshopId: Worksh
 }
 
 export async function fetchWorkshopBadges(workshopId: WorkshopId): Promise<string[]> {
+    if (getErpBackendMode() === 'sql') {
+        return await fetchWorkshopBadgesViaApi(workshopId)
+    }
+
     const config = getConfig()
     let gasError: unknown
 
@@ -265,6 +290,10 @@ async function issueBadgeViaGas(
 }
 
 export async function fetchIssuedBadgesToday(fio: string, workshopId: WorkshopId | null): Promise<ErpIssuedBadgeEntry[]> {
+    if (getErpBackendMode() === 'sql') {
+        return await fetchIssuedBadgesTodayViaApi(fio, workshopId)
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -285,6 +314,11 @@ export async function fetchIssuedBadgesToday(fio: string, workshopId: WorkshopId
 }
 
 export async function deleteIssuedBadge(entry: ErpIssuedBadgeEntry, fio: string): Promise<void> {
+    if (getErpBackendMode() === 'sql') {
+        await deleteIssuedBadgeViaApi(entry, fio)
+        return
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -304,6 +338,10 @@ export async function deleteIssuedBadge(entry: ErpIssuedBadgeEntry, fio: string)
 }
 
 export async function fetchHandedOverBadgesToday(fio: string): Promise<ErpIssuedBadgeEntry[]> {
+    if (getErpBackendMode() === 'sql') {
+        return await fetchHandedOverTodayViaApi(fio)
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -322,7 +360,24 @@ export async function fetchHandedOverBadgesToday(fio: string): Promise<ErpIssued
     return result.entries ?? []
 }
 
+export async function fetchCurrentReports(): Promise<ErpCurrentReport> {
+    if (getErpBackendMode() !== 'sql') {
+        throw new Error('Отчёты доступны в проверочном SQL-контуре')
+    }
+    return await fetchReportsCurrentViaApi()
+}
+
 export async function recordHandoverEntry(fio: string, badgeContent: string): Promise<void> {
+    if (getErpBackendMode() === 'sql') {
+        await recordHandoverViaApi(
+            badgeContent,
+            typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID().replace(/-/g, '').slice(0, 32)
+                : undefined,
+        )
+        return
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -341,6 +396,11 @@ export async function recordHandoverEntry(fio: string, badgeContent: string): Pr
 }
 
 export async function undoHandover(entry: ErpIssuedBadgeEntry, fio: string): Promise<void> {
+    if (getErpBackendMode() === 'sql') {
+        await undoHandoverViaApi(entry, fio)
+        return
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -360,6 +420,11 @@ export async function undoHandover(entry: ErpIssuedBadgeEntry, fio: string): Pro
 }
 
 export async function loginErpEmployee(login: string, password: string): Promise<ErpLoginProfile> {
+    if (getErpBackendMode() === 'sql') {
+        const profile = await loginErpEmployeeViaApi(login, password)
+        return {...profile, password: ''}
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -421,6 +486,15 @@ async function requestPersonnel(config: SheetsRuntimeConfig, action: string, act
 }
 
 export async function fetchPersonnelDepartments(actor: PersonnelActor): Promise<{ departments: ErpPersonnelDepartment[]; platforms: string[]; rights: ErpPersonnelRight[] }> {
+    if (getErpBackendMode() === 'sql') {
+        const result = await fetchPersonnelDepartmentsViaApi()
+        return {
+            departments: result.departments ?? [],
+            platforms: result.platforms ?? [],
+            rights: (result.rights ?? []) as ErpPersonnelRight[],
+        }
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelDepartments', actor)
@@ -428,6 +502,10 @@ export async function fetchPersonnelDepartments(actor: PersonnelActor): Promise<
 }
 
 export async function fetchPersonnelEmployees(actor: PersonnelActor, department: string): Promise<ErpPersonnelRow[]> {
+    if (getErpBackendMode() === 'sql') {
+        return await fetchPersonnelEmployeesViaApi(department)
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelEmployees', actor, {department})
@@ -435,6 +513,11 @@ export async function fetchPersonnelEmployees(actor: PersonnelActor, department:
 }
 
 export async function fetchPersonnelEmployee(actor: PersonnelActor, row: number, fio: string): Promise<ErpPersonnelEmployee> {
+    if (getErpBackendMode() === 'sql') {
+        const employee = await fetchPersonnelEmployeeViaApi(row)
+        return normalizePersonnelEmployee(employee)
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelEmployee', actor, {row, fio})
@@ -447,6 +530,17 @@ function rightsPayload(rights: ErpPersonnelRight[]): Record<string, 'Да' | 'Н
 }
 
 export async function savePersonnelEmployee(actor: PersonnelActor, row: number, fio: string, draft: ErpPersonnelDraft): Promise<ErpPersonnelEmployee> {
+    if (getErpBackendMode() === 'sql') {
+        const employee = await savePersonnelEmployeeViaApi(row, {
+            platform: draft.platform,
+            role: draft.role,
+            login: draft.login,
+            password: draft.password ?? '',
+            rights: draft.rights,
+        })
+        return normalizePersonnelEmployee(employee)
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelSave', actor, {
@@ -463,6 +557,19 @@ export async function savePersonnelEmployee(actor: PersonnelActor, row: number, 
 }
 
 export async function createPersonnelEmployee(actor: PersonnelActor, draft: ErpPersonnelDraft): Promise<ErpPersonnelEmployee> {
+    if (getErpBackendMode() === 'sql') {
+        const employee = await createPersonnelEmployeeViaApi({
+            fio: draft.fio,
+            department: draft.department,
+            position: draft.position,
+            platform: draft.platform,
+            role: draft.role,
+            login: draft.login,
+            rights: draft.rights,
+        })
+        return normalizePersonnelEmployee(employee)
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelCreate', actor, {
@@ -479,9 +586,33 @@ export async function createPersonnelEmployee(actor: PersonnelActor, draft: ErpP
 }
 
 export async function dismissPersonnelEmployee(actor: PersonnelActor, row: number, fio: string): Promise<void> {
+    if (getErpBackendMode() === 'sql') {
+        await dismissPersonnelEmployeeViaApi(row)
+        return
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     await requestPersonnel(config, 'personnelDismiss', actor, {row, fio})
+}
+
+const APPROVALS_SQL_ONLY = 'Согласования доступны только на staging с SQL API.'
+
+export async function fetchApprovals(): Promise<ErpApprovalsResponse> {
+    if (getErpBackendMode() === 'sql') {
+        return fetchApprovalsViaApi()
+    }
+    throw new Error(APPROVALS_SQL_ONLY)
+}
+
+export async function decideApproval(input: {
+    rowNumber: number
+    action: 'approve' | 'reject'
+}): Promise<{status: ErpApprovalDecisionStatus}> {
+    if (getErpBackendMode() === 'sql') {
+        return decideApprovalViaApi(input)
+    }
+    throw new Error(APPROVALS_SQL_ONLY)
 }
 
 export async function recordMeasurement(
@@ -558,6 +689,17 @@ export async function fetchPackingToday(fio: string, machine: string): Promise<E
 export type JournalWriteResult = 'ok' | 'skipped'
 
 export async function appendBadgeJournalEntry(entry: ErpBadgeIssue): Promise<JournalWriteResult> {
+    if (getErpBackendMode() === 'sql') {
+        await issueBadgeViaApi({
+            workshopId: entry.workshopId,
+            badgeContent: entry.badgeContent,
+            idempotencyKey: typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID().replace(/-/g, '').slice(0, 32)
+                : undefined,
+        })
+        return 'ok'
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
