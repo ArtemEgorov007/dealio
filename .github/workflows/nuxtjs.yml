@@ -61,6 +61,14 @@ jobs:
           NUXT_APP_BASE_URL: /
           NUXT_PUBLIC_ERP_GAS_URL: ${{ secrets.NUXT_PUBLIC_ERP_GAS_URL || secrets.NUXT_PUBLIC_CRM_GAS_URL }}
           NUXT_PUBLIC_WAREHOUSE_GAS_URL: ${{ secrets.NUXT_PUBLIC_WAREHOUSE_GAS_URL }}
+          # Режим бэкенда задаётся переменной окружения GitHub, а не хардкодом:
+          # staging работает на SQL API, production пока на GAS. Без этого
+          # любой деплой через CI молча возвращал staging на GAS, потому что
+          # SQL-сборку туда выкладывали руками с локальными переменными.
+          # Значение по умолчанию — gas: безопасный откат, если переменная
+          # в окружении не задана.
+          NUXT_PUBLIC_ERP_BACKEND_MODE: ${{ vars.ERP_BACKEND_MODE || 'gas' }}
+          NUXT_PUBLIC_ERP_API_BASE: ${{ vars.ERP_API_BASE || '/api' }}
         run: npm run generate
 
       - name: Write release marker
