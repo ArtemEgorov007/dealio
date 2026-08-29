@@ -257,14 +257,14 @@ const onDragEnd = () => {
   flex-shrink: 0
 
 // Своя, более заметная длительность — только для этой шторки (не трогаем
-// общий --dealio-motion-duration, которым делятся тосты и другие панели).
+// общий --erp-motion-duration, которым делятся тосты и другие панели).
 .erp-sheet-enter-active,
 .erp-sheet-leave-active
   .erp-sheet-backdrop
-    transition: opacity 0.36s var(--dealio-motion-ease)
+    transition: opacity 0.36s var(--erp-motion-ease)
 
   .erp-sheet-panel
-    transition: transform 0.36s var(--dealio-motion-ease)
+    transition: transform 0.36s var(--erp-motion-ease)
 
 .erp-sheet-enter-from,
 .erp-sheet-leave-to

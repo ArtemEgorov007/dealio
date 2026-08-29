@@ -1,6 +1,6 @@
 {
-  "name": "dealio",
-  "description": "Dealio — трекер идей, задач и желаний с kanban-доской на Nuxt 4",
+  "name": "erp-morflot",
+  "description": "ERP «Морфлот Технология» — бирки, промеры, упаковка, сдача работ, склад, кадры и согласования",
   "type": "module",
   "private": true,
   "scripts": {
@@ -20,15 +20,11 @@
     "@nuxt/ui": "^3.3.3",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@pinia/nuxt": "^0.11.2",
-    "@tanstack/vue-query": "^5.85.6",
     "@vee-validate/nuxt": "^4.15.1",
     "@vueuse/core": "^14.3.0",
     "@vueuse/nuxt": "^14.3.0",
-    "appwrite": "^18.2.0",
-    "dayjs": "^1.11.18",
     "nuxt": "^4.0.3",
     "qr-scanner": "^1.4.2",
-    "uuid": "^11.1.0",
     "vue": "^3.5.19",
     "vue-router": "^4.5.1"
   },

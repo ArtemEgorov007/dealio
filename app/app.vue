@@ -8,7 +8,7 @@
         duration: 3500,
         expand: false,
         progress: false,
-        class: 'dealio-toast-host',
+        class: 'erp-toast-host',
       }"
   >
     <NuxtLayout>

@@ -80,22 +80,12 @@ export default defineNuxtConfig({
     css: [
         '@/assets/css/normalize.css',
         '@/assets/css/variables.css',
-        '@/assets/css/kanban-effects.css',
         '@/assets/css/toast-overrides.css',
         '@/assets/css/erp-theme.css',
     ],
 
     pinia: {
         storesDirs: ['./store/**']
-    },
-
-    routeRules: {
-        '/products': {redirect: '/ideas'},
-        '/customers': {redirect: '/wishlist'},
-        '/customers/**': {redirect: '/wishlist'},
-        '/payments': {redirect: '/archive'},
-        '/kanban': {redirect: '/board'},
-        '/feedback': {redirect: '/help'},
     },
 
     nitro: {

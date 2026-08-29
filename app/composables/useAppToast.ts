@@ -2,14 +2,14 @@ const TOAST_DURATION_MS = 3500
 const UNDO_DELETE_DURATION_MS = 10_000
 
 const toastUi = {
-    root: 'dealio-toast',
-    wrapper: 'dealio-toast__body',
-    title: 'dealio-toast__title',
-    description: 'dealio-toast__desc',
-    icon: 'dealio-toast__icon',
-    progress: 'dealio-toast__progress',
-    close: 'dealio-toast__close',
-    actions: 'dealio-toast__actions',
+    root: 'erp-toast',
+    wrapper: 'erp-toast__body',
+    title: 'erp-toast__title',
+    description: 'erp-toast__desc',
+    icon: 'erp-toast__icon',
+    progress: 'erp-toast__progress',
+    close: 'erp-toast__close',
+    actions: 'erp-toast__actions',
 }
 
 const baseToastOptions = {
@@ -30,7 +30,7 @@ export function useAppToast() {
             title,
             description,
             icon: 'heroicons:check-circle',
-            class: 'dealio-toast dealio-toast--success',
+            class: 'erp-toast erp-toast--success',
         })
     }
 
@@ -41,7 +41,7 @@ export function useAppToast() {
             title,
             icon: 'heroicons:x-circle',
             duration: TOAST_DURATION_MS + 500,
-            class: 'dealio-toast dealio-toast--error',
+            class: 'erp-toast erp-toast--error',
         })
     }
 
@@ -69,10 +69,10 @@ export function useAppToast() {
             title: 'Карточка удалена навсегда',
             description: getRemainingLabel(),
             icon: 'heroicons:trash',
-            class: 'dealio-toast dealio-toast--undo',
+            class: 'erp-toast erp-toast--undo',
             actions: [{
                 label: 'Отменить',
-                class: 'dealio-toast__undo-btn',
+                class: 'erp-toast__undo-btn',
                 onClick: () => {
                     stopTick()
                     onUndo()

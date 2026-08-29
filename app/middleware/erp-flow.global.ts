@@ -24,16 +24,10 @@ const ERP_ROUTES = new Set([
     '/personnel',
 ])
 
-const DEALIO_PREFIXES = ['/board', '/login', '/archive', '/settings', '/dashboard', '/ideas', '/tasks', '/wishlist', '/help']
-
 export default defineNuxtRouteMiddleware((to) => {
-    // GitHub Pages добавляет конечный слэш при прямой навигации/обновлении страницы
+    // Прямая навигация и обновление страницы могут дать конечный слэш
     // (например /badges/) — без нормализации сравнения ниже не сработают.
     const path = to.path.length > 1 ? to.path.replace(/\/$/, '') : to.path
-
-    if (DEALIO_PREFIXES.some(prefix => path === prefix || path.startsWith(`${prefix}/`))) {
-        return
-    }
 
     const employeeStore = useErpEmployeeStore()
     const sessionStore = useErpSessionStore()

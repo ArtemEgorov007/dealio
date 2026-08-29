@@ -163,49 +163,10 @@
     --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Панели / toast — общая кривая выезда справа */
-    --dealio-motion-duration: 0.24s;
-    --dealio-motion-ease: cubic-bezier(0.32, 0.72, 0, 1);
-    --dealio-slideover-width: 420px;
+    --erp-motion-duration: 0.24s;
+    --erp-motion-ease: cubic-bezier(0.32, 0.72, 0, 1);
+    --erp-slideover-width: 420px;
     --mobile-bottom-nav-offset: 72px;
-    --navbar-height: 60px;
     --border-width: 1px;
-    --sidebar-width-expanded: 220px;
-    --sidebar-width-collapsed: 64px;
 
-    /* Kanban column colors (ideas / tasks / doing / done / wishlist) — точки-индикаторы, не фон */
-    --kanban-todo-color: #888888;
-    --kanban-todo-bg: rgba(136, 136, 136, 0.08);
-    --kanban-agreed-color: #4facfe;
-    --kanban-agreed-bg: rgba(79, 172, 254, 0.08);
-    --kanban-progress-color: #ff9a44;
-    --kanban-progress-bg: rgba(255, 154, 68, 0.08);
-    --kanban-produced-color: #a78bfa;
-    --kanban-produced-bg: rgba(167, 139, 250, 0.08);
-    --kanban-done-color: #34e89e;
-    --kanban-done-bg: rgba(52, 232, 158, 0.08);
-    /* tracker statuses */
-    --kanban-ideas-color: #4facfe;
-    --kanban-ideas-bg: rgba(79, 172, 254, 0.08);
-    --kanban-tasks-color: #a78bfa;
-    --kanban-tasks-bg: rgba(167, 139, 250, 0.08);
-    --kanban-doing-color: #ff9a44;
-    --kanban-doing-bg: rgba(255, 154, 68, 0.08);
-    --kanban-done-tracker-color: #34e89e;
-    --kanban-done-tracker-bg: rgba(52, 232, 158, 0.08);
-    --kanban-wishlist-color: #ff6b9d;
-    --kanban-wishlist-bg: rgba(255, 107, 157, 0.08);
-
-    /* Error colors */
-    --color-error-bg: rgba(248, 113, 113, 0.08);
-    --color-error-text: #f87171;
-    --color-error-border: rgba(248, 113, 113, 0.25);
-
-    /* Kanban board surface — без точечной сетки, плоский чёрный фон */
-    --kanban-grid-pattern: none;
-    --kanban-grid-size: 0 0;
-    --kanban-surface-bg: #000000;
-    --kanban-column-bg: transparent;
-    --kanban-column-border: transparent;
-    --kanban-column-shadow: none;
-    --kanban-card-bg: #0a0a0a;
 }

@@ -1,6 +1,6 @@
 /*
  * iOS 18 палитра для ERP «Морфлот Технология».
- * Применяется только внутри .erp-layout — kanban-трекер не затронут.
+ * Применяется только внутри .erp-layout — остальное приложение не затронуто.
  */
 .erp-layout {
     /* Корпоративный синий: светло-синий тинт вместо нейтрально-серого */
@@ -264,7 +264,7 @@
 
 /* ─── Toasts on light ERP screens ──────────────────────────────────────── */
 /* Хост тостов живёт вне .erp-layout — переменные текста наследуются от
-   тёмного kanban-корня (#f5f5f7), и текст пропадает на белом тосте.
+   тёмного корня (#f5f5f7), и текст пропадает на белом тосте.
    Переопределяем токены прямо на хосте. */
 
 /* ─── Floating overlays (Teleport → body) ──────────────────────────────── */
@@ -344,7 +344,7 @@
     }
 }
 
-body:has(.erp-layout) ol.dealio-toast-host {
+body:has(.erp-layout) ol.erp-toast-host {
     --color-text: #000000;
     --color-text-secondary: rgba(60, 60, 67, 0.60);
     --color-text-muted: rgba(60, 60, 67, 0.60);
@@ -356,7 +356,7 @@ body:has(.erp-layout) ol.dealio-toast-host {
     --color-button-outline-text-hover: #014F9C;
 }
 
-body:has(.erp-layout) ol.dealio-toast-host .dealio-toast {
+body:has(.erp-layout) ol.erp-toast-host .erp-toast {
     background-color: #FFFFFF !important;
     border-color: rgba(60, 60, 67, 0.12) !important;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
@@ -364,7 +364,7 @@ body:has(.erp-layout) ol.dealio-toast-host .dealio-toast {
 }
 
 @media (max-width: 768px) {
-    body:has(.erp-layout) ol.dealio-toast-host {
+    body:has(.erp-layout) ol.erp-toast-host {
         bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px) !important;
     }
 }
