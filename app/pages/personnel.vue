@@ -32,7 +32,7 @@ const loadDepartments = async () => {
     platforms.value = result.platforms
     rights.value = result.rights
   } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : 'Не удалось загрузить отделы'
+    error.value = errorMessage(loadError, 'Не удалось загрузить отделы')
   } finally {
     isLoading.value = false
   }
@@ -45,7 +45,7 @@ const openDepartment = async (department: string) => {
     employees.value = await fetchPersonnelEmployees(actor.value, department)
     selectedDepartment.value = department
   } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : 'Не удалось загрузить сотрудников'
+    error.value = errorMessage(loadError, 'Не удалось загрузить сотрудников')
   } finally {
     isLoading.value = false
   }

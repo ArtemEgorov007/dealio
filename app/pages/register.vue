@@ -69,7 +69,7 @@ const submit = async () => {
         employeeStore.setProfile(profile)
         password.value = ''
     } catch (loginError) {
-        error.value = loginError instanceof Error ? loginError.message : 'Не удалось войти'
+        error.value = errorMessage(loginError, 'Не удалось войти')
     } finally {
         isLoading.value = false
     }

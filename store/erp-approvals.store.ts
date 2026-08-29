@@ -1,6 +1,9 @@
 import {defineStore} from 'pinia'
 
 import {fetchApprovals} from '~/utils/erp-sheets'
+// Импорт явный, хотя Nuxt автоимпортит utils: стор исполняется в изоляции
+// в контрактном тесте, где автоимпортов нет.
+import {errorMessage} from '~/utils/error-message'
 import type {ErpApproval} from '~/utils/erp-api'
 
 interface ErpApprovalsState {
@@ -28,7 +31,7 @@ export const useErpApprovalsStore = defineStore('erp-approvals', {
                 this.pendingCount = queue.pendingCount
                 return queue
             } catch (error) {
-                this.error = error instanceof Error ? error.message : 'Не удалось загрузить очередь'
+                this.error = errorMessage(error, 'Не удалось загрузить очередь')
                 throw error
             } finally {
                 this.loading = false

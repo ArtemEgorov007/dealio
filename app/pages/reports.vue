@@ -15,7 +15,7 @@ const load = async () => {
   try {
     report.value = await fetchCurrentReports()
   } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : 'Не удалось загрузить отчёт'
+    error.value = errorMessage(loadError, 'Не удалось загрузить отчёт')
   } finally {
     loading.value = false
   }

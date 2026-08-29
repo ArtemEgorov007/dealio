@@ -38,7 +38,7 @@ export function useWarehouseCatalog<TItem>(options: {
         try {
             categories.value = await fetchWarehouseCategories()
         } catch (error) {
-            categoriesError.value = error instanceof Error ? error.message : 'Ошибка загрузки категорий'
+            categoriesError.value = errorMessage(error, 'Ошибка загрузки категорий')
         } finally {
             categoriesLoading.value = false
         }
@@ -61,7 +61,7 @@ export function useWarehouseCatalog<TItem>(options: {
             if (selectedCategory.value === category) items.value = fetched
         } catch (error) {
             if (selectedCategory.value === category) {
-                itemsError.value = error instanceof Error ? error.message : options.itemsErrorMessage
+                itemsError.value = errorMessage(error, options.itemsErrorMessage)
             }
         } finally {
             if (selectedCategory.value === category) itemsLoading.value = false

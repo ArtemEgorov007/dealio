@@ -28,7 +28,7 @@ const load = async () => {
     try {
         items.value = await fetchWarehouseStock(selectedPlatform.value)
     } catch (loadError) {
-        error.value = loadError instanceof Error ? loadError.message : 'Ошибка загрузки остатков'
+        error.value = errorMessage(loadError, 'Ошибка загрузки остатков')
     } finally {
         isLoading.value = false
     }

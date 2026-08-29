@@ -113,7 +113,7 @@ const submit = async () => {
         sheetItem.value = null
         retryItems()
     } catch (error) {
-        submitError.value = error instanceof Error ? error.message : 'Не удалось оформить выдачу'
+        submitError.value = errorMessage(error, 'Не удалось оформить выдачу')
     } finally {
         isSaving.value = false
     }

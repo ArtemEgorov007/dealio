@@ -68,7 +68,7 @@ const load = async () => {
     try {
         entries.value = await fetchIssuedBadgesToday(employeeStore.fio, employeeStore.workshopId)
     } catch (loadError) {
-        error.value = loadError instanceof Error ? loadError.message : 'Ошибка загрузки'
+        error.value = errorMessage(loadError, 'Ошибка загрузки')
     } finally {
         isLoading.value = false
     }

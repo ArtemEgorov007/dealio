@@ -15,6 +15,16 @@ const api = await readFile(new URL('../app/utils/erp-api.ts', import.meta.url), 
 const sheets = await readFile(new URL('../app/utils/erp-sheets.ts', import.meta.url), 'utf8')
 const approvalsStore = await readFile(new URL('../store/erp-approvals.store.ts', import.meta.url), 'utf8').catch(() => '')
 
+// Настоящая реализация errorMessage для VM-контекста стора (см. createApprovalsStore).
+const errorMessageSource = await readFile(new URL('../app/utils/error-message.ts', import.meta.url), 'utf8')
+const errorMessageModule = {exports: {}}
+vm.runInNewContext(
+  transpileModule(errorMessageSource, {
+    compilerOptions: {module: ModuleKind.CommonJS, target: ScriptTarget.ES2022},
+  }).outputText,
+  {module: errorMessageModule, exports: errorMessageModule.exports, require: () => ({})},
+)
+
 async function createApprovalCardController() {
   const source = await readFile(new URL('../app/components/erp/ErpApprovalCard.vue', import.meta.url), 'utf8')
   const {descriptor} = parse(source)
@@ -52,6 +62,9 @@ async function createApprovalsStore(fetchQueue) {
     require: (name) => {
       if (name === 'pinia') return {defineStore: (_id, options) => options}
       if (name === '~/utils/erp-sheets') return {fetchApprovals: fetchQueue}
+      // Отдаём настоящую реализацию, а не заглушку: её результат попадает
+      // в state.error, и подмена скрыла бы регрессию в разборе ошибки.
+      if (name === '~/utils/error-message') return errorMessageModule.exports
       throw new Error(`Unexpected store dependency: ${name}`)
     },
   }

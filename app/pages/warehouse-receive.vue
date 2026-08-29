@@ -99,7 +99,7 @@ const submit = async () => {
         resetRequestId()
         sheetItem.value = null
     } catch (error) {
-        submitError.value = error instanceof Error ? error.message : 'Не удалось оформить приём'
+        submitError.value = errorMessage(error, 'Не удалось оформить приём')
     } finally {
         isSaving.value = false
     }

@@ -632,7 +632,7 @@ export async function testErpGasConnection(gasUrl: string): Promise<{ ok: boolea
     } catch (error) {
         return {
             ok: false,
-            error: error instanceof Error ? error.message : 'Ошибка подключения',
+            error: errorMessage(error, 'Ошибка подключения'),
         }
     }
 }

@@ -42,7 +42,7 @@ const confirmUndo = async () => {
         vibrate(200)
         emit('undone', props.entry)
     } catch (e) {
-        error.value = e instanceof Error ? e.message : 'Не удалось отменить сдачу'
+        error.value = errorMessage(e, 'Не удалось отменить сдачу')
         phase.value = 'error'
         vibrate([100, 50, 100])
     }
