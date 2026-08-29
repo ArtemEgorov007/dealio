@@ -233,11 +233,14 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
 .erp-screen__hero
   margin-top: var(--spacing-4)
 
-.erp-screen__stats
+// Плитки счётчиков приходят слотом #hero из страниц (workshop, scan-handover),
+// поэтому нужен :deep() — scoped-стили сами по себе на слот-контент родителя
+// не действуют, и плитки съезжали в одну строку без фона: «0бирок за смену».
+:deep(.erp-screen__stats)
   display: flex
   gap: var(--spacing-3)
 
-.erp-screen__stat
+:deep(.erp-screen__stat)
   flex: 1
   display: flex
   flex-direction: column
@@ -246,14 +249,14 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   border-radius: 13px
   background: rgba(255, 255, 255, 0.16)
 
-.erp-screen__stat-num
+:deep(.erp-screen__stat-num)
   font-size: 22px
   font-weight: 800
   line-height: 1.1
   color: #fff
   font-variant-numeric: tabular-nums
 
-.erp-screen__stat-label
+:deep(.erp-screen__stat-label)
   font-size: 11px
   color: rgba(255, 255, 255, 0.85)
 
