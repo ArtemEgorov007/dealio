@@ -1,5 +1,4 @@
 import type {
-    ErpAccessFlags,
     ErpBadgeIssue,
     ErpIssuedBadgeEntry,
     ErpPackingEntry,
@@ -33,14 +32,24 @@ import {
     undoHandoverViaApi,
 } from '~/utils/erp-api'
 import type {ErpApprovalDecisionStatus, ErpApprovalsResponse, ErpCurrentReport} from '~/utils/erp-api'
+import {
+    DEFAULT_SPREADSHEET_ID,
+    GAS_URL_STORAGE_KEY,
+    ISSUE_SHEET,
+    ISSUE_SHEET_GID,
+    JOURNAL_SHEET,
+    getConfig,
+    isGasConfigured,
+    isSheetsApiConfigured,
+    requestGas,
+    requestGasPost,
+} from '~/utils/erp/transport'
+import type {GasResponse, SheetsRuntimeConfig} from '~/utils/erp/transport'
 
-const ISSUE_SHEET = 'Выдача'
-const JOURNAL_SHEET = 'Журнал выдачи бирок'
-const ISSUE_SHEET_GID = '1376055067'
-
-const DEFAULT_SPREADSHEET_ID = '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
-
-const GAS_URL_STORAGE_KEY = 'erp-gas-url'
+// Транспорт к GAS и конфигурация листов переехали в ~/utils/erp/transport.
+// Реэкспорт сохраняет прежний публичный интерфейс: страницы, компоненты и
+// сторы продолжают импортировать всё из erp-sheets без правок.
+export type {ErpLoginProfile, PersonnelActor} from '~/utils/erp/transport'
 
 const MOCK_BADGES: Record<WorkshopId, string[]> = {
     kolpino: [
@@ -55,123 +64,6 @@ const MOCK_BADGES: Record<WorkshopId, string[]> = {
     ],
 }
 
-interface SheetsRuntimeConfig {
-    spreadsheetId: string
-    issueSheetGid: string
-    apiKey: string
-    gasUrl: string
-}
-
-interface GasResponse {
-    ok?: boolean
-    badges?: string[]
-    entries?: ErpIssuedBadgeEntry[]
-    packingEntries?: ErpPackingEntry[]
-    error?: string
-    fio?: string
-    department?: string
-    position?: string
-    platform?: string
-    role?: string
-    login?: string
-    password?: string
-    access?: ErpAccessFlags
-    departments?: ErpPersonnelDepartment[]
-    platforms?: string[]
-    rights?: ErpPersonnelRight[]
-    employees?: ErpPersonnelRow[]
-    employee?: ErpPersonnelEmployee
-}
-
-export interface ErpLoginProfile {
-    fio: string
-    department: string
-    position: string
-    platform: string
-    role: string
-    login: string
-    password?: string
-    access: ErpAccessFlags
-}
-
-export interface PersonnelActor {
-    login: string
-    password: string
-}
-
-function getConfig(): SheetsRuntimeConfig {
-    const config = useRuntimeConfig()
-    const envGasUrl = config.public.erpGasUrl || ''
-    const storedGasUrl = import.meta.client ? localStorage.getItem(GAS_URL_STORAGE_KEY) || '' : ''
-
-    return {
-        spreadsheetId: config.public.erpSpreadsheetId || DEFAULT_SPREADSHEET_ID,
-        issueSheetGid: config.public.erpIssueSheetGid || ISSUE_SHEET_GID,
-        apiKey: config.public.erpSheetsApiKey || '',
-        gasUrl: envGasUrl || storedGasUrl,
-    }
-}
-
-function isSheetsApiConfigured(config: SheetsRuntimeConfig): boolean {
-    return Boolean(config.spreadsheetId && config.apiKey)
-}
-
-function isGasConfigured(config: SheetsRuntimeConfig): boolean {
-    return Boolean(config.gasUrl)
-}
-
-function buildGasUrl(config: SheetsRuntimeConfig, params: Record<string, string>): string {
-    const url = new URL(config.gasUrl)
-    for (const [key, value] of Object.entries(params)) {
-        url.searchParams.set(key, value)
-    }
-    return url.toString()
-}
-
-async function requestGas(config: SheetsRuntimeConfig, params: Record<string, string>): Promise<GasResponse> {
-    let response: Response
-
-    try {
-        response = await fetch(buildGasUrl(config, params))
-    } catch {
-        throw new Error('Нет связи с сервером. Проверьте интернет и повторите.')
-    }
-
-    if (!response.ok) {
-        throw new Error('Ошибка связи с Google Таблицей')
-    }
-
-    try {
-        return await response.json() as GasResponse
-    } catch {
-        throw new Error('Неверный ответ от сервера.')
-    }
-}
-
-async function requestGasPost(config: SheetsRuntimeConfig, payload: Record<string, unknown>): Promise<GasResponse> {
-    let response: Response
-
-    try {
-        response = await fetch(config.gasUrl, {
-            method: 'POST',
-            headers: {'Content-Type': 'text/plain;charset=utf-8'},
-            body: JSON.stringify(payload),
-            redirect: 'follow',
-        })
-    } catch {
-        throw new Error('Нет связи с сервером. Проверьте интернет и повторите.')
-    }
-
-    if (!response.ok) {
-        throw new Error('Ошибка связи с Google Таблицей')
-    }
-
-    try {
-        return await response.json() as GasResponse
-    } catch {
-        throw new Error('Неверный ответ от сервера. Обновите страницу и попробуйте снова.')
-    }
-}
 
 function parseBadgeColumn(rows: string[][], workshopId: WorkshopId): string[] {
     if (rows.length === 0) return []
