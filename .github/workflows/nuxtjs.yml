@@ -79,6 +79,7 @@ jobs:
         run: |
           test -f .output/public/index.html
           test -f .output/public/release.txt
+          test -f .output/public/api/.htaccess
           test "$(find .output/public -type l | wc -l)" -eq 0
           du -sh .output/public
 
@@ -89,6 +90,12 @@ jobs:
           path: ./.output/public
           if-no-files-found: error
           retention-days: 7
+          # Без этого upload-artifact@v4 молча выбрасывает точечные файлы, и
+          # public/api/.htaccess никогда не доезжал до сервера. API продолжал
+          # работать на старом .htaccess, залитом когда-то вручную, поэтому
+          # пропажа ничем себя не проявляла — пока правка в .htaccess просто
+          # не применилась на бою.
+          include-hidden-files: true
 
   deploy:
     needs: [resolve-target, build]
@@ -132,3 +139,48 @@ jobs:
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
             ./site/. "$SFTP_USERNAME@$SFTP_HOST:$SFTP_SERVER_DIR"
+
+      # Выкладка прошла — но это не значит, что выложилось то, что нужно.
+      # Скрытый .htaccess однажды уже потерялся по дороге, и заметили это
+      # только вручную: сервер продолжал отвечать на старой копии.
+      - name: Verify deployed site
+        env:
+          DEPLOY_URL: ${{ vars.DEPLOY_URL }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEPLOY_URL:-}" ]; then
+            echo "DEPLOY_URL не задан — проверку выполнить нечем"
+            exit 1
+          fi
+          base="${DEPLOY_URL%/}"
+
+          echo "Выложенная ревизия:"
+          actual=$(curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "$base/release.txt" | tr -d '[:space:]')
+          echo "  ожидаем $EXPECTED_SHA"
+          echo "  на сайте $actual"
+          test "$actual" = "$EXPECTED_SHA"
+
+          # Внутренности API не должны отдаваться наружу: под webroot лежат
+          # исходники, миграции со схемой базы и зависимости.
+          fail=0
+          for path in api/composer.json api/src/Auth.php api/vendor/autoload.php; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$base/$path")
+            echo "  $path -> $code"
+            if [ "$code" != "404" ] && [ "$code" != "403" ]; then
+              echo "    ДОСТУПНО НАРУЖУ"
+              fail=1
+            fi
+          done
+          # Репозиторий в этой job не выкачивается — имя миграции берём из
+          # самого артефакта, который только что выложили.
+          migration=$(ls -1 ./site/api/migrations 2>/dev/null | tail -1 || true)
+          if [ -n "$migration" ]; then
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$base/api/migrations/$migration")
+            echo "  api/migrations/$migration -> $code"
+            if [ "$code" != "404" ] && [ "$code" != "403" ]; then
+              echo "    СХЕМА БАЗЫ ДОСТУПНА НАРУЖУ"
+              fail=1
+            fi
+          fi
+          exit $fail
