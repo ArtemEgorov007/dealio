@@ -28,9 +28,19 @@ function erp_load_config(): array
 
 function erp_database(array $config): PDO
 {
-    return new PDO($config['db']['dsn'], $config['db']['user'], $config['db']['password'], [
+    $pdo = new PDO($config['db']['dsn'], $config['db']['user'], $config['db']['password'], [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_EMULATE_PREPARES => false,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
+
+    // Миграции применяются здесь, а не в отдельных обработчиках.
+    //
+    // Раньше вызов стоял внутри согласований и push-подписок, и любой новый
+    // раздел работал только потому, что пользователь до него успевал открыть
+    // экран, который этот вызов задевал. Схему обязан получить каждый, кто
+    // получил соединение.
+    erp_apply_migrations($pdo, __DIR__ . '/../migrations');
+
+    return $pdo;
 }

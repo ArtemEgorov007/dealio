@@ -68,7 +68,6 @@ function erp_import_rows(string $path): array
 
 $config = erp_load_config();
 $pdo = erp_database($config);
-erp_apply_migrations($pdo, erp_cli_migrations_dir());
 
 $summary = [];
 

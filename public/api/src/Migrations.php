@@ -20,19 +20,27 @@ function erp_apply_migrations(PDO $pdo, string $directory): int
             PRIMARY KEY (migration_name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
-    $alreadyApplied = $pdo->prepare(
-        'SELECT 1 FROM erp_schema_migrations WHERE migration_name = :migration_name LIMIT 1'
+
+    // Применённые читаем одним запросом, а не по SELECT на каждый файл:
+    // проверка идёт на каждом обращении к базе, а миграции меняются раз в
+    // релиз, поэтому обычный путь — «ничего не применилось».
+    $applied = $pdo->query('SELECT migration_name FROM erp_schema_migrations')->fetchAll(PDO::FETCH_COLUMN);
+    $applied = array_flip(array_map('strval', $applied));
+
+    $pending = array_filter(
+        erp_migration_paths($directory),
+        static fn (string $path): bool => !isset($applied[basename($path)]),
     );
+    if ($pending === []) {
+        return 0;
+    }
+
     $recordApplied = $pdo->prepare(
         'INSERT INTO erp_schema_migrations (migration_name) VALUES (:migration_name)'
     );
-    $applied = 0;
-    foreach (erp_migration_paths($directory) as $path) {
-        $name = basename($path);
-        $alreadyApplied->execute(['migration_name' => $name]);
-        if ($alreadyApplied->fetchColumn()) {
-            continue;
-        }
+
+    $count = 0;
+    foreach ($pending as $path) {
         $sql = file_get_contents($path);
         if ($sql === false) {
             throw new RuntimeException('Migration file is unavailable: ' . basename($path));
@@ -40,8 +48,9 @@ function erp_apply_migrations(PDO $pdo, string $directory): int
         foreach (array_filter(array_map('trim', explode(';', $sql))) as $statement) {
             $pdo->exec($statement);
         }
-        $recordApplied->execute(['migration_name' => $name]);
-        $applied++;
+        $recordApplied->execute(['migration_name' => basename($path)]);
+        $count++;
     }
-    return $applied;
+
+    return $count;
 }

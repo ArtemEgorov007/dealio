@@ -296,7 +296,6 @@ function erp_push_notify_cron(PDO $pdo, array $config, string $requestId): void
         erp_json(403, erp_error_payload('forbidden', 'Недостаточно прав', $requestId));
     }
 
-    erp_apply_migrations($pdo, __DIR__ . '/../migrations');
     $summary = erp_push_notify_pending_approvals($pdo, $config);
     erp_json(200, ['ok' => true, 'data' => $summary]);
 }
@@ -321,7 +320,6 @@ function erp_push_notify_pending_approvals(PDO $pdo, array $config): array
         return $summary;
     }
 
-    erp_apply_migrations($pdo, __DIR__ . '/../migrations');
     $users = erp_approvals_users_with_access($pdo);
     if ($users === []) {
         return $summary;
@@ -397,7 +395,6 @@ function erp_approvals_notify_all_with_access(PDO $pdo, array $config): array
         'failed' => 0,
     ];
 
-    erp_apply_migrations($pdo, __DIR__ . '/../migrations');
     $users = erp_approvals_users_with_access($pdo);
     if ($users === []) {
         return $summary;

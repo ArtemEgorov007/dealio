@@ -234,7 +234,6 @@ function erp_approvals_notifications_current(PDO $pdo, array $config, string $re
 {
     $user = erp_require_user($pdo, $config, $requestId);
     erp_require_permission($pdo, $user, 'approvals', $requestId);
-    erp_apply_migrations($pdo, __DIR__ . '/../migrations');
 
     $stmt = $pdo->prepare(
         'SELECT approval_row_number AS rowNumber, invoice
@@ -252,7 +251,6 @@ function erp_approvals_notifications_mark_read(PDO $pdo, array $config, string $
 {
     $user = erp_require_user($pdo, $config, $requestId);
     erp_require_permission($pdo, $user, 'approvals', $requestId);
-    erp_apply_migrations($pdo, __DIR__ . '/../migrations');
 
     $raw = file_get_contents('php://input') ?: '';
     $input = json_decode($raw, true);
