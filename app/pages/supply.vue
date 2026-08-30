@@ -273,6 +273,10 @@ onMounted(load)
   grid-template-columns: 1fr 92px
   gap: 6px
   min-width: 0
+  // Колонки выравниваем по верху. По умолчанию сетка растягивает ячейки на
+  // всю высоту строки, и после выбора позиции — когда под номенклатурой
+  // появляется подпись категории — поле количества вытягивалось с 46 до 65px.
+  align-items: start
 
 .supply-row__name
   position: relative
@@ -285,11 +289,16 @@ onMounted(load)
   border-radius: 12px
   background: var(--color-card-bg)
   box-shadow: var(--erp-shadow-card, 0 1px 0 rgba(0, 0, 0, 0.04))
-  font-size: 15px
   color: var(--color-text)
+  // Размер шрифта здесь намеренно не задан: erp-theme.css держит все поля
+  // ввода на 16px через !important, иначе iOS Safari зумирует страницу при
+  // фокусе. Строчка «font-size: 15px» тут стояла и не работала.
 
   &::placeholder
     color: var(--color-text-secondary)
+    // На плейсхолдер запрет не распространяется — зум зависит от размера
+    // самого поля. Уменьшаем до размера заголовка «Позиции заявки».
+    font-size: 13px
 
   &:focus
     outline: 2px solid var(--color-primary)
