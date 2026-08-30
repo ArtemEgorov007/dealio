@@ -184,3 +184,37 @@ test('раздел больше не помечен заглушкой', () => {
     assert.doesNotMatch(hub, /label: 'Снабжение', caption: 'В разработке'/)
     assert.match(hub, /label: 'Снабжение', caption: 'Заявка на материалы'/)
 })
+
+test('всю номенклатуру можно посмотреть списком', () => {
+    // Сотрудник не обязан угадывать формулировку, чтобы увидеть, что бывает
+    // на складе: пустое поле показывает весь справочник.
+    assert.match(page, /const suggestionsFor = \(row: FormRow\): ErpSupplyCatalogItem\[\] =>\s*\n\s*rankByQuery\(catalog\.value, row\.name, item => item\.name\)/)
+    assert.doesNotMatch(page, /if \(!row\.name\.trim\(\)\) return \[\]/, 'пустой ввод не должен давать пустой список')
+    assert.doesNotMatch(page, /\.slice\(0, 8\)/, 'список не обрезаем — он прокручивается')
+    assert.match(page, /max-height: 260px/)
+    assert.match(page, /overflow-y: auto/)
+})
+
+test('список открывается кнопкой, а не только вводом', () => {
+    assert.match(page, /Показать всю номенклатуру/)
+    assert.match(page, /toggleSuggestions\(row\)/)
+})
+
+test('набранное подставляется из номенклатуры', () => {
+    // Заявка принимается только с позицией из справочника, поэтому «каска»
+    // нужно превратить в «Каска защитная» самим, а не отбивать ошибкой.
+    assert.match(page, /resolveSingleMatch\(catalog\.value, row\.name, item => item\.name\)/)
+    assert.match(page, /@blur="closeSuggestions\(row\)"/)
+})
+
+test('нераспознанная строка видна до отправки', () => {
+    // Иначе сотрудник узнаёт о проблеме только из ошибки сервера после
+    // нажатия «Заказать».
+    assert.match(page, /Выберите позицию из номенклатуры/)
+    assert.match(page, /unresolvedRows/)
+    assert.match(page, /unresolvedRows\.value\.length === 0/)
+})
+
+test('пустой результат поиска не тупик', () => {
+    assert.match(page, /Ничего не нашлось\. Очистите поле, чтобы увидеть всю номенклатуру\./)
+})
