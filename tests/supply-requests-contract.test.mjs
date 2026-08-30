@@ -218,3 +218,25 @@ test('нераспознанная строка видна до отправки
 test('пустой результат поиска не тупик', () => {
     assert.match(page, /Ничего не нашлось\. Очистите поле, чтобы увидеть всю номенклатуру\./)
 })
+
+test('поле количества не растёт после выбора позиции', () => {
+    // Сетка по умолчанию растягивает ячейки на высоту строки: когда под
+    // номенклатурой появлялась подпись категории, поле количества
+    // вытягивалось с 46 до 65px (замерено на стенде).
+    const fields = page.slice(page.indexOf('.supply-row__fields'), page.indexOf('.supply-row__name'))
+    assert.match(fields, /align-items: start/)
+})
+
+test('уменьшен плейсхолдер, а не само поле', () => {
+    // iOS Safari зумирует страницу при фокусе на поле с font-size < 16px,
+    // поэтому инпуту размер занижать нельзя — только плейсхолдеру.
+    const placeholder = page.slice(page.indexOf('&::placeholder'))
+    assert.match(placeholder.slice(0, 400), /font-size: 13px/)
+
+    // Комментарии выкидываем: проверяем объявления, а не текст рядом с ними.
+    const declarations = page.slice(page.indexOf('.supply-input\n'), page.indexOf('&::placeholder'))
+        .split('\n')
+        .filter(line => !line.trim().startsWith('//'))
+        .join('\n')
+    assert.doesNotMatch(declarations, /font-size: 1[0-5]px/, 'сам инпут не опускаем ниже 16px')
+})
