@@ -34,6 +34,47 @@ const rows = ref<FormRow[]>([{id: nextRowId++, name: '', quantity: ''}])
 const activeSuggestRow = ref<number | null>(null)
 const isSubmitting = ref(false)
 
+// Ссылки на обёртку поля и на поле количества — по id строки. Нужны, чтобы
+// померить место под список и перевести фокус после выбора позиции.
+const fieldEls = new Map<number, HTMLElement>()
+const quantityEls = new Map<number, HTMLInputElement>()
+
+const setFieldEl = (id: number, el: unknown) => {
+    if (el instanceof HTMLElement) fieldEls.set(id, el)
+    else fieldEls.delete(id)
+}
+
+const setQuantityEl = (id: number, el: unknown) => {
+    if (el instanceof HTMLInputElement) quantityEls.set(id, el)
+    else quantityEls.delete(id)
+}
+
+/**
+ * Высота списка подсказок.
+ *
+ * Экранная клавиатура не уменьшает обычный viewport, поэтому список,
+ * отрисованный под полем, оказывался за клавиатурой: сотрудник видел
+ * подсказки только после того, как её убирал. Меряем реально видимую часть
+ * экрана (visualViewport) и отдаём списку ровно её.
+ */
+const suggestMaxHeight = ref(260)
+
+const measureSuggestSpace = () => {
+    const id = activeSuggestRow.value
+    if (id === null) return
+    const field = fieldEls.get(id)
+    const viewport = window.visualViewport
+    if (!field || !viewport) return
+
+    const rect = field.getBoundingClientRect()
+    const visibleBottom = viewport.offsetTop + viewport.height
+    const available = visibleBottom - rect.bottom - 12
+
+    // Ниже 140px список превращается в щель; тогда он всё равно
+    // прокручивается, зато остаётся читаемым.
+    suggestMaxHeight.value = Math.max(140, Math.min(320, Math.round(available)))
+}
+
 const load = async () => {
     isLoading.value = true
     loadError.value = ''
@@ -46,6 +87,11 @@ const load = async () => {
     }
 }
 
+// Список открыт кнопкой «показать всю номенклатуру», а не набором текста.
+// Тогда фильтр не применяем: иначе у строки с уже выбранной позицией список
+// показывал ровно её одну, и сменить позицию можно было только очистив поле.
+const isBrowsingAll = ref(false)
+
 /**
  * Что показать в списке под строкой.
  *
@@ -54,7 +100,9 @@ const load = async () => {
  * прокручивается, поэтому обрезать его не нужно.
  */
 const suggestionsFor = (row: FormRow): ErpSupplyCatalogItem[] =>
-    rankByQuery(catalog.value, row.name, item => item.name)
+    isBrowsingAll.value
+        ? rankByQuery(catalog.value, '', item => item.name)
+        : rankByQuery(catalog.value, row.name, item => item.name)
 
 const isFromCatalog = (name: string): boolean =>
     catalog.value.some(item => item.name === name.trim())
@@ -81,9 +129,49 @@ const closeSuggestions = (row: FormRow) => {
     if (activeSuggestRow.value === row.id) activeSuggestRow.value = null
 }
 
-const toggleSuggestions = (row: FormRow) => {
-    activeSuggestRow.value = activeSuggestRow.value === row.id ? null : row.id
+const openSuggestions = async (row: FormRow, browseAll = false) => {
+    isBrowsingAll.value = browseAll
+    activeSuggestRow.value = row.id
+    await nextTick()
+    // Поле подтягиваем вверх видимой области, иначе список открывается там,
+    // где его закрывает клавиатура.
+    fieldEls.get(row.id)?.scrollIntoView({block: 'nearest', behavior: 'smooth'})
+    measureSuggestSpace()
 }
+
+const toggleSuggestions = (row: FormRow) => {
+    if (activeSuggestRow.value === row.id && isBrowsingAll.value) {
+        activeSuggestRow.value = null
+        return
+    }
+    void openSuggestions(row, true)
+}
+
+/**
+ * Закрытие по касанию вне поля.
+ *
+ * Одного @blur мало: список можно открыть кнопкой, не ставя фокус в поле
+ * (тогда клавиатура не лезет поверх списка), и blur в этом случае не придёт.
+ */
+const onDocumentPointerDown = (event: PointerEvent) => {
+    const id = activeSuggestRow.value
+    if (id === null) return
+    const field = fieldEls.get(id)
+    if (field && event.target instanceof Node && field.contains(event.target)) return
+    activeSuggestRow.value = null
+}
+
+onMounted(() => {
+    document.addEventListener('pointerdown', onDocumentPointerDown, true)
+    window.visualViewport?.addEventListener('resize', measureSuggestSpace)
+    window.visualViewport?.addEventListener('scroll', measureSuggestSpace)
+})
+
+onBeforeUnmount(() => {
+    document.removeEventListener('pointerdown', onDocumentPointerDown, true)
+    window.visualViewport?.removeEventListener('resize', measureSuggestSpace)
+    window.visualViewport?.removeEventListener('scroll', measureSuggestSpace)
+})
 
 /** Строки, где набрано что-то не из номенклатуры: заявку с ними не примут. */
 const unresolvedRows = computed(() =>
@@ -103,6 +191,9 @@ const removeRow = (id: number) => {
 const pickSuggestion = (row: FormRow, item: ErpSupplyCatalogItem) => {
     row.name = item.name
     activeSuggestRow.value = null
+    // Следующий шаг всегда один — количество. Переводим фокус сами, чтобы
+    // клавиатура не закрывалась и не приходилось целиться в узкое поле.
+    nextTick(() => quantityEls.get(row.id)?.focus())
 }
 
 const filledRows = computed(() =>
@@ -160,21 +251,27 @@ onMounted(load)
         <div v-for="row in rows" :key="row.id" class="supply-row">
           <div class="supply-row__fields">
             <div class="supply-row__name">
-              <div class="supply-field">
+              <div :ref="el => setFieldEl(row.id, el)" class="supply-field">
                 <input
                     v-model="row.name"
                     type="text"
                     class="supply-input"
                     placeholder="Номенклатура"
                     autocomplete="off"
-                    @focus="activeSuggestRow = row.id"
+                    autocapitalize="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    enterkeyhint="done"
+                    @focus="openSuggestions(row)"
+                    @input="isBrowsingAll = false"
                     @blur="closeSuggestions(row)"
+                    @keydown.enter.prevent="closeSuggestions(row)"
                 >
                 <button
                     type="button"
                     class="supply-field__toggle"
                     :aria-label="activeSuggestRow === row.id ? 'Скрыть номенклатуру' : 'Показать всю номенклатуру'"
-                    @mousedown.prevent="toggleSuggestions(row)"
+                    @pointerdown.prevent="toggleSuggestions(row)"
                 >
                   <Icon
                       name="heroicons:chevron-down"
@@ -197,13 +294,14 @@ onMounted(load)
               <div
                   v-if="activeSuggestRow === row.id && suggestionsFor(row).length > 0"
                   class="supply-suggest"
+                  :style="{maxHeight: suggestMaxHeight + 'px'}"
               >
                 <button
                     v-for="item in suggestionsFor(row)"
                     :key="item.name"
                     type="button"
                     class="supply-suggest__item"
-                    @mousedown.prevent="pickSuggestion(row, item)"
+                    @pointerdown.prevent="pickSuggestion(row, item)"
                 >
                   <span class="supply-suggest__name">{{ item.name }}</span>
                   <span class="supply-suggest__category">{{ item.category }}</span>
@@ -218,6 +316,7 @@ onMounted(load)
             </div>
 
             <input
+                :ref="el => setQuantityEl(row.id, el)"
                 v-model="row.quantity"
                 type="number"
                 inputmode="decimal"
@@ -362,9 +461,8 @@ onMounted(load)
   left: 0
   right: 0
   z-index: 20
-  // Список открывается целиком, без обрезки: сотрудник должен видеть всю
-  // номенклатуру, а не первые несколько строк.
-  max-height: 260px
+  // Высоту задаёт скрипт по реально видимой части экрана (см.
+  // measureSuggestSpace): под клавиатурой места меньше, чем в вёрстке.
   overflow-y: auto
   overscroll-behavior: contain
   -webkit-overflow-scrolling: touch

@@ -188,10 +188,10 @@ test('раздел больше не помечен заглушкой', () => {
 test('всю номенклатуру можно посмотреть списком', () => {
     // Сотрудник не обязан угадывать формулировку, чтобы увидеть, что бывает
     // на складе: пустое поле показывает весь справочник.
-    assert.match(page, /const suggestionsFor = \(row: FormRow\): ErpSupplyCatalogItem\[\] =>\s*\n\s*rankByQuery\(catalog\.value, row\.name, item => item\.name\)/)
+    assert.match(page, /const suggestionsFor = \(row: FormRow\): ErpSupplyCatalogItem\[\] =>/)
+    assert.match(page, /rankByQuery\(catalog\.value, row\.name, item => item\.name\)/)
     assert.doesNotMatch(page, /if \(!row\.name\.trim\(\)\) return \[\]/, 'пустой ввод не должен давать пустой список')
     assert.doesNotMatch(page, /\.slice\(0, 8\)/, 'список не обрезаем — он прокручивается')
-    assert.match(page, /max-height: 260px/)
     assert.match(page, /overflow-y: auto/)
 })
 
@@ -239,4 +239,51 @@ test('уменьшен плейсхолдер, а не само поле', () =>
         .filter(line => !line.trim().startsWith('//'))
         .join('\n')
     assert.doesNotMatch(declarations, /font-size: 1[0-5]px/, 'сам инпут не опускаем ниже 16px')
+})
+
+test('выбор позиции работает касанием, а не только мышью', () => {
+    // mousedown на тач-устройстве синтезируется уже после blur: список к
+    // этому моменту снят с DOM, и тап по позиции не доходил до обработчика.
+    // pointerdown приходит сразу по касанию, до blur, и .prevent сохраняет
+    // фокус в поле.
+    assert.doesNotMatch(page, /@mousedown/, 'mousedown не работает на касании')
+    assert.match(page, /@pointerdown\.prevent="pickSuggestion\(row, item\)"/)
+    assert.match(page, /@pointerdown\.prevent="toggleSuggestions\(row\)"/)
+})
+
+test('список умещается в видимую часть экрана над клавиатурой', () => {
+    // Экранная клавиатура не уменьшает обычный viewport, поэтому список,
+    // отрисованный под полем, оказывался за ней: подсказки было видно
+    // только после того, как клавиатуру убирали.
+    assert.match(page, /window\.visualViewport/)
+    assert.match(page, /viewport\.offsetTop \+ viewport\.height/)
+    assert.match(page, /:style="\{maxHeight: suggestMaxHeight \+ 'px'\}"/)
+    assert.match(page, /scrollIntoView/)
+})
+
+test('высота списка пересчитывается при появлении клавиатуры', () => {
+    assert.match(page, /visualViewport\?\.addEventListener\('resize', measureSuggestSpace\)/)
+    assert.match(page, /visualViewport\?\.addEventListener\('scroll', measureSuggestSpace\)/)
+    assert.match(page, /visualViewport\?\.removeEventListener\('resize', measureSuggestSpace\)/)
+})
+
+test('список закрывается касанием вне поля', () => {
+    // Одного blur мало: список открывается кнопкой без фокуса в поле, и
+    // blur тогда не приходит вовсе.
+    assert.match(page, /document\.addEventListener\('pointerdown', onDocumentPointerDown, true\)/)
+    assert.match(page, /document\.removeEventListener\('pointerdown', onDocumentPointerDown, true\)/)
+    assert.match(page, /field\.contains\(event\.target\)/)
+})
+
+test('после выбора позиции фокус уходит в количество', () => {
+    assert.match(page, /quantityEls\.get\(row\.id\)\?\.focus\(\)/)
+})
+
+test('кнопка списка показывает весь справочник даже у заполненной строки', () => {
+    // Иначе у строки с уже выбранной позицией список показывал ровно её
+    // одну, и сменить позицию можно было только очистив поле.
+    assert.match(page, /const isBrowsingAll = ref\(false\)/)
+    assert.match(page, /isBrowsingAll\.value\s*\n\s*\? rankByQuery\(catalog\.value, ''/)
+    assert.match(page, /openSuggestions\(row, true\)/)
+    assert.match(page, /@input="isBrowsingAll = false"/, 'набор текста возвращает фильтрацию')
 })
