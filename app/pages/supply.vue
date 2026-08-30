@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {createSupplyRequest, fetchSupplyCatalog} from '~/utils/erp-supply'
 import type {ErpSupplyCatalogItem} from '~/utils/erp-supply'
-import {filterByQuery} from '~/utils/text-search'
+import {rankByQuery, resolveSingleMatch} from '~/utils/text-search'
 import {useAppToast} from '~/composables/useAppToast'
 
 definePageMeta({layout: 'erp'})
@@ -46,14 +46,49 @@ const load = async () => {
     }
 }
 
-const suggestionsFor = (row: FormRow): ErpSupplyCatalogItem[] => {
-    if (!row.name.trim()) return []
-    // Больше восьми подсказок на телефоне не помещается и мешает вводу.
-    return filterByQuery(catalog.value, row.name, item => item.name).slice(0, 8)
-}
+/**
+ * Что показать в списке под строкой.
+ *
+ * Пустой ввод даёт всю номенклатуру: сотрудник не обязан угадывать
+ * формулировку, чтобы вообще увидеть, что бывает на складе. Список
+ * прокручивается, поэтому обрезать его не нужно.
+ */
+const suggestionsFor = (row: FormRow): ErpSupplyCatalogItem[] =>
+    rankByQuery(catalog.value, row.name, item => item.name)
+
+const isFromCatalog = (name: string): boolean =>
+    catalog.value.some(item => item.name === name.trim())
 
 const categoryFor = (name: string): string =>
-    catalog.value.find(item => item.name === name)?.category ?? ''
+    catalog.value.find(item => item.name === name.trim())?.category ?? ''
+
+/**
+ * Подставляет позицию номенклатуры по тому, что набрал сотрудник.
+ *
+ * Заявка принимается только с позицией из справочника, поэтому набранное
+ * «каска» нужно превратить в «Каска защитная» самим, а не отбивать ошибкой.
+ * Если подходящих несколько — оставляем как есть и показываем список:
+ * «Круг отрезной 125» и «Круг отрезной 230» — разные вещи.
+ */
+const resolveRow = (row: FormRow) => {
+    if (!row.name.trim() || isFromCatalog(row.name)) return
+    const match = resolveSingleMatch(catalog.value, row.name, item => item.name)
+    if (match) row.name = match.name
+}
+
+const closeSuggestions = (row: FormRow) => {
+    resolveRow(row)
+    if (activeSuggestRow.value === row.id) activeSuggestRow.value = null
+}
+
+const toggleSuggestions = (row: FormRow) => {
+    activeSuggestRow.value = activeSuggestRow.value === row.id ? null : row.id
+}
+
+/** Строки, где набрано что-то не из номенклатуры: заявку с ними не примут. */
+const unresolvedRows = computed(() =>
+    rows.value.filter(row => row.name.trim() && !isFromCatalog(row.name)),
+)
 
 const addRow = () => {
     rows.value.push({id: nextRowId++, name: '', quantity: ''})
@@ -74,7 +109,11 @@ const filledRows = computed(() =>
     rows.value.filter(row => row.name.trim() && parseQuantity(row.quantity) > 0),
 )
 
-const canSubmit = computed(() => filledRows.value.length > 0 && !isSubmitting.value)
+// Кнопку не блокируем из-за неразобранной строки: сотрудник должен видеть
+// подсказку под конкретной строкой, а не гадать, почему «Заказать» не жмётся.
+const canSubmit = computed(() =>
+    filledRows.value.length > 0 && unresolvedRows.value.length === 0 && !isSubmitting.value,
+)
 
 const submit = async () => {
     if (!canSubmit.value) return
@@ -121,16 +160,38 @@ onMounted(load)
         <div v-for="row in rows" :key="row.id" class="supply-row">
           <div class="supply-row__fields">
             <div class="supply-row__name">
-              <input
-                  v-model="row.name"
-                  type="text"
-                  class="supply-input"
-                  placeholder="Номенклатура"
-                  autocomplete="off"
-                  @focus="activeSuggestRow = row.id"
-              >
+              <div class="supply-field">
+                <input
+                    v-model="row.name"
+                    type="text"
+                    class="supply-input"
+                    placeholder="Номенклатура"
+                    autocomplete="off"
+                    @focus="activeSuggestRow = row.id"
+                    @blur="closeSuggestions(row)"
+                >
+                <button
+                    type="button"
+                    class="supply-field__toggle"
+                    :aria-label="activeSuggestRow === row.id ? 'Скрыть номенклатуру' : 'Показать всю номенклатуру'"
+                    @mousedown.prevent="toggleSuggestions(row)"
+                >
+                  <Icon
+                      name="heroicons:chevron-down"
+                      size="16"
+                      :class="{'supply-field__toggle-icon--open': activeSuggestRow === row.id}"
+                  />
+                </button>
+              </div>
+
               <span v-if="categoryFor(row.name)" class="supply-row__category">
                 {{ categoryFor(row.name) }}
+              </span>
+              <span
+                  v-else-if="row.name.trim() && activeSuggestRow !== row.id"
+                  class="supply-row__hint"
+              >
+                Выберите позицию из номенклатуры
               </span>
 
               <div
@@ -148,6 +209,12 @@ onMounted(load)
                   <span class="supply-suggest__category">{{ item.category }}</span>
                 </button>
               </div>
+              <p
+                  v-else-if="activeSuggestRow === row.id && row.name.trim()"
+                  class="supply-suggest supply-suggest--empty"
+              >
+                Ничего не нашлось. Очистите поле, чтобы увидеть всю номенклатуру.
+              </p>
             </div>
 
             <input
@@ -228,15 +295,48 @@ onMounted(load)
     outline: 2px solid var(--color-primary)
     outline-offset: -1px
 
+.supply-field .supply-input
+  // Место под кнопку раскрытия списка, иначе длинное название заезжает под неё.
+  padding-right: 36px
+
 .supply-input--qty
   text-align: right
   font-variant-numeric: tabular-nums
+
+.supply-field
+  position: relative
+
+.supply-field__toggle
+  position: absolute
+  top: 0
+  right: 0
+  display: flex
+  align-items: center
+  justify-content: center
+  width: 34px
+  height: 100%
+  border: none
+  background: none
+  color: var(--color-text-secondary)
+  cursor: pointer
+
+  svg
+    transition: transform 0.15s ease
+
+.supply-field__toggle-icon--open
+  transform: rotate(180deg)
 
 .supply-row__category
   display: block
   margin: 3px 0 0 12px
   font-size: 11px
   color: var(--color-text-secondary)
+
+.supply-row__hint
+  display: block
+  margin: 3px 0 0 12px
+  font-size: 11px
+  color: var(--erp-warn, #E7920B)
 
 .supply-row__remove
   flex-shrink: 0
@@ -253,10 +353,21 @@ onMounted(load)
   left: 0
   right: 0
   z-index: 20
+  // Список открывается целиком, без обрезки: сотрудник должен видеть всю
+  // номенклатуру, а не первые несколько строк.
+  max-height: 260px
+  overflow-y: auto
+  overscroll-behavior: contain
+  -webkit-overflow-scrolling: touch
   background: var(--color-card-bg)
   border-radius: 12px
   box-shadow: 0 8px 24px -8px rgba(1, 110, 215, 0.35)
-  overflow: hidden
+
+.supply-suggest--empty
+  margin: 0
+  padding: 10px 12px
+  font-size: 12.5px
+  color: var(--color-text-secondary)
 
 .supply-suggest__item
   display: flex
