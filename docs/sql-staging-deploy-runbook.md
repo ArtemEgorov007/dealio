@@ -51,6 +51,29 @@ Review the last `erp_catalog_sync_runs` row and the operations log after a
 source-table change. Do not enable the schedule on production until the
 separate production gate is approved.
 
+## Notification schedules
+
+Two notification jobs run on a schedule. Neither is triggered by user
+activity, so an unscheduled job fails silently — nobody gets notified and
+nothing errors.
+
+| Job | Script | HTTP route | What it sends |
+| --- | --- | --- | --- |
+| Pending approvals | `scripts/push-notify-approvals.php` | `POST /api/internal/push-notify` | Reminds approvers of invoices awaiting their decision |
+| Supply status changes | `scripts/supply-notify-status.php` | `POST /api/internal/supply-notify-status` | Tells a supply request's author that its status changed |
+
+Run either as a CLI job (preferred — no token needed, it reads the private
+config directly) or over HTTP with the `X-Cron-Token` header matching
+`push.cron_token` in `erp-api-config.php`. Every 5 minutes is enough for both;
+they are idempotent, so an overlapping run sends nothing twice.
+
+The supply job detects a change by comparing `status` against
+`notified_status` on `erp_supply_requests`. It marks a request notified even
+when delivery fails, so a broken push endpoint costs one missed message
+rather than a permanent retry loop. New requests are created with
+`notified_status` already set, so ordering never notifies the author of the
+status they just saw on screen.
+
 ## Rollback
 
 Set staging `erpBackendMode=gas` and redeploy the static frontend. SQL tables
