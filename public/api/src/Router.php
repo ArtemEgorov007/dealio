@@ -33,6 +33,15 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'GET' && $path === '/supply/requests') {
         return ['supply_requests'];
     }
+    if ($method === 'GET' && $path === '/supply/my-requests') {
+        return ['supply_my_requests'];
+    }
+    if ($method === 'GET' && $path === '/supply/catalog') {
+        return ['supply_catalog'];
+    }
+    if ($method === 'POST' && $path === '/supply/requests') {
+        return ['supply_create'];
+    }
     if ($method === 'GET' && $path === '/auth/me') {
         return ['auth_me'];
     }

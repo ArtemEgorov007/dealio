@@ -48,6 +48,15 @@ try {
     if ($name === 'supply_requests') {
         erp_supply_requests($pdo, $config, $requestId);
     }
+    if ($name === 'supply_my_requests') {
+        erp_supply_my_requests($pdo, $config, $requestId);
+    }
+    if ($name === 'supply_catalog') {
+        erp_supply_catalog($pdo, $config, $requestId);
+    }
+    if ($name === 'supply_create') {
+        erp_supply_create($pdo, $config, $requestId);
+    }
     if ($name === 'reports_current') {
         erp_reports_current($pdo, $config, $requestId);
     }
