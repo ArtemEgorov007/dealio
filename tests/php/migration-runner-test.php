@@ -26,6 +26,8 @@ expect_migration($names === [
     '004_erp_catalog_sync.sql',
     '005_erp_push.sql',
     '006_erp_approval_notifications.sql',
+    '007_erp_warehouse.sql',
+    '008_erp_supply_approvals.sql',
 ], 'All ERP migrations must run once in numeric order');
 
 foreach ($paths as $path) {
