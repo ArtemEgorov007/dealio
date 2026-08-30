@@ -69,6 +69,9 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'POST' && $path === '/internal/approvals-notify-all') {
         return ['approvals_notify_all_cron'];
     }
+    if ($method === 'POST' && $path === '/internal/supply-notify-status') {
+        return ['supply_notify_status_cron'];
+    }
     if ($method === 'GET' && $path === '/approvals/notifications') {
         return ['approvals_notifications'];
     }

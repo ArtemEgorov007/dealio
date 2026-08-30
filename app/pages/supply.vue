@@ -17,8 +17,14 @@ const loadError = ref('')
 interface FormRow {
     id: number
     name: string
-    quantity: string
+    // v-model на <input type="number"> отдаёт число, а на пустом поле —
+    // пустую строку, поэтому тип честно допускает оба варианта.
+    quantity: string | number
 }
+
+/** Количество из поля ввода. Запятая — потому что её ставит русская раскладка. */
+const parseQuantity = (value: string | number): number =>
+    typeof value === 'number' ? value : Number(String(value).replace(',', '.'))
 
 let nextRowId = 1
 const rows = ref<FormRow[]>([{id: nextRowId++, name: '', quantity: ''}])
@@ -65,7 +71,7 @@ const pickSuggestion = (row: FormRow, item: ErpSupplyCatalogItem) => {
 }
 
 const filledRows = computed(() =>
-    rows.value.filter(row => row.name.trim() && Number(row.quantity.replace(',', '.')) > 0),
+    rows.value.filter(row => row.name.trim() && parseQuantity(row.quantity) > 0),
 )
 
 const canSubmit = computed(() => filledRows.value.length > 0 && !isSubmitting.value)
@@ -77,7 +83,7 @@ const submit = async () => {
         const result = await createSupplyRequest(
             filledRows.value.map(row => ({
                 name: row.name.trim(),
-                quantity: Number(row.quantity.replace(',', '.')),
+                quantity: parseQuantity(row.quantity),
             })),
         )
         showSuccess(`Заявка ${result.requestCode} создана`, `Позиций: ${result.positions}`)

@@ -287,7 +287,13 @@ function erp_push_send_approval(array $config, array $subscriptions, string $inv
     return ['sent' => $sent, 'expired' => $expired, 'failed' => $failed];
 }
 
-function erp_push_notify_cron(PDO $pdo, array $config, string $requestId): void
+/**
+ * Общая проверка cron-токена для внутренних маршрутов.
+ *
+ * Три обработчика повторяли одну и ту же проверку дословно. Расходятся такие
+ * копии молча, а расходится здесь право дёрнуть рассылку без входа в систему.
+ */
+function erp_require_cron_token(array $config, string $requestId): void
 {
     $push = $config['push'] ?? null;
     $expected = is_array($push) ? trim((string) ($push['cron_token'] ?? '')) : '';
@@ -295,6 +301,11 @@ function erp_push_notify_cron(PDO $pdo, array $config, string $requestId): void
     if ($expected === '' || $provided === '' || !hash_equals($expected, $provided)) {
         erp_json(403, erp_error_payload('forbidden', 'Недостаточно прав', $requestId));
     }
+}
+
+function erp_push_notify_cron(PDO $pdo, array $config, string $requestId): void
+{
+    erp_require_cron_token($config, $requestId);
 
     $summary = erp_push_notify_pending_approvals($pdo, $config);
     erp_json(200, ['ok' => true, 'data' => $summary]);
@@ -482,12 +493,7 @@ function erp_approvals_notify_all_with_access(PDO $pdo, array $config): array
 
 function erp_approvals_notify_all_cron(PDO $pdo, array $config, string $requestId): void
 {
-    $push = $config['push'] ?? null;
-    $expected = is_array($push) ? trim((string) ($push['cron_token'] ?? '')) : '';
-    $provided = trim((string) ($_SERVER['HTTP_X_CRON_TOKEN'] ?? ''));
-    if ($expected === '' || $provided === '' || !hash_equals($expected, $provided)) {
-        erp_json(403, erp_error_payload('forbidden', 'Недостаточно прав', $requestId));
-    }
+    erp_require_cron_token($config, $requestId);
 
     $summary = erp_approvals_notify_all_with_access($pdo, $config);
     erp_json(200, ['ok' => true, 'data' => $summary]);

@@ -81,6 +81,9 @@ try {
     if ($name === 'approvals_notify_all_cron') {
         erp_approvals_notify_all_cron($pdo, $config, $requestId);
     }
+    if ($name === 'supply_notify_status_cron') {
+        erp_supply_notify_status_cron($pdo, $config, $requestId);
+    }
     if ($name === 'approvals_notifications') {
         erp_approvals_notifications_current($pdo, $config, $requestId);
     }

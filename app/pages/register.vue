@@ -47,7 +47,7 @@ const modules = computed(() => {
         {key: 'handover', to: '/scan-handover', icon: 'heroicons:check-badge', label: 'Сдача', caption: 'Приёмка', tone: '#8E4EC6'},
         {key: 'reports', to: '/reports', icon: 'heroicons:chart-bar', label: 'Отчёты', caption: 'Оперативный срез', tone: '#016ED7'},
         {key: 'approvals', to: '/approvals', icon: 'heroicons:check-circle', label: 'Согласования', caption: 'Счета', tone: '#0F766E', count: a.approvals && approvalsStore.pendingCount > 0 ? approvalsStore.pendingCount : null},
-        {key: 'supply', to: '/supply', icon: 'heroicons:truck', label: 'Снабжение', caption: 'В разработке', tone: '#5B6B7F'},
+        {key: 'supply', to: '/supply', icon: 'heroicons:truck', label: 'Снабжение', caption: 'Заявка на материалы', tone: '#B45309'},
         {key: 'orders', to: '/orders', icon: 'heroicons:shopping-bag', label: 'Заказы', caption: 'В разработке', tone: '#5B6B7F'},
         {key: 'warehouse', to: '/warehouse', icon: 'heroicons:archive-box', label: 'Склад', caption: 'Приём/выдача', tone: '#4F46E5'},
         {key: 'personnel', to: '/personnel', icon: 'heroicons:user-group', label: 'Кадры', tone: '#016ED7'},

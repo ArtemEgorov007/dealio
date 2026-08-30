@@ -84,12 +84,7 @@ function erp_supply_notify_engineers(PDO $pdo, array $config, string $requestCod
     }
 }
 
-/**
- * Уведомление автору о смене статуса заявки.
- *
- * Вызывается из места, где статус меняется. Пока такого экрана нет —
- * функция готова к подключению, когда появится обработка заявок.
- */
+/** Уведомление автору о смене статуса заявки. */
 function erp_supply_notify_author(PDO $pdo, array $config, string $requestCode, string $status): void
 {
     try {
@@ -103,10 +98,61 @@ function erp_supply_notify_author(PDO $pdo, array $config, string $requestCode, 
             return;
         }
 
-        erp_supply_push($pdo, $config, $authors, 'Заявка ' . $requestCode, 'Статус: ' . $status, '/supply');
+        erp_supply_push($pdo, $config, $authors, 'Заявка ' . $requestCode, 'Статус: ' . $status, '/supply-requests');
     } catch (Throwable) {
         // Молча: смена статуса важнее уведомления.
     }
+}
+
+/**
+ * Рассылка уведомлений по заявкам, у которых статус разошёлся с сообщённым.
+ *
+ * Экрана обработки заявок ещё нет: статус меняет снабжение — сегодня правкой
+ * в базе, позже из функционала счетов. Поэтому событием считаем сам факт
+ * расхождения, а не вызов из конкретного обработчика: так уведомление уйдёт
+ * независимо от того, кто и откуда статус поменял.
+ *
+ * @return array{requests: int, notified: int}
+ */
+function erp_supply_notify_status_changes(PDO $pdo, array $config): array
+{
+    // Заявка — это группа строк с общим кодом. Уведомляем один раз на заявку,
+    // а не по разу на каждую позицию.
+    $changed = $pdo->query(
+        "SELECT request_code, status, MIN(author_user_id) AS author_user_id
+         FROM erp_supply_requests
+         WHERE author_user_id IS NOT NULL AND status <> COALESCE(notified_status, '')
+         GROUP BY request_code, status"
+    )->fetchAll(PDO::FETCH_ASSOC);
+
+    // Имена параметров разные, хотя значение одно: при отключённой эмуляции
+    // подготовленных выражений PDO не даёт переиспользовать один placeholder.
+    $markNotified = $pdo->prepare(
+        'UPDATE erp_supply_requests SET notified_status = :notified
+         WHERE request_code = :code AND status = :status'
+    );
+
+    $notified = 0;
+    foreach ($changed as $row) {
+        $code = (string) $row['request_code'];
+        $status = (string) $row['status'];
+
+        erp_supply_notify_author($pdo, $config, $code, $status);
+
+        // Отметку ставим и при сбое доставки: иначе каждая следующая минута
+        // крона повторяла бы одну и ту же неудачную рассылку бесконечно.
+        $markNotified->execute(['code' => $code, 'status' => $status, 'notified' => $status]);
+        $notified++;
+    }
+
+    return ['requests' => count($changed), 'notified' => $notified];
+}
+
+function erp_supply_notify_status_cron(PDO $pdo, array $config, string $requestId): void
+{
+    erp_require_cron_token($config, $requestId);
+
+    erp_json(200, ['ok' => true, 'data' => erp_supply_notify_status_changes($pdo, $config)]);
 }
 
 function erp_supply_push(PDO $pdo, array $config, array $userIds, string $title, string $body, string $url): void
@@ -176,17 +222,30 @@ function erp_supply_create(PDO $pdo, array $config, string $requestId): void
         $insert = $pdo->prepare(
             'INSERT INTO erp_supply_requests
                 (author_user_id, request_code, requested_at, platform, employee_fio, department,
-                 item_name, quantity, unit, category, approver_fio, approved_at, invoice, status)
+                 item_name, quantity, unit, category, approver_fio, approved_at, invoice, status, notified_status)
              VALUES
                 (:author_user_id, :request_code, CURDATE(), :platform, :employee_fio, :department,
-                 :item_name, :quantity, \'\', :category, NULL, NULL, NULL, :status)'
+                 :item_name, :quantity, \'\', :category, NULL, NULL, NULL, :status, :notified_status)'
         );
 
         foreach ($items as $item) {
             // Категорию берём из справочника, а не от клиента: она должна
             // совпадать с номенклатурой, иначе заявки не сгруппировать.
             $categoryStatement->execute(['name' => $item['name']]);
-            $category = (string) ($categoryStatement->fetchColumn() ?: '');
+            $category = $categoryStatement->fetchColumn();
+
+            // Позицию не из справочника не принимаем. Поле ввода свободное
+            // (подсказки не обязывают выбрать), и без проверки такая строка
+            // легла бы с пустой категорией — заявка выпадает из любой
+            // группировки по категориям и всплывает только в отчёте.
+            if ($category === false) {
+                $pdo->rollBack();
+                erp_json(422, erp_error_payload(
+                    'invalid_input',
+                    "«{$item['name']}» нет в номенклатуре склада — выберите позицию из списка",
+                    $requestId
+                ));
+            }
 
             $insert->execute([
                 'author_user_id' => $actor['id'] ?? null,
@@ -196,8 +255,12 @@ function erp_supply_create(PDO $pdo, array $config, string $requestId): void
                 'department' => (string) ($actor['department'] ?? ''),
                 'item_name' => $item['name'],
                 'quantity' => $item['quantity'],
-                'category' => $category,
+                'category' => (string) $category,
                 'status' => ERP_SUPPLY_STATUS_NEW,
+                // Начальный статус сразу считаем сообщённым: автор только что
+                // нажал «Заказать» и увидел подтверждение — уведомление о том
+                // же статусе было бы шумом. Сторож ловит только изменения.
+                'notified_status' => ERP_SUPPLY_STATUS_NEW,
             ]);
         }
 
@@ -218,11 +281,15 @@ function erp_supply_my_requests(PDO $pdo, array $config, string $requestId): voi
     $actor = erp_require_user($pdo, $config, $requestId);
     erp_require_permission($pdo, $actor, 'supply', $requestId);
 
+    // Порядок задаёт id, а не request_code: код — строка, и сортировка по нему
+    // ставит «Колпино-9» выше «Колпино-18». Читаем по возрастанию (позиции
+    // остаются в том порядке, в каком сотрудник их вводил), а список заявок
+    // переворачиваем ниже — свежие сверху.
     $statement = $pdo->prepare(
         'SELECT request_code, requested_at, item_name, quantity, unit, category, status, invoice
          FROM erp_supply_requests
          WHERE author_user_id = :user_id
-         ORDER BY requested_at DESC, request_code DESC, item_name'
+         ORDER BY id'
     );
     $statement->execute(['user_id' => $actor['id'] ?? 0]);
 
@@ -246,7 +313,7 @@ function erp_supply_my_requests(PDO $pdo, array $config, string $requestId): voi
         ];
     }
 
-    erp_json(200, ['ok' => true, 'data' => ['requests' => array_values($requests)]]);
+    erp_json(200, ['ok' => true, 'data' => ['requests' => array_reverse(array_values($requests))]]);
 }
 
 /** Номенклатура для подсказки в форме заявки. */

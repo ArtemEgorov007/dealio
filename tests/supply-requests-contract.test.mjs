@@ -8,6 +8,9 @@ const page = await readFile(new URL('../app/pages/supply.vue', import.meta.url),
 const requestsPage = await readFile(new URL('../app/pages/supply-requests.vue', import.meta.url), 'utf8')
 const router = await readFile(new URL('../public/api/src/Router.php', import.meta.url), 'utf8')
 const middleware = await readFile(new URL('../app/middleware/erp-flow.global.ts', import.meta.url), 'utf8')
+const statusMigration = await readFile(new URL('../public/api/migrations/010_erp_supply_status_notifications.sql', import.meta.url), 'utf8')
+const pushPhp = await readFile(new URL('../public/api/src/Push.php', import.meta.url), 'utf8')
+const hub = await readFile(new URL('../app/pages/register.vue', import.meta.url), 'utf8')
 
 test('одна заявка может содержать несколько позиций', () => {
     // ТЗ: сколько строк создал сотрудник — столько строк в таблице, но код
@@ -74,6 +77,50 @@ test('смена статуса уведомляет автора заявки',
     assert.match(migration, /author_user_id BIGINT UNSIGNED NULL/i)
 })
 
+test('смену статуса ловим по расхождению, а не по вызову из обработчика', () => {
+    // Экрана обработки заявок нет: статус меняет снабжение напрямую в базе,
+    // а позже — функционал счетов. Привязка к одному обработчику потеряла бы
+    // все остальные источники.
+    assert.match(statusMigration, /ADD COLUMN notified_status VARCHAR\(64\) NULL/i)
+    assert.match(supplyPhp, /status <> COALESCE\(notified_status, ''\)/)
+    assert.match(supplyPhp, /function erp_supply_notify_status_changes/)
+})
+
+test('старая история не рассылается при первом прогоне', () => {
+    assert.match(statusMigration, /UPDATE erp_supply_requests SET notified_status = status/i)
+})
+
+test('уведомление — одно на заявку, а не на позицию', () => {
+    const watcher = supplyPhp.slice(supplyPhp.indexOf('function erp_supply_notify_status_changes'))
+    assert.match(watcher, /GROUP BY request_code, status/)
+})
+
+test('сбой доставки не зацикливает рассылку', () => {
+    // Без отметки после попытки крон повторял бы одну неудачу каждую минуту.
+    const watcher = supplyPhp.slice(supplyPhp.indexOf('function erp_supply_notify_status_changes'))
+    const notify = watcher.indexOf('erp_supply_notify_author(')
+    const mark = watcher.indexOf('$markNotified->execute(')
+    assert.ok(notify > -1 && mark > notify, 'отметка должна ставиться после попытки доставки')
+})
+
+test('уведомление ведёт на экран заявок автора', () => {
+    assert.match(supplyPhp, /'Статус: ' \. \$status, '\/supply-requests'/)
+})
+
+test('крон-маршрут закрыт токеном', () => {
+    assert.match(router, /'POST' && \$path === '\/internal\/supply-notify-status'/)
+    const handler = supplyPhp.slice(supplyPhp.indexOf('function erp_supply_notify_status_cron'))
+    assert.match(handler.slice(0, 300), /erp_require_cron_token\(\$config, \$requestId\)/)
+})
+
+test('проверка cron-токена не размножена по копиям', () => {
+    // Копии расходятся молча, а расходится здесь право дёрнуть рассылку
+    // без входа в систему.
+    const guards = pushPhp.match(/HTTP_X_CRON_TOKEN/g) ?? []
+    assert.equal(guards.length, 1, 'проверка токена должна быть в одном месте')
+    assert.match(pushPhp, /function erp_require_cron_token/)
+})
+
 test('сбой уведомления не отменяет заявку', () => {
     // Заявка уже в базе; непришедшее уведомление — повод посмотреть логи,
     // а не потерять заказ.
@@ -114,4 +161,26 @@ test('новый роут закрыт правом supply', () => {
     // не проверялся вовсе — поэтому роут обязан быть в обоих списках.
     assert.match(middleware, /'\/supply-requests',/)
     assert.match(middleware, /'\/supply-requests': 'supply'/)
+})
+
+test('количество из поля разбирается и числом, и строкой', () => {
+    // <input type="number"> отдаёт через v-model число, и вызов .replace на
+    // нём ронял весь экран заявки — поймано только живым кликом.
+    assert.match(page, /const parseQuantity = \(value: string \| number\): number =>/)
+    assert.match(page, /typeof value === 'number' \? value : Number\(String\(value\)\.replace\(',', '\.'\)\)/)
+    assert.doesNotMatch(page, /row\.quantity\.replace/, 'у количества нельзя звать строковые методы напрямую')
+})
+
+test('заявки сортируются по времени, а не по строке кода', () => {
+    // request_code — строка: сортировка по нему ставит «Колпино-9» выше
+    // «Колпино-18», то есть свежая заявка проваливается в середину списка.
+    const my = supplyPhp.slice(supplyPhp.indexOf('function erp_supply_my_requests'))
+    assert.doesNotMatch(my.slice(0, 900), /ORDER BY[^']*request_code DESC/)
+    assert.match(my, /ORDER BY id'/)
+    assert.match(my, /array_reverse\(array_values\(\$requests\)\)/)
+})
+
+test('раздел больше не помечен заглушкой', () => {
+    assert.doesNotMatch(hub, /label: 'Снабжение', caption: 'В разработке'/)
+    assert.match(hub, /label: 'Снабжение', caption: 'Заявка на материалы'/)
 })
