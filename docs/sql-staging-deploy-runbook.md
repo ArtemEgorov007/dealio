@@ -31,7 +31,11 @@ export ERP_FTP_PASSWORD='…'
 python3 scripts/deploy-staging-api.py
 python3 scripts/staging-approvals-auth-smoke.py
 ```
-3. Run `ERP_API_SRC=/absolute/path/to/staging/api/src ERP_MIGRATIONS_DIR=/absolute/path/to/erp-ops/migrations php /absolute/path/to/erp-ops/scripts/sql-migrate.php` through the server shell.
+3. Run `ERP_API_SRC=/absolute/path/to/staging/api/src php /absolute/path/to/erp-ops/scripts/sql-migrate.php`
+   through the server shell. Migrations are applied by the database connection itself
+   (`erp_database`), so this step verifies rather than performs them: it prints
+   `applied/total` and exits non-zero if any migration is missing. Do not continue on a
+   non-zero exit — the schema the API expects is not the schema on the server.
 4. Run `ERP_API_SRC=/absolute/path/to/staging/api/src php /absolute/path/to/erp-ops/scripts/sql-import-workshop-badges.php`; retain its JSON result as
    the initial catalog-sync audit record.
 5. Confirm the sync report has the expected workshop counts and no error.
