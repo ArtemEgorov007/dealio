@@ -12,6 +12,27 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'POST' && $path === '/auth/logout') {
         return ['auth_logout'];
     }
+    if ($method === 'GET' && $path === '/warehouse/categories') {
+        return ['warehouse_categories'];
+    }
+    if ($method === 'GET' && $path === '/warehouse/platforms') {
+        return ['warehouse_platforms'];
+    }
+    if ($method === 'GET' && $path === '/warehouse/items') {
+        return ['warehouse_items'];
+    }
+    if ($method === 'GET' && $path === '/warehouse/stock') {
+        return ['warehouse_stock'];
+    }
+    if ($method === 'POST' && $path === '/warehouse/receive') {
+        return ['warehouse_receive'];
+    }
+    if ($method === 'POST' && $path === '/warehouse/issue') {
+        return ['warehouse_issue'];
+    }
+    if ($method === 'GET' && $path === '/supply/requests') {
+        return ['supply_requests'];
+    }
     if ($method === 'GET' && $path === '/auth/me') {
         return ['auth_me'];
     }

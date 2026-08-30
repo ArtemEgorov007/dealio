@@ -27,6 +27,27 @@ try {
     if ($name === 'auth_me') {
         erp_auth_me($pdo, $config, $requestId);
     }
+    if ($name === 'warehouse_categories') {
+        erp_warehouse_categories($pdo, $config, $requestId);
+    }
+    if ($name === 'warehouse_platforms') {
+        erp_warehouse_platforms($pdo, $config, $requestId);
+    }
+    if ($name === 'warehouse_items') {
+        erp_warehouse_items($pdo, $config, $requestId);
+    }
+    if ($name === 'warehouse_stock') {
+        erp_warehouse_stock($pdo, $config, $requestId);
+    }
+    if ($name === 'warehouse_receive') {
+        erp_warehouse_receive($pdo, $config, $requestId);
+    }
+    if ($name === 'warehouse_issue') {
+        erp_warehouse_issue($pdo, $config, $requestId);
+    }
+    if ($name === 'supply_requests') {
+        erp_supply_requests($pdo, $config, $requestId);
+    }
     if ($name === 'reports_current') {
         erp_reports_current($pdo, $config, $requestId);
     }

@@ -15,3 +15,4 @@ require_once __DIR__ . '/Handover.php';
 require_once __DIR__ . '/Reports.php';
 require_once __DIR__ . '/Approvals.php';
 require_once __DIR__ . '/Push.php';
+require_once __DIR__ . '/Warehouse.php';
