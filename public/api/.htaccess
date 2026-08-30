@@ -1,0 +1,16 @@
+RewriteEngine On
+
+# Единственная точка входа — index.php.
+#
+# Раньше правило ниже пропускало любой существующий файл, и внутренности API
+# отдавались наружу: .sql-миграции скачивались как статика (схема базы),
+# composer.json показывал список зависимостей, а файлы из src/ и vendor/
+# выполнялись PHP напрямую — в обход Bootstrap, Router и проверки прав.
+#
+# 404, а не 403: незачем подтверждать, что файл существует.
+RewriteRule ^(src|migrations|vendor)(/|$) - [R=404,L]
+RewriteRule ^composer\.(json|lock)$ - [R=404,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

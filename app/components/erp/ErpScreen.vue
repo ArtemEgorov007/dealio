@@ -3,10 +3,11 @@ defineProps<{
   title: string
   subtitle?: string
   overline?: string
-  shiftLink?: { to: string; label: string; icon?: string; iconSize?: number }
+  shiftLink?: { to?: string; label: string; icon?: string; iconSize?: number; onClick?: () => void }
   icon?: string
   centerBrand?: boolean
   footerHidden?: boolean
+  headCompact?: boolean
 }>()
 
 const baseURL = useRuntimeConfig().app.baseURL
@@ -18,8 +19,11 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
 </script>
 
 <template>
-  <section class="erp-screen">
-    <header class="erp-screen__head" :class="{ 'erp-screen__head--center': centerBrand }">
+  <section class="erp-screen" :class="{ 'erp-screen--sheet-open': headCompact }">
+    <header
+        class="erp-screen__head"
+        :class="{ 'erp-screen__head--center': centerBrand, 'erp-screen__head--compact': headCompact }"
+    >
       <div class="erp-screen__head-inner">
         <template v-if="centerBrand">
           <img :src="markSrc" alt="" class="erp-screen__brand-hero">
@@ -32,7 +36,11 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
               <img :src="logoSrc" alt="Морфлот Технология" class="erp-screen__brand-mark">
             </div>
             <div class="erp-screen__head-actions">
-              <NuxtLink v-if="shiftLink" :to="shiftLink.to" class="erp-screen__shift-link">
+              <button v-if="shiftLink?.onClick" type="button" class="erp-screen__shift-link" @click="shiftLink.onClick">
+                <Icon :name="shiftLink.icon || 'heroicons:clipboard-document-list'" :size="shiftLink.iconSize || 16"/>
+                {{ shiftLink.label }}
+              </button>
+              <NuxtLink v-else-if="shiftLink?.to" :to="shiftLink.to" class="erp-screen__shift-link">
                 <Icon :name="shiftLink.icon || 'heroicons:clipboard-document-list'" :size="shiftLink.iconSize || 16"/>
                 {{ shiftLink.label }}
               </NuxtLink>
@@ -79,15 +87,22 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   margin: 0 auto
   flex: 1
   min-height: 0
+  min-width: 0
   display: flex
   flex-direction: column
   box-sizing: border-box
+  overflow: hidden
 
   // На десктопе (рельс слева, см. ErpTabBar.vue) 480px в центре широкого
   // окна оставляет огромные пустые поля по бокам — расширяем колонку,
   // остаётся по-прежнему по центру, просто менее вопиюще узкая.
   @media (min-width: 900px)
     max-width: 720px
+
+.erp-screen--sheet-open
+  @media (max-width: 899px)
+    .erp-screen__head
+      display: none
 
 .erp-screen__head
   flex-shrink: 0
@@ -96,6 +111,27 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   padding-top: calc(env(safe-area-inset-top, 0px) + 18px)
   border-radius: 0 0 24px 24px
   box-shadow: 0 6px 20px -10px rgba(1, 110, 215, 0.5)
+
+.erp-screen__head--compact
+  @media (min-width: 900px)
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px)
+    border-radius: 0 0 16px 16px
+
+    .erp-screen__head-inner
+      padding-bottom: 12px
+
+    .erp-screen__brand
+      display: none
+
+    .erp-screen__head-row
+      margin-bottom: 8px
+
+    .erp-screen__title
+      font-size: 20px
+
+    .erp-screen__title-icon,
+    .erp-screen__subtitle
+      display: none
 
 .erp-screen__head-inner
   padding: 0 var(--spacing-4) 22px
@@ -120,6 +156,9 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   filter: brightness(0) invert(1)
 
 .erp-screen__head-actions
+  position: relative
+  z-index: 2
+  flex-shrink: 0
   display: flex
   align-items: center
   gap: var(--spacing-2)
@@ -165,6 +204,10 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   white-space: nowrap
   text-decoration: none
   border: none
+  cursor: pointer
+  font: inherit
+  appearance: none
+  touch-action: manipulation
 
 .erp-screen__title
   display: flex
@@ -190,11 +233,14 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
 .erp-screen__hero
   margin-top: var(--spacing-4)
 
-.erp-screen__stats
+// Плитки счётчиков приходят слотом #hero из страниц (workshop, scan-handover),
+// поэтому нужен :deep() — scoped-стили сами по себе на слот-контент родителя
+// не действуют, и плитки съезжали в одну строку без фона: «0бирок за смену».
+:deep(.erp-screen__stats)
   display: flex
   gap: var(--spacing-3)
 
-.erp-screen__stat
+:deep(.erp-screen__stat)
   flex: 1
   display: flex
   flex-direction: column
@@ -203,14 +249,14 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
   border-radius: 13px
   background: rgba(255, 255, 255, 0.16)
 
-.erp-screen__stat-num
+:deep(.erp-screen__stat-num)
   font-size: 22px
   font-weight: 800
   line-height: 1.1
   color: #fff
   font-variant-numeric: tabular-nums
 
-.erp-screen__stat-label
+:deep(.erp-screen__stat-label)
   font-size: 11px
   color: rgba(255, 255, 255, 0.85)
 
@@ -220,6 +266,7 @@ useHead({meta: [{name: 'color-scheme', content: 'light'}]})
 .erp-screen__body
   flex: 1
   min-height: 0
+  overflow-x: hidden
   overflow-y: auto
   scrollbar-gutter: stable
   -webkit-overflow-scrolling: touch

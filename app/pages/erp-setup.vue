@@ -3,9 +3,8 @@ import {
     getErpGasUrl,
     getErpSheetsMode,
     saveErpGasUrl,
-    testErpGasConnection,
+    testErpGasConnection,DEFAULT_SPREADSHEET_ID
 } from '~/utils/erp-sheets'
-import {DEFAULT_SPREADSHEET_ID} from '~/utils/erp-sheets'
 
 definePageMeta({layout: 'erp'})
 

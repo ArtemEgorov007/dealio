@@ -1,6 +1,6 @@
 <script setup lang="ts">
 interface Props {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'link'
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'inverse' | 'link'
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
   loading?: boolean
@@ -41,7 +41,7 @@ const handleClick = (event: MouseEvent) => {
       :aria-busy="loading"
       @click="handleClick"
   >
-    <span v-if="loading" class="ui-btn__spinner"></span>
+    <span v-if="loading" class="ui-btn__spinner"/>
     <span class="ui-btn__content">
       <slot/>
     </span>
@@ -135,6 +135,20 @@ const handleClick = (event: MouseEvent) => {
     &:hover:enabled
       background-color: var(--color-bg-secondary)
       color: var(--color-button-ghost-text-hover)
+
+  // Контрастное системное действие для брендовой синей шапки ERP.
+  // Используется вместо локальных переопределений в отдельных экранах.
+  &--inverse
+    background-color: transparent
+    color: #fff
+    border-color: rgba(255, 255, 255, 0.72)
+
+    &:hover:enabled
+      background-color: rgba(255, 255, 255, 0.16)
+      border-color: #fff
+
+    &:active:enabled
+      background-color: rgba(255, 255, 255, 0.24)
 
   &--link
     background-color: transparent

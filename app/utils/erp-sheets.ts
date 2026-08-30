@@ -1,5 +1,4 @@
 import type {
-    ErpAccessFlags,
     ErpBadgeIssue,
     ErpIssuedBadgeEntry,
     ErpPackingEntry,
@@ -12,14 +11,45 @@ import type {
 } from '~~/types/erp.types'
 import {DEFAULT_ACCESS_FLAGS, workshopById} from '~~/types/erp.types'
 import {parseCsv} from '~/utils/erp-csv'
+import {
+    createPersonnelEmployeeViaApi,
+    decideApprovalViaApi,
+    deleteIssuedBadgeViaApi,
+    dismissPersonnelEmployeeViaApi,
+    fetchApprovalsViaApi,
+    fetchHandedOverTodayViaApi,
+    fetchIssuedBadgesTodayViaApi,
+    fetchPersonnelDepartmentsViaApi,
+    fetchPersonnelEmployeeViaApi,
+    fetchPersonnelEmployeesViaApi,
+    fetchReportsCurrentViaApi,
+    fetchWorkshopBadgesViaApi,
+    getErpBackendMode,
+    issueBadgeViaApi,
+    loginErpEmployeeViaApi,
+    recordHandoverViaApi,
+    savePersonnelEmployeeViaApi,
+    undoHandoverViaApi,
+} from '~/utils/erp-api'
+import type {ErpApprovalDecisionStatus, ErpApprovalsResponse, ErpCurrentReport} from '~/utils/erp-api'
+import {
+    DEFAULT_SPREADSHEET_ID,
+    GAS_URL_STORAGE_KEY,
+    ISSUE_SHEET,
+    ISSUE_SHEET_GID,
+    JOURNAL_SHEET,
+    getConfig,
+    isGasConfigured,
+    isSheetsApiConfigured,
+    requestGas,
+    requestGasPost,
+} from '~/utils/erp/transport'
+import type {GasResponse, SheetsRuntimeConfig} from '~/utils/erp/transport'
 
-const ISSUE_SHEET = 'Выдача'
-const JOURNAL_SHEET = 'Журнал выдачи бирок'
-const ISSUE_SHEET_GID = '1376055067'
-
-const DEFAULT_SPREADSHEET_ID = '1HDj9ng5OdbgohhzdeP9LGVA-Fs_WI93m5IDWDdTXR-U'
-
-const GAS_URL_STORAGE_KEY = 'erp-gas-url'
+// Транспорт к GAS и конфигурация листов переехали в ~/utils/erp/transport.
+// Реэкспорт сохраняет прежний публичный интерфейс: страницы, компоненты и
+// сторы продолжают импортировать всё из erp-sheets без правок.
+export type {ErpLoginProfile, PersonnelActor} from '~/utils/erp/transport'
 
 const MOCK_BADGES: Record<WorkshopId, string[]> = {
     kolpino: [
@@ -34,123 +64,6 @@ const MOCK_BADGES: Record<WorkshopId, string[]> = {
     ],
 }
 
-interface SheetsRuntimeConfig {
-    spreadsheetId: string
-    issueSheetGid: string
-    apiKey: string
-    gasUrl: string
-}
-
-interface GasResponse {
-    ok?: boolean
-    badges?: string[]
-    entries?: ErpIssuedBadgeEntry[]
-    packingEntries?: ErpPackingEntry[]
-    error?: string
-    fio?: string
-    department?: string
-    position?: string
-    platform?: string
-    role?: string
-    login?: string
-    password?: string
-    access?: ErpAccessFlags
-    departments?: ErpPersonnelDepartment[]
-    platforms?: string[]
-    rights?: ErpPersonnelRight[]
-    employees?: ErpPersonnelRow[]
-    employee?: ErpPersonnelEmployee
-}
-
-export interface ErpLoginProfile {
-    fio: string
-    department: string
-    position: string
-    platform: string
-    role: string
-    login: string
-    password: string
-    access: ErpAccessFlags
-}
-
-export interface PersonnelActor {
-    login: string
-    password: string
-}
-
-function getConfig(): SheetsRuntimeConfig {
-    const config = useRuntimeConfig()
-    const envGasUrl = config.public.erpGasUrl || ''
-    const storedGasUrl = import.meta.client ? localStorage.getItem(GAS_URL_STORAGE_KEY) || '' : ''
-
-    return {
-        spreadsheetId: config.public.erpSpreadsheetId || DEFAULT_SPREADSHEET_ID,
-        issueSheetGid: config.public.erpIssueSheetGid || ISSUE_SHEET_GID,
-        apiKey: config.public.erpSheetsApiKey || '',
-        gasUrl: envGasUrl || storedGasUrl,
-    }
-}
-
-function isSheetsApiConfigured(config: SheetsRuntimeConfig): boolean {
-    return Boolean(config.spreadsheetId && config.apiKey)
-}
-
-function isGasConfigured(config: SheetsRuntimeConfig): boolean {
-    return Boolean(config.gasUrl)
-}
-
-function buildGasUrl(config: SheetsRuntimeConfig, params: Record<string, string>): string {
-    const url = new URL(config.gasUrl)
-    for (const [key, value] of Object.entries(params)) {
-        url.searchParams.set(key, value)
-    }
-    return url.toString()
-}
-
-async function requestGas(config: SheetsRuntimeConfig, params: Record<string, string>): Promise<GasResponse> {
-    let response: Response
-
-    try {
-        response = await fetch(buildGasUrl(config, params))
-    } catch {
-        throw new Error('Нет связи с сервером. Проверьте интернет и повторите.')
-    }
-
-    if (!response.ok) {
-        throw new Error('Ошибка связи с Google Таблицей')
-    }
-
-    try {
-        return await response.json() as GasResponse
-    } catch {
-        throw new Error('Неверный ответ от сервера.')
-    }
-}
-
-async function requestGasPost(config: SheetsRuntimeConfig, payload: Record<string, unknown>): Promise<GasResponse> {
-    let response: Response
-
-    try {
-        response = await fetch(config.gasUrl, {
-            method: 'POST',
-            headers: {'Content-Type': 'text/plain;charset=utf-8'},
-            body: JSON.stringify(payload),
-            redirect: 'follow',
-        })
-    } catch {
-        throw new Error('Нет связи с сервером. Проверьте интернет и повторите.')
-    }
-
-    if (!response.ok) {
-        throw new Error('Ошибка связи с Google Таблицей')
-    }
-
-    try {
-        return await response.json() as GasResponse
-    } catch {
-        throw new Error('Неверный ответ от сервера. Обновите страницу и попробуйте снова.')
-    }
-}
 
 function parseBadgeColumn(rows: string[][], workshopId: WorkshopId): string[] {
     if (rows.length === 0) return []
@@ -216,6 +129,10 @@ async function fetchBadgesViaApi(config: SheetsRuntimeConfig, workshopId: Worksh
 }
 
 export async function fetchWorkshopBadges(workshopId: WorkshopId): Promise<string[]> {
+    if (getErpBackendMode() === 'sql') {
+        return await fetchWorkshopBadgesViaApi(workshopId)
+    }
+
     const config = getConfig()
     let gasError: unknown
 
@@ -265,6 +182,10 @@ async function issueBadgeViaGas(
 }
 
 export async function fetchIssuedBadgesToday(fio: string, workshopId: WorkshopId | null): Promise<ErpIssuedBadgeEntry[]> {
+    if (getErpBackendMode() === 'sql') {
+        return await fetchIssuedBadgesTodayViaApi(fio, workshopId)
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -285,6 +206,11 @@ export async function fetchIssuedBadgesToday(fio: string, workshopId: WorkshopId
 }
 
 export async function deleteIssuedBadge(entry: ErpIssuedBadgeEntry, fio: string): Promise<void> {
+    if (getErpBackendMode() === 'sql') {
+        await deleteIssuedBadgeViaApi(entry, fio)
+        return
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -304,6 +230,10 @@ export async function deleteIssuedBadge(entry: ErpIssuedBadgeEntry, fio: string)
 }
 
 export async function fetchHandedOverBadgesToday(fio: string): Promise<ErpIssuedBadgeEntry[]> {
+    if (getErpBackendMode() === 'sql') {
+        return await fetchHandedOverTodayViaApi(fio)
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -322,7 +252,24 @@ export async function fetchHandedOverBadgesToday(fio: string): Promise<ErpIssued
     return result.entries ?? []
 }
 
+export async function fetchCurrentReports(): Promise<ErpCurrentReport> {
+    if (getErpBackendMode() !== 'sql') {
+        throw new Error('Отчёты доступны в проверочном SQL-контуре')
+    }
+    return await fetchReportsCurrentViaApi()
+}
+
 export async function recordHandoverEntry(fio: string, badgeContent: string): Promise<void> {
+    if (getErpBackendMode() === 'sql') {
+        await recordHandoverViaApi(
+            badgeContent,
+            typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID().replace(/-/g, '').slice(0, 32)
+                : undefined,
+        )
+        return
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -341,6 +288,11 @@ export async function recordHandoverEntry(fio: string, badgeContent: string): Pr
 }
 
 export async function undoHandover(entry: ErpIssuedBadgeEntry, fio: string): Promise<void> {
+    if (getErpBackendMode() === 'sql') {
+        await undoHandoverViaApi(entry, fio)
+        return
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -360,6 +312,11 @@ export async function undoHandover(entry: ErpIssuedBadgeEntry, fio: string): Pro
 }
 
 export async function loginErpEmployee(login: string, password: string): Promise<ErpLoginProfile> {
+    if (getErpBackendMode() === 'sql') {
+        const profile = await loginErpEmployeeViaApi(login, password)
+        return {...profile, password: ''}
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -421,6 +378,15 @@ async function requestPersonnel(config: SheetsRuntimeConfig, action: string, act
 }
 
 export async function fetchPersonnelDepartments(actor: PersonnelActor): Promise<{ departments: ErpPersonnelDepartment[]; platforms: string[]; rights: ErpPersonnelRight[] }> {
+    if (getErpBackendMode() === 'sql') {
+        const result = await fetchPersonnelDepartmentsViaApi()
+        return {
+            departments: result.departments ?? [],
+            platforms: result.platforms ?? [],
+            rights: (result.rights ?? []) as ErpPersonnelRight[],
+        }
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelDepartments', actor)
@@ -428,6 +394,10 @@ export async function fetchPersonnelDepartments(actor: PersonnelActor): Promise<
 }
 
 export async function fetchPersonnelEmployees(actor: PersonnelActor, department: string): Promise<ErpPersonnelRow[]> {
+    if (getErpBackendMode() === 'sql') {
+        return await fetchPersonnelEmployeesViaApi(department)
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelEmployees', actor, {department})
@@ -435,6 +405,11 @@ export async function fetchPersonnelEmployees(actor: PersonnelActor, department:
 }
 
 export async function fetchPersonnelEmployee(actor: PersonnelActor, row: number, fio: string): Promise<ErpPersonnelEmployee> {
+    if (getErpBackendMode() === 'sql') {
+        const employee = await fetchPersonnelEmployeeViaApi(row)
+        return normalizePersonnelEmployee(employee)
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelEmployee', actor, {row, fio})
@@ -447,6 +422,17 @@ function rightsPayload(rights: ErpPersonnelRight[]): Record<string, 'Да' | 'Н
 }
 
 export async function savePersonnelEmployee(actor: PersonnelActor, row: number, fio: string, draft: ErpPersonnelDraft): Promise<ErpPersonnelEmployee> {
+    if (getErpBackendMode() === 'sql') {
+        const employee = await savePersonnelEmployeeViaApi(row, {
+            platform: draft.platform,
+            role: draft.role,
+            login: draft.login,
+            password: draft.password ?? '',
+            rights: draft.rights,
+        })
+        return normalizePersonnelEmployee(employee)
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelSave', actor, {
@@ -463,6 +449,19 @@ export async function savePersonnelEmployee(actor: PersonnelActor, row: number, 
 }
 
 export async function createPersonnelEmployee(actor: PersonnelActor, draft: ErpPersonnelDraft): Promise<ErpPersonnelEmployee> {
+    if (getErpBackendMode() === 'sql') {
+        const employee = await createPersonnelEmployeeViaApi({
+            fio: draft.fio,
+            department: draft.department,
+            position: draft.position,
+            platform: draft.platform,
+            role: draft.role,
+            login: draft.login,
+            rights: draft.rights,
+        })
+        return normalizePersonnelEmployee(employee)
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     const result = await requestPersonnel(config, 'personnelCreate', actor, {
@@ -479,9 +478,33 @@ export async function createPersonnelEmployee(actor: PersonnelActor, draft: ErpP
 }
 
 export async function dismissPersonnelEmployee(actor: PersonnelActor, row: number, fio: string): Promise<void> {
+    if (getErpBackendMode() === 'sql') {
+        await dismissPersonnelEmployeeViaApi(row)
+        return
+    }
+
     const config = getConfig()
     if (!isGasConfigured(config)) throw new Error('Кадровый сервис не подключён')
     await requestPersonnel(config, 'personnelDismiss', actor, {row, fio})
+}
+
+const APPROVALS_SQL_ONLY = 'Согласования доступны только на staging с SQL API.'
+
+export async function fetchApprovals(): Promise<ErpApprovalsResponse> {
+    if (getErpBackendMode() === 'sql') {
+        return fetchApprovalsViaApi()
+    }
+    throw new Error(APPROVALS_SQL_ONLY)
+}
+
+export async function decideApproval(input: {
+    rowNumber: number
+    action: 'approve' | 'reject'
+}): Promise<{status: ErpApprovalDecisionStatus}> {
+    if (getErpBackendMode() === 'sql') {
+        return decideApprovalViaApi(input)
+    }
+    throw new Error(APPROVALS_SQL_ONLY)
 }
 
 export async function recordMeasurement(
@@ -558,6 +581,17 @@ export async function fetchPackingToday(fio: string, machine: string): Promise<E
 export type JournalWriteResult = 'ok' | 'skipped'
 
 export async function appendBadgeJournalEntry(entry: ErpBadgeIssue): Promise<JournalWriteResult> {
+    if (getErpBackendMode() === 'sql') {
+        await issueBadgeViaApi({
+            workshopId: entry.workshopId,
+            badgeContent: entry.badgeContent,
+            idempotencyKey: typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID().replace(/-/g, '').slice(0, 32)
+                : undefined,
+        })
+        return 'ok'
+    }
+
     const config = getConfig()
 
     if (!isGasConfigured(config)) {
@@ -598,7 +632,7 @@ export async function testErpGasConnection(gasUrl: string): Promise<{ ok: boolea
     } catch (error) {
         return {
             ok: false,
-            error: error instanceof Error ? error.message : 'Ошибка подключения',
+            error: errorMessage(error, 'Ошибка подключения'),
         }
     }
 }

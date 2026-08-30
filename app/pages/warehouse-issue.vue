@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import {fetchWarehouseCategories, fetchWarehouseStock, issueWarehouseItem} from '~/utils/warehouse-sheets'
+import {fetchWarehouseStock, issueWarehouseItem} from '~/utils/warehouse-sheets'
 import {WAREHOUSE_UNITS, WAREHOUSE_TYPES} from '~~/types/warehouse.types'
 import type {WarehouseStockItem} from '~~/types/warehouse.types'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useAppToast} from '~/composables/useAppToast'
 import {useIdempotencyKey} from '~/composables/useIdempotencyKey'
+import {useWarehouseCatalog} from '~/composables/useWarehouseCatalog'
 
 definePageMeta({layout: 'erp'})
 useSeoMeta({title: 'Выдача | ERP'})
@@ -13,68 +14,25 @@ const employeeStore = useErpEmployeeStore()
 const {showSuccess} = useAppToast()
 const {requestIdFor, reset: resetRequestId} = useIdempotencyKey()
 
-const categories = ref<string[]>([])
-const categoriesLoading = ref(true)
-const categoriesError = ref('')
-
-const selectedCategory = ref<string | null>(null)
-const stockItems = ref<WarehouseStockItem[]>([])
-const itemsLoading = ref(false)
-const itemsError = ref('')
-const query = ref('')
-
-const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim()
-
-const filteredItems = computed(() => {
-    const needle = normalize(query.value)
-    if (!needle) return stockItems.value
-    return stockItems.value.filter(item => normalize(item.name).includes(needle))
+const {
+    categories,
+    categoriesLoading,
+    categoriesError,
+    loadCategories,
+    selectedCategory,
+    selectCategory,
+    items: stockItems,
+    itemsLoading,
+    itemsError,
+    itemsSectionRef,
+    retryItems,
+    query,
+    filteredItems,
+} = useWarehouseCatalog<WarehouseStockItem>({
+    loadItems: category => fetchWarehouseStock(employeeStore.platform, category),
+    itemsErrorMessage: 'Ошибка загрузки остатков',
+    searchSelector: item => item.name,
 })
-
-const loadCategories = async () => {
-    categoriesLoading.value = true
-    categoriesError.value = ''
-    try {
-        categories.value = await fetchWarehouseCategories()
-    } catch (error) {
-        categoriesError.value = error instanceof Error ? error.message : 'Ошибка загрузки категорий'
-    } finally {
-        categoriesLoading.value = false
-    }
-}
-
-const itemsSectionRef = ref<HTMLElement | null>(null)
-
-const selectCategory = async (category: string) => {
-    selectedCategory.value = category
-    query.value = ''
-    itemsLoading.value = true
-    itemsError.value = ''
-    // Подсказка, что снизу появился контент — иначе на длинной сетке категорий
-    // не всегда очевидно, что список уже подгрузился под текущей прокруткой.
-    nextTick(() => itemsSectionRef.value?.scrollIntoView({behavior: 'smooth', block: 'start'}))
-    try {
-        const fetchedItems = await fetchWarehouseStock(employeeStore.platform, category)
-        // Guard against stale responses: only write if this category is still selected
-        if (selectedCategory.value === category) {
-            stockItems.value = fetchedItems
-        }
-    } catch (error) {
-        // Guard against stale responses: only write error if this category is still selected
-        if (selectedCategory.value === category) {
-            itemsError.value = error instanceof Error ? error.message : 'Ошибка загрузки остатков'
-        }
-    } finally {
-        // Guard against stale responses: only clear loading state if this category is still selected
-        if (selectedCategory.value === category) {
-            itemsLoading.value = false
-        }
-    }
-}
-
-const retryItems = () => {
-    if (selectedCategory.value) selectCategory(selectedCategory.value)
-}
 
 onMounted(loadCategories)
 
@@ -155,7 +113,7 @@ const submit = async () => {
         sheetItem.value = null
         retryItems()
     } catch (error) {
-        submitError.value = error instanceof Error ? error.message : 'Не удалось оформить выдачу'
+        submitError.value = errorMessage(error, 'Не удалось оформить выдачу')
     } finally {
         isSaving.value = false
     }
@@ -237,7 +195,7 @@ const submit = async () => {
     <ErpActionSheet
         :open="!!sheetItem"
         :busy="isSaving"
-        ariaLabel="Выдача товара"
+        aria-label="Выдача товара"
         @dismiss="closeSheet"
     >
       <template #label>Выдача товара</template>

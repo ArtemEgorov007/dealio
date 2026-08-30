@@ -7,6 +7,7 @@ import {
     type WorkshopId,
     DEFAULT_ACCESS_FLAGS,
 } from '../types/erp.types'
+import {getErpBackendMode, logoutErpEmployee, restoreErpEmployee} from '~/utils/erp-api'
 
 const STORAGE_KEY = 'erp-employee-profile'
 const VERSION_KEY = 'erp-profile-version'
@@ -19,16 +20,23 @@ const PROFILE_VERSION = '3'
 function loadProfile(): ErpEmployeeProfile | null {
     if (typeof window === 'undefined') return null
 
-    if (localStorage.getItem(VERSION_KEY) !== PROFILE_VERSION) {
-        clearProfile()
-        return null
-    }
-
     try {
         const raw = localStorage.getItem(STORAGE_KEY)
         if (!raw) return null
-        return JSON.parse(raw) as ErpEmployeeProfile
+        const profile = JSON.parse(raw) as ErpEmployeeProfile
+
+        if (!isValidFio(profile.fio)) {
+            clearProfile()
+            return null
+        }
+
+        // Версия описывает форму локального кэша, а не действительность
+        // учётной записи. Сброс по версии разлогинивал сотрудника после
+        // обычной выкладки. Валидный профиль мигрируем без потери сессии.
+        localStorage.setItem(VERSION_KEY, PROFILE_VERSION)
+        return profile
     } catch {
+        clearProfile()
         return null
     }
 }
@@ -54,6 +62,7 @@ interface EmployeeState {
     login: string
     password: string
     access: ErpAccessFlags
+    isRestoring: boolean
 }
 
 export const useErpEmployeeStore = defineStore('erp-employee', {
@@ -67,6 +76,7 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
         login: '',
         password: '',
         access: {...DEFAULT_ACCESS_FLAGS},
+        isRestoring: false,
     }),
 
     getters: {
@@ -101,7 +111,7 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
             platform: string
             role: string
             login: string
-            password: string
+            password?: string
             access: ErpAccessFlags
         }) {
             this.fio = profile.fio
@@ -110,7 +120,7 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
             this.platform = profile.platform
             this.role = profile.role
             this.login = profile.login
-            this.password = profile.password
+            this.password = profile.password ?? ''
             this.access = profile.access
             saveProfile(this.$state as ErpEmployeeProfile)
         },
@@ -121,6 +131,15 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
         // трогаем (setProfile его не задаёт).
         async refreshProfile() {
             if (typeof window === 'undefined') return
+            if (getErpBackendMode() === 'sql') {
+                try {
+                    const profile = await restoreErpEmployee()
+                    if (profile) this.setProfile({...profile, password: ''})
+                } catch {
+                    // сеть/аккаунт недоступны — оставляем кэш
+                }
+                return
+            }
             if (!this.login || !this.password) return
             try {
                 const {loginErpEmployee} = await import('~/utils/erp-sheets')
@@ -128,6 +147,23 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
                 this.setProfile(profile)
             } catch {
                 // сеть/аккаунт недоступны — оставляем кэш
+            }
+        },
+
+        async restoreSession() {
+            if (typeof window === 'undefined' || getErpBackendMode() !== 'sql') return
+            this.isRestoring = true
+            try {
+                const profile = await restoreErpEmployee()
+                if (profile) {
+                    this.setProfile({...profile, password: ''})
+                    return
+                }
+                if (this.hasFio) this.logout()
+            } catch {
+                // Transient network errors must not clear a cached SQL session on cold start.
+            } finally {
+                this.isRestoring = false
             }
         },
 
@@ -147,6 +183,9 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
         },
 
         logout() {
+            if (getErpBackendMode() === 'sql') {
+                void logoutErpEmployee().catch(() => undefined)
+            }
             this.fio = ''
             this.workshopId = null
             this.department = ''
@@ -156,6 +195,7 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
             this.login = ''
             this.password = ''
             this.access = {...DEFAULT_ACCESS_FLAGS}
+            this.isRestoring = false
             clearProfile()
         },
     },

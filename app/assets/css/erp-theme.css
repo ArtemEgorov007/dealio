@@ -1,6 +1,6 @@
 /*
  * iOS 18 палитра для ERP «Морфлот Технология».
- * Применяется только внутри .erp-layout — kanban-трекер не затронут.
+ * Применяется только внутри .erp-layout — остальное приложение не затронуто.
  */
 .erp-layout {
     /* Корпоративный синий: светло-синий тинт вместо нейтрально-серого */
@@ -105,10 +105,10 @@
 /* ─── Input: iOS grouped-inset style ──────────────────────────────────── */
 .erp-layout .ui-input__label {
     text-transform: none;
-    letter-spacing: 0;
-    font-weight: 500;
+    letter-spacing: -0.1px;
+    font-weight: 600;
     font-size: 13px;
-    color: rgba(60, 60, 67, 0.60);
+    color: var(--color-text-secondary);
     margin-bottom: 5px;
 }
 .erp-layout .ui-input__field {
@@ -264,9 +264,87 @@
 
 /* ─── Toasts on light ERP screens ──────────────────────────────────────── */
 /* Хост тостов живёт вне .erp-layout — переменные текста наследуются от
-   тёмного kanban-корня (#f5f5f7), и текст пропадает на белом тосте.
+   тёмного корня (#f5f5f7), и текст пропадает на белом тосте.
    Переопределяем токены прямо на хосте. */
-body:has(.erp-layout) ol.dealio-toast-host {
+
+/* ─── Floating overlays (Teleport → body) ──────────────────────────────── */
+/* INVARIANT: любой ERP-оверлей вне .erp-layout (toast-host, ErpTransientBanner,
+   modal backdrop children) на белом/светлом фоне ОБЯЗАН задавать цвет текста и
+   иконок явно (#1C2530 / #014F9C) или переопределять --color-text на #000000.
+   var(--color-text) на светлом фоне = невидимый UI (FAIL). */
+.erp-transient-banner {
+    position: fixed;
+    z-index: 120;
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(420px, calc(100vw - 20px));
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: #FFFFFF !important;
+    box-shadow: 0 10px 30px -14px rgba(16, 24, 40, 0.45), 0 0 0 0.5px rgba(16, 24, 40, 0.12) !important;
+    color: #1C2530 !important;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.erp-transient-banner__icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(1, 110, 215, 0.14) !important;
+    color: #014F9C !important;
+}
+
+.erp-transient-banner__icon svg {
+    color: #014F9C !important;
+}
+
+.erp-transient-banner__text {
+    margin: 0;
+    padding-top: 4px;
+    font-size: 12px;
+    line-height: 1.35;
+    font-weight: 600;
+    color: #1C2530 !important;
+}
+
+.erp-transient-banner-enter-active {
+    transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.erp-transient-banner-leave-active,
+.erp-transient-banner--leaving {
+    transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.erp-transient-banner-enter-from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-12px) scale(0.98);
+}
+
+.erp-transient-banner-leave-to,
+.erp-transient-banner--leaving {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .erp-transient-banner-enter-active,
+    .erp-transient-banner-leave-active,
+    .erp-transient-banner--leaving {
+        transition: none;
+    }
+}
+
+body:has(.erp-layout) ol.erp-toast-host {
     --color-text: #000000;
     --color-text-secondary: rgba(60, 60, 67, 0.60);
     --color-text-muted: rgba(60, 60, 67, 0.60);
@@ -278,7 +356,7 @@ body:has(.erp-layout) ol.dealio-toast-host {
     --color-button-outline-text-hover: #014F9C;
 }
 
-body:has(.erp-layout) ol.dealio-toast-host .dealio-toast {
+body:has(.erp-layout) ol.erp-toast-host .erp-toast {
     background-color: #FFFFFF !important;
     border-color: rgba(60, 60, 67, 0.12) !important;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
@@ -286,7 +364,7 @@ body:has(.erp-layout) ol.dealio-toast-host .dealio-toast {
 }
 
 @media (max-width: 768px) {
-    body:has(.erp-layout) ol.dealio-toast-host {
+    body:has(.erp-layout) ol.erp-toast-host {
         bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px) !important;
     }
 }

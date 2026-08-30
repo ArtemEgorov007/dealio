@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import {useTabBarHidden} from '~/composables/useTabBarHidden'
+
 const props = defineProps<{
   open: boolean
   busy: boolean
@@ -9,14 +11,35 @@ const emit = defineEmits<{
   dismiss: []
 }>()
 
+const isTabBarHidden = useTabBarHidden()
+
+// Несколько шторок на одной странице (карточка + подтверждение) — считаем
+// открытые экземпляры, иначе закрытие верхней снова показывает tab bar.
+let openSheetCount = 0
+
+const syncTabBarHidden = () => {
+    isTabBarHidden.value = openSheetCount > 0
+}
+
 watch(() => props.open, (value) => {
     if (import.meta.client) {
         document.body.style.overflow = value ? 'hidden' : ''
     }
 }, {immediate: true})
 
+watch(() => props.open, (value, wasOpen) => {
+    if (value === wasOpen) return
+    if (value) openSheetCount += 1
+    else openSheetCount = Math.max(0, openSheetCount - 1)
+    syncTabBarHidden()
+}, {immediate: true})
+
 onBeforeUnmount(() => {
     if (import.meta.client) document.body.style.overflow = ''
+    if (props.open) {
+        openSheetCount = Math.max(0, openSheetCount - 1)
+        syncTabBarHidden()
+    }
 })
 
 const dismiss = () => {
@@ -121,22 +144,28 @@ const onDragEnd = () => {
 .erp-sheet-backdrop
   position: absolute
   inset: 0
-  background-color: rgba(0, 0, 0, 0.35)
+  background-color: rgba(0, 0, 0, 0.52)
 
 .erp-sheet-panel
   position: relative
   width: 100%
   max-width: 480px
+  // Почти весь экран на iPhone — иначе за шторкой остаётся шапка/footer и
+  // кажется, что «всё перекрывается».
+  max-height: min(96dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 6px))
+  min-height: min(72dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 6px))
   display: flex
   flex-direction: column
   align-items: stretch
   gap: 8px
-  padding: 0 16px calc(16px + env(safe-area-inset-bottom))
+  padding: 0 16px calc(12px + env(safe-area-inset-bottom, 0px))
+  box-sizing: border-box
   background-color: #F2F2F7
   border: none
   border-bottom: none
   border-radius: 18px 18px 0 0
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12)
+  overflow: hidden
   will-change: transform
 
 .erp-sheet-grip
@@ -211,6 +240,13 @@ const onDragEnd = () => {
   flex-direction: column
   gap: var(--spacing-3)
   width: 100%
+  flex: 1 1 auto
+  min-height: 0
+  overflow-x: hidden
+  overflow-y: auto
+  -webkit-overflow-scrolling: touch
+  overscroll-behavior: contain
+  touch-action: pan-y
 
 .erp-sheet-actions
   display: flex
@@ -218,16 +254,17 @@ const onDragEnd = () => {
   gap: 8px
   width: 100%
   margin-top: 4px
+  flex-shrink: 0
 
 // Своя, более заметная длительность — только для этой шторки (не трогаем
-// общий --dealio-motion-duration, которым делятся тосты и другие панели).
+// общий --erp-motion-duration, которым делятся тосты и другие панели).
 .erp-sheet-enter-active,
 .erp-sheet-leave-active
   .erp-sheet-backdrop
-    transition: opacity 0.36s var(--dealio-motion-ease)
+    transition: opacity 0.36s var(--erp-motion-ease)
 
   .erp-sheet-panel
-    transition: transform 0.36s var(--dealio-motion-ease)
+    transition: transform 0.36s var(--erp-motion-ease)
 
 .erp-sheet-enter-from,
 .erp-sheet-leave-to

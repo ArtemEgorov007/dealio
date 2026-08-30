@@ -2,6 +2,7 @@
 import {fetchWarehouseStock, fetchWarehousePlatforms} from '~/utils/warehouse-sheets'
 import type {WarehouseStockItem} from '~~/types/warehouse.types'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
+import {filterByQuery} from '~/utils/text-search'
 
 definePageMeta({layout: 'erp'})
 useSeoMeta({title: 'Баланс | ERP'})
@@ -19,13 +20,7 @@ const isLoading = ref(true)
 const error = ref('')
 const query = ref('')
 
-const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim()
-
-const filteredItems = computed(() => {
-    const needle = normalize(query.value)
-    if (!needle) return items.value
-    return items.value.filter(item => normalize(item.name).includes(needle))
-})
+const filteredItems = computed(() => filterByQuery(items.value, query.value, item => item.name))
 
 const load = async () => {
     isLoading.value = true
@@ -33,7 +28,7 @@ const load = async () => {
     try {
         items.value = await fetchWarehouseStock(selectedPlatform.value)
     } catch (loadError) {
-        error.value = loadError instanceof Error ? loadError.message : 'Ошибка загрузки остатков'
+        error.value = errorMessage(loadError, 'Ошибка загрузки остатков')
     } finally {
         isLoading.value = false
     }
@@ -125,7 +120,7 @@ onMounted(() => {
     <ErpActionSheet
         :open="isPickerOpen"
         :busy="false"
-        ariaLabel="Выбор площадки"
+        aria-label="Выбор площадки"
         @dismiss="isPickerOpen = false"
     >
       <template #label>Площадка</template>

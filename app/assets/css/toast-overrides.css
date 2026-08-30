@@ -1,25 +1,25 @@
 /* Toast — ширина по контенту, выезд справа (как slideover карточки) */
 
 :root {
-    --dealio-toast-offset-top: 16px;
-    --dealio-toast-offset-x: 16px;
-    --dealio-toast-gap: 8px;
-    --dealio-toast-min-height: 44px;
-    --dealio-toast-max-width: 480px;
-    --dealio-toast-radius: var(--radius-md);
-    --dealio-toast-pad-y: 11px;
-    --dealio-toast-pad-x: 12px;
-    --dealio-toast-accent-w: 3px;
-    --dealio-toast-icon-size: 16px;
-    --dealio-toast-icon-gap: 10px;
+    --erp-toast-offset-top: 16px;
+    --erp-toast-offset-x: 16px;
+    --erp-toast-gap: 8px;
+    --erp-toast-min-height: 44px;
+    --erp-toast-max-width: 480px;
+    --erp-toast-radius: var(--radius-md);
+    --erp-toast-pad-y: 11px;
+    --erp-toast-pad-x: 12px;
+    --erp-toast-accent-w: 3px;
+    --erp-toast-icon-size: 16px;
+    --erp-toast-icon-gap: 10px;
 }
 
 /* Viewport — desktop: правый верхний угол */
-ol.dealio-toast-host {
+ol.erp-toast-host {
     position: fixed !important;
     z-index: 1100 !important;
-    top: var(--dealio-toast-offset-top) !important;
-    right: var(--dealio-toast-offset-x) !important;
+    top: var(--erp-toast-offset-top) !important;
+    right: var(--erp-toast-offset-x) !important;
     bottom: auto !important;
     left: auto !important;
     transform: none !important;
@@ -31,21 +31,21 @@ ol.dealio-toast-host {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: var(--dealio-toast-gap);
+    gap: var(--erp-toast-gap);
     pointer-events: none;
     outline: none;
-    transition: right var(--dealio-motion-duration) var(--dealio-motion-ease);
+    transition: right var(--erp-motion-duration) var(--erp-motion-ease);
 }
 
 /* Не перекрывать slideover на desktop */
 @media (min-width: 769px) {
-    body.dealio-slideover-open ol.dealio-toast-host {
-        right: calc(min(var(--dealio-slideover-width), 100vw) + var(--dealio-toast-offset-x)) !important;
+    body.erp-slideover-open ol.erp-toast-host {
+        right: calc(min(var(--erp-slideover-width), 100vw) + var(--erp-toast-offset-x)) !important;
     }
 }
 
 /* Root — сброс Nuxt UI */
-.dealio-toast {
+.erp-toast {
     position: relative !important;
     top: auto !important;
     left: auto !important;
@@ -54,21 +54,21 @@ ol.dealio-toast-host {
     box-sizing: border-box;
     width: max-content;
     max-width: min(
-        var(--dealio-toast-max-width),
-        calc(100vw - var(--dealio-toast-offset-x) * 2)
+        var(--erp-toast-max-width),
+        calc(100vw - var(--erp-toast-offset-x) * 2)
     );
-    min-height: var(--dealio-toast-min-height);
+    min-height: var(--erp-toast-min-height);
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    gap: var(--dealio-toast-icon-gap) !important;
-    padding: var(--dealio-toast-pad-y) var(--dealio-toast-pad-x) !important;
+    gap: var(--erp-toast-icon-gap) !important;
+    padding: var(--erp-toast-pad-y) var(--erp-toast-pad-x) !important;
     margin: 0 !important;
     overflow: hidden;
     background-color: var(--color-card-bg) !important;
     border: var(--border-width) solid var(--color-card-border) !important;
-    border-left-width: var(--dealio-toast-accent-w) !important;
-    border-radius: var(--dealio-toast-radius) !important;
+    border-left-width: var(--erp-toast-accent-w) !important;
+    border-radius: var(--erp-toast-radius) !important;
     color: var(--color-text) !important;
     box-shadow: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
@@ -77,18 +77,18 @@ ol.dealio-toast-host {
     will-change: transform, opacity;
 }
 
-.dealio-toast[data-state='open'] {
-    animation: dealio-toast-enter var(--dealio-motion-duration) var(--dealio-motion-ease) both;
+.erp-toast[data-state='open'] {
+    animation: erp-toast-enter var(--erp-motion-duration) var(--erp-motion-ease) both;
 }
 
-.dealio-toast[data-state='closed'] {
-    animation: dealio-toast-exit var(--dealio-motion-duration) var(--dealio-motion-ease) both;
+.erp-toast[data-state='closed'] {
+    animation: erp-toast-exit var(--erp-motion-duration) var(--erp-motion-ease) both;
 }
 
-@keyframes dealio-toast-enter {
+@keyframes erp-toast-enter {
     from {
         opacity: 0;
-        transform: translateX(calc(100% + var(--dealio-toast-offset-x)));
+        transform: translateX(calc(100% + var(--erp-toast-offset-x)));
     }
     to {
         opacity: 1;
@@ -96,42 +96,42 @@ ol.dealio-toast-host {
     }
 }
 
-@keyframes dealio-toast-exit {
+@keyframes erp-toast-exit {
     from {
         opacity: 1;
         transform: translateX(0);
     }
     to {
         opacity: 0;
-        transform: translateX(calc(100% + var(--dealio-toast-offset-x)));
+        transform: translateX(calc(100% + var(--erp-toast-offset-x)));
     }
 }
 
-.dealio-toast--success {
+.erp-toast--success {
     border-left-color: var(--color-success) !important;
 }
 
-.dealio-toast--error {
+.erp-toast--error {
     border-left-color: var(--color-danger) !important;
 }
 
-.dealio-toast--undo {
+.erp-toast--undo {
     border-left-color: var(--color-text-muted) !important;
-    padding-bottom: calc(var(--dealio-toast-pad-y) + 4px) !important;
+    padding-bottom: calc(var(--erp-toast-pad-y) + 4px) !important;
 }
 
-.dealio-toast--undo .dealio-toast__icon {
+.erp-toast--undo .erp-toast__icon {
     color: var(--color-text-muted) !important;
 }
 
-.dealio-toast--undo .dealio-toast__desc {
+.erp-toast--undo .erp-toast__desc {
     font-variant-numeric: tabular-nums;
     font-family: var(--font-numeric);
     color: var(--color-text-secondary);
 }
 
 /* Контент */
-.dealio-toast__body {
+.erp-toast__body {
     flex: 0 1 auto;
     min-width: 0;
     width: auto !important;
@@ -141,7 +141,7 @@ ol.dealio-toast-host {
     gap: 0;
 }
 
-.dealio-toast__title {
+.erp-toast__title {
     margin: 0;
     padding: 0;
     font-family: var(--font-family-base);
@@ -153,7 +153,7 @@ ol.dealio-toast-host {
     white-space: nowrap;
 }
 
-.dealio-toast__desc {
+.erp-toast__desc {
     margin: 2px 0 0;
     padding: 0;
     font-size: var(--font-size-xs);
@@ -164,7 +164,7 @@ ol.dealio-toast-host {
 }
 
 /* Иконка — 16×16 в слоте 18×18 */
-.dealio-toast__icon {
+.erp-toast__icon {
     flex: 0 0 18px;
     width: 18px !important;
     height: 18px !important;
@@ -177,26 +177,26 @@ ol.dealio-toast-host {
     color: var(--color-text-muted) !important;
 }
 
-.dealio-toast__icon svg {
-    width: var(--dealio-toast-icon-size) !important;
-    height: var(--dealio-toast-icon-size) !important;
+.erp-toast__icon svg {
+    width: var(--erp-toast-icon-size) !important;
+    height: var(--erp-toast-icon-size) !important;
 }
 
-.dealio-toast--success .dealio-toast__icon {
+.erp-toast--success .erp-toast__icon {
     color: var(--color-success) !important;
 }
 
-.dealio-toast--error .dealio-toast__icon {
+.erp-toast--error .erp-toast__icon {
     color: var(--color-danger) !important;
 }
 
-.dealio-toast:not(.dealio-toast--undo) .dealio-toast__progress,
-.dealio-toast:not(.dealio-toast--undo) .dealio-toast__close,
-.dealio-toast:not(.dealio-toast--undo) .dealio-toast__actions {
+.erp-toast:not(.erp-toast--undo) .erp-toast__progress,
+.erp-toast:not(.erp-toast--undo) .erp-toast__close,
+.erp-toast:not(.erp-toast--undo) .erp-toast__actions {
     display: none !important;
 }
 
-.dealio-toast--undo .dealio-toast__progress {
+.erp-toast--undo .erp-toast__progress {
     position: absolute !important;
     left: 0 !important;
     right: 0 !important;
@@ -205,25 +205,25 @@ ol.dealio-toast-host {
     height: 3px !important;
     margin: 0 !important;
     padding: 0 !important;
-    border-radius: 0 0 var(--dealio-toast-radius) var(--dealio-toast-radius) !important;
+    border-radius: 0 0 var(--erp-toast-radius) var(--erp-toast-radius) !important;
     overflow: hidden !important;
     opacity: 1 !important;
     background-color: var(--color-bg-tertiary) !important;
 }
 
-.dealio-toast--undo .dealio-toast__progress > *,
-.dealio-toast--undo .dealio-toast__progress [role='progressbar'] {
+.erp-toast--undo .erp-toast__progress > *,
+.erp-toast--undo .erp-toast__progress [role='progressbar'] {
     height: 3px !important;
     min-height: 3px !important;
     border-radius: 0 !important;
 }
 
-.dealio-toast--undo .dealio-toast__progress [role='progressbar'] > * {
+.erp-toast--undo .erp-toast__progress [role='progressbar'] > * {
     background-color: var(--color-text-muted) !important;
     transition: width 0.25s linear !important;
 }
 
-.dealio-toast--undo .dealio-toast__actions {
+.erp-toast--undo .erp-toast__actions {
     display: flex !important;
     flex: 0 0 auto;
     align-items: center;
@@ -233,7 +233,7 @@ ol.dealio-toast-host {
 }
 
 /* ui-btn--outline + ui-btn--sm */
-.dealio-toast--undo .dealio-toast__undo-btn {
+.erp-toast--undo .erp-toast__undo-btn {
     all: unset;
     box-sizing: border-box;
     display: inline-flex !important;
@@ -262,13 +262,13 @@ ol.dealio-toast-host {
         border-color var(--transition-normal) var(--transition-ease) !important;
 }
 
-.dealio-toast--undo .dealio-toast__undo-btn:hover {
+.erp-toast--undo .erp-toast__undo-btn:hover {
     background-color: var(--color-primary-light) !important;
     color: var(--color-button-outline-text-hover) !important;
     border-color: var(--color-button-outline-border) !important;
 }
 
-.dealio-toast--undo .dealio-toast__undo-btn:focus-visible {
+.erp-toast--undo .erp-toast__undo-btn:focus-visible {
     outline: 2px solid var(--color-primary) !important;
     outline-offset: 2px !important;
 }
@@ -276,38 +276,38 @@ ol.dealio-toast-host {
 /* Mobile — над bottom nav, выравнивание справа */
 @media (max-width: 768px) {
     :root {
-        --dealio-toast-offset-x: 12px;
-        --dealio-toast-max-width: calc(100vw - 24px);
+        --erp-toast-offset-x: 12px;
+        --erp-toast-max-width: calc(100vw - 24px);
     }
 
-    ol.dealio-toast-host {
+    ol.erp-toast-host {
         top: auto !important;
-        bottom: calc(var(--mobile-bottom-nav-offset) + var(--dealio-toast-offset-x)) !important;
-        right: var(--dealio-toast-offset-x) !important;
+        bottom: calc(var(--mobile-bottom-nav-offset) + var(--erp-toast-offset-x)) !important;
+        right: var(--erp-toast-offset-x) !important;
         left: auto !important;
         padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 
-    body.dealio-slideover-open ol.dealio-toast-host {
-        right: var(--dealio-toast-offset-x) !important;
+    body.erp-slideover-open ol.erp-toast-host {
+        right: var(--erp-toast-offset-x) !important;
     }
 
-    .dealio-toast {
-        max-width: calc(100vw - var(--dealio-toast-offset-x) * 2);
+    .erp-toast {
+        max-width: calc(100vw - var(--erp-toast-offset-x) * 2);
     }
 
-    .dealio-toast[data-state='open'] {
-        animation-name: dealio-toast-enter-mobile;
+    .erp-toast[data-state='open'] {
+        animation-name: erp-toast-enter-mobile;
     }
 
-    .dealio-toast[data-state='closed'] {
-        animation-name: dealio-toast-exit-mobile;
+    .erp-toast[data-state='closed'] {
+        animation-name: erp-toast-exit-mobile;
     }
 
-    @keyframes dealio-toast-enter-mobile {
+    @keyframes erp-toast-enter-mobile {
         from {
             opacity: 0;
-            transform: translateX(calc(100% + var(--dealio-toast-offset-x)));
+            transform: translateX(calc(100% + var(--erp-toast-offset-x)));
         }
         to {
             opacity: 1;
@@ -315,14 +315,14 @@ ol.dealio-toast-host {
         }
     }
 
-    @keyframes dealio-toast-exit-mobile {
+    @keyframes erp-toast-exit-mobile {
         from {
             opacity: 1;
             transform: translateX(0);
         }
         to {
             opacity: 0;
-            transform: translateX(calc(100% + var(--dealio-toast-offset-x)));
+            transform: translateX(calc(100% + var(--erp-toast-offset-x)));
         }
     }
 }

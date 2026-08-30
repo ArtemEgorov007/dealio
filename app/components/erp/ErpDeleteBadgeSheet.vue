@@ -42,7 +42,7 @@ const confirmDelete = async () => {
         vibrate(200)
         emit('deleted', props.entry)
     } catch (e) {
-        error.value = e instanceof Error ? e.message : 'Не удалось удалить бирку'
+        error.value = errorMessage(e, 'Не удалось удалить бирку')
         phase.value = 'error'
         vibrate([100, 50, 100])
     }
@@ -58,7 +58,7 @@ const cancel = () => {
   <ErpActionSheet
       :open="!!entry"
       :busy="phase === 'deleting'"
-      ariaLabel="Подтверждение удаления бирки"
+      aria-label="Подтверждение удаления бирки"
       @dismiss="cancel"
   >
     <template #label>{{ phase === 'error' ? 'Ошибка удаления' : 'Удалить бирку' }}</template>

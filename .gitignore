@@ -28,3 +28,7 @@ logs
 
 # Git worktrees
 .worktrees/
+
+# PHP-зависимости API: воспроизводятся из composer.lock (composer install --no-dev).
+# В репозитории не держим — 744 файла стороннего кода зашумляют каждый diff.
+public/api/vendor/

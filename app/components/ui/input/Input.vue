@@ -24,14 +24,21 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: '',
+  label: '',
+  placeholder: '',
   type: 'text',
   disabled: false,
   readonly: false,
+  error: '',
   success: false,
   required: false,
   autocomplete: 'off',
+  name: '',
+  id: '',
   showPasswordToggle: false,
+  hint: '',
   flush: false,
+  rows: 0,
 })
 
 defineOptions({ inheritAttrs: false })
@@ -142,7 +149,7 @@ const handleFileChange = (event: Event) => {
           class="ui-input__field"
           :class="inputClasses"
           @change="type === 'file' ? handleFileChange($event) : undefined"
-      />
+      >
       <button
           v-if="showPasswordToggle && type === 'password'"
           type="button"

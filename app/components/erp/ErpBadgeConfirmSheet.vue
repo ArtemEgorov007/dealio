@@ -54,7 +54,7 @@ const confirm = async () => {
         vibrate(200)
         emit('issued', result === 'skipped')
     } catch (e) {
-        error.value = e instanceof Error ? e.message : 'Не удалось записать в журнал'
+        error.value = errorMessage(e, 'Не удалось записать в журнал')
         phase.value = 'error'
         vibrate([100, 50, 100])
     }
@@ -70,7 +70,7 @@ const cancel = () => {
   <ErpActionSheet
       :open="!!badge"
       :busy="phase === 'saving'"
-      ariaLabel="Подтверждение выдачи бирки"
+      aria-label="Подтверждение выдачи бирки"
       @dismiss="cancel"
   >
     <template #label>{{ phase === 'error' ? 'Ошибка записи' : 'Выдать бирку' }}</template>

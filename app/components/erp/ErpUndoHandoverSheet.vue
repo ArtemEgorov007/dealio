@@ -42,7 +42,7 @@ const confirmUndo = async () => {
         vibrate(200)
         emit('undone', props.entry)
     } catch (e) {
-        error.value = e instanceof Error ? e.message : 'Не удалось отменить сдачу'
+        error.value = errorMessage(e, 'Не удалось отменить сдачу')
         phase.value = 'error'
         vibrate([100, 50, 100])
     }
@@ -58,7 +58,7 @@ const cancel = () => {
   <ErpActionSheet
       :open="!!entry"
       :busy="phase === 'undoing'"
-      ariaLabel="Подтверждение отмены сдачи"
+      aria-label="Подтверждение отмены сдачи"
       @dismiss="cancel"
   >
     <template #label>{{ phase === 'error' ? 'Ошибка отмены' : 'Отменить сдачу' }}</template>

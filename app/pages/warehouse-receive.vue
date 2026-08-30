@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import {fetchWarehouseCategories, fetchWarehouseItems, receiveWarehouseItem} from '~/utils/warehouse-sheets'
+import {fetchWarehouseItems, receiveWarehouseItem} from '~/utils/warehouse-sheets'
 import {WAREHOUSE_UNITS, WAREHOUSE_TYPES} from '~~/types/warehouse.types'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useAppToast} from '~/composables/useAppToast'
 import {useIdempotencyKey} from '~/composables/useIdempotencyKey'
+import {useWarehouseCatalog} from '~/composables/useWarehouseCatalog'
 
 definePageMeta({layout: 'erp'})
 useSeoMeta({title: 'Приём | ERP'})
@@ -12,68 +13,25 @@ const employeeStore = useErpEmployeeStore()
 const {showSuccess} = useAppToast()
 const {requestIdFor, reset: resetRequestId} = useIdempotencyKey()
 
-const categories = ref<string[]>([])
-const categoriesLoading = ref(true)
-const categoriesError = ref('')
-
-const selectedCategory = ref<string | null>(null)
-const items = ref<string[]>([])
-const itemsLoading = ref(false)
-const itemsError = ref('')
-const query = ref('')
-
-const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim()
-
-const filteredItems = computed(() => {
-    const needle = normalize(query.value)
-    if (!needle) return items.value
-    return items.value.filter(item => normalize(item).includes(needle))
+const {
+    categories,
+    categoriesLoading,
+    categoriesError,
+    loadCategories,
+    selectedCategory,
+    selectCategory,
+    items,
+    itemsLoading,
+    itemsError,
+    itemsSectionRef,
+    retryItems,
+    query,
+    filteredItems,
+} = useWarehouseCatalog<string>({
+    loadItems: category => fetchWarehouseItems(category),
+    itemsErrorMessage: 'Ошибка загрузки товаров',
+    searchSelector: item => item,
 })
-
-const loadCategories = async () => {
-    categoriesLoading.value = true
-    categoriesError.value = ''
-    try {
-        categories.value = await fetchWarehouseCategories()
-    } catch (error) {
-        categoriesError.value = error instanceof Error ? error.message : 'Ошибка загрузки категорий'
-    } finally {
-        categoriesLoading.value = false
-    }
-}
-
-const itemsSectionRef = ref<HTMLElement | null>(null)
-
-const selectCategory = async (category: string) => {
-    selectedCategory.value = category
-    query.value = ''
-    itemsLoading.value = true
-    itemsError.value = ''
-    // Подсказка, что снизу появился контент — иначе на длинной сетке категорий
-    // не всегда очевидно, что список уже подгрузился под текущей прокруткой.
-    nextTick(() => itemsSectionRef.value?.scrollIntoView({behavior: 'smooth', block: 'start'}))
-    try {
-        const fetchedItems = await fetchWarehouseItems(category)
-        // Guard against stale responses: only write if this category is still selected
-        if (selectedCategory.value === category) {
-            items.value = fetchedItems
-        }
-    } catch (error) {
-        // Guard against stale responses: only write error if this category is still selected
-        if (selectedCategory.value === category) {
-            itemsError.value = error instanceof Error ? error.message : 'Ошибка загрузки товаров'
-        }
-    } finally {
-        // Guard against stale responses: only clear loading state if this category is still selected
-        if (selectedCategory.value === category) {
-            itemsLoading.value = false
-        }
-    }
-}
-
-const retryItems = () => {
-    if (selectedCategory.value) selectCategory(selectedCategory.value)
-}
 
 onMounted(loadCategories)
 
@@ -141,7 +99,7 @@ const submit = async () => {
         resetRequestId()
         sheetItem.value = null
     } catch (error) {
-        submitError.value = error instanceof Error ? error.message : 'Не удалось оформить приём'
+        submitError.value = errorMessage(error, 'Не удалось оформить приём')
     } finally {
         isSaving.value = false
     }
@@ -216,7 +174,7 @@ const submit = async () => {
     <ErpActionSheet
         :open="!!sheetItem"
         :busy="isSaving"
-        ariaLabel="Приём товара"
+        aria-label="Приём товара"
         @dismiss="closeSheet"
     >
       <template #label>Приём товара</template>

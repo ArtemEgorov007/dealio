@@ -1,0 +1,11 @@
+{
+    "name": "dealio/erp-api",
+    "description": "ERP staging SQL API dependencies",
+    "require": {
+        "php": ">=8.1",
+        "minishlink/web-push": "^9.0"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

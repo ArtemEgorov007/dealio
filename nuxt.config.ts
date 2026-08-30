@@ -12,11 +12,14 @@ export default defineNuxtConfig({
             erpSheetsApiKey: process.env.NUXT_PUBLIC_ERP_SHEETS_API_KEY || '',
             erpGasUrl: process.env.NUXT_PUBLIC_ERP_GAS_URL || '',
             warehouseGasUrl: process.env.NUXT_PUBLIC_WAREHOUSE_GAS_URL || '',
+            erpBackendMode: process.env.NUXT_PUBLIC_ERP_BACKEND_MODE || 'gas',
+            erpApiBase: process.env.NUXT_PUBLIC_ERP_API_BASE || '/api',
         },
     },
 
     app: {
         baseURL: process.env.NUXT_APP_BASE_URL || '/',
+        buildAssetsDir: process.env.NUXT_APP_BUILD_ASSETS_DIR || '/_nuxt/',
         head: {
             htmlAttrs: {lang: 'ru'},
             title: 'ERP — выдача бирок',
@@ -77,22 +80,12 @@ export default defineNuxtConfig({
     css: [
         '@/assets/css/normalize.css',
         '@/assets/css/variables.css',
-        '@/assets/css/kanban-effects.css',
         '@/assets/css/toast-overrides.css',
         '@/assets/css/erp-theme.css',
     ],
 
     pinia: {
         storesDirs: ['./store/**']
-    },
-
-    routeRules: {
-        '/products': {redirect: '/ideas'},
-        '/customers': {redirect: '/wishlist'},
-        '/customers/**': {redirect: '/wishlist'},
-        '/payments': {redirect: '/archive'},
-        '/kanban': {redirect: '/board'},
-        '/feedback': {redirect: '/help'},
     },
 
     nitro: {

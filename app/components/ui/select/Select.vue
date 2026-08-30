@@ -20,8 +20,11 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: '',
+  label: '',
+  error: '',
   disabled: false,
   required: false,
+  id: '',
   size: 'md',
   tone: 'default',
   flush: false,
@@ -29,8 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | number): void
-  (e: 'change', value: string | number): void
+  (e: 'update:modelValue' | 'change', value: string | number): void
 }>()
 
 const rootRef = ref<HTMLElement | null>(null)

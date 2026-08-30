@@ -29,6 +29,9 @@ const JOURNAL_SHEET = 'Журнал выдачи бирок'
 const LOGIST_SHEET = 'Логисты'
 const HANDOVER_SHEET = 'Сдача'
 const MEASUREMENT_SHEET = 'Промеры'
+const REPORTS_SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('REPORTS_SPREADSHEET_ID')
+const REPORTS_SHEET_NAME = PropertiesService.getScriptProperties().getProperty('REPORTS_SHEET_NAME') || 'Лист15'
+const REPORTS_BRIDGE_TOKEN = PropertiesService.getScriptProperties().getProperty('REPORTS_BRIDGE_TOKEN') || ''
 
 // Имя цеха = имя колонки на листе «Выдача» = имя исходного листа с бирками.
 const WORKSHOP_SHEETS = {
@@ -42,6 +45,9 @@ const ACCESS_SPREADSHEET_ID = PropertiesService.getScriptProperties().getPropert
     || '12TAfi2p6hMBG_MnP4LEROnZ6BaJp0bTFHd93jq06Qz8'
 const STAFF_SHEET = 'Сотрудники'
 const ACTIVE_STATUS = 'Работает'
+// Колонка K — первая колонка прав и доступов на листе «Сотрудники».
+// Храним границу явно, чтобы K («Доступ к биркам») не исчезла при правках.
+const PERSONNEL_RIGHTS_START_INDEX = 10
 
 function doGet(e) {
     try {
@@ -65,6 +71,10 @@ function doGet(e) {
         if (action === 'packingToday') {
             const entries = getPackingToday_(e.parameter.fio || '', e.parameter.machine || '')
             return jsonResponse_({ok: true, packingEntries: entries})
+        }
+
+        if (action === 'reportsCurrent') {
+            return jsonResponse_({ok: true, data: reportsCurrent_(e.parameter.token || '')})
         }
 
         return jsonResponse_({ok: false, error: 'Unknown action'})
@@ -181,6 +191,61 @@ function doPost(e) {
 
 function getSpreadsheet_() {
     return SpreadsheetApp.openById(SPREADSHEET_ID)
+}
+
+function reportsCurrent_(token) {
+    if (!REPORTS_BRIDGE_TOKEN || token !== REPORTS_BRIDGE_TOKEN) {
+        throw new Error('Нет доступа к отчётам')
+    }
+    if (!REPORTS_SPREADSHEET_ID) {
+        throw new Error('Не настроен источник отчётов')
+    }
+
+    const sheet = SpreadsheetApp.openById(REPORTS_SPREADSHEET_ID).getSheetByName(REPORTS_SHEET_NAME)
+    if (!sheet) {
+        throw new Error('Не найден лист отчётов: ' + REPORTS_SHEET_NAME)
+    }
+    return {
+        sourceReadAt: new Date().toISOString(),
+        rows: normalizeReportsRows_(sheet.getDataRange().getDisplayValues()),
+    }
+}
+
+function reportsNumber_(value) {
+    const normalized = normalizeCell_(value).replace(/[\s\u00A0]/g, '').replace(',', '.')
+    if (!normalized) return 0
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? parsed : 0
+}
+
+function normalizeReportsRows_(values) {
+    if (!values.length) return []
+
+    const header = values[0].map(normalizeCell_)
+    const customerIndex = requireColumn_(header, 'Заказчик', 'Отчёты')
+    const contractIndex = requireColumn_(header, 'Договор', 'Отчёты')
+    const siteIndex = requireColumn_(header, 'Площадка', 'Отчёты')
+    const productionIndex = requireColumn_(header, 'ТП за месяц, тн', 'Отчёты')
+    const shippedIndex = requireColumn_(header, 'Отгружено за месяц, тн', 'Отчёты')
+    const workshopIndex = requireColumn_(header, 'В цехе, тн', 'Отчёты')
+
+    const rows = []
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        const customer = normalizeCell_(row[customerIndex])
+        const contract = normalizeCell_(row[contractIndex])
+        const site = normalizeCell_(row[siteIndex])
+        if (!customer || !contract || !site) continue
+        rows.push({
+            customer: customer,
+            contract: contract,
+            site: site,
+            productionRub: reportsNumber_(row[productionIndex]),
+            shippedTons: reportsNumber_(row[shippedIndex]),
+            inWorkshopTons: reportsNumber_(row[workshopIndex]),
+        })
+    }
+    return rows
 }
 
 function getWorkshopSheetName_(workshop) {
@@ -587,7 +652,7 @@ function getStaffSchema_(sheet) {
         passwordIndex: requireColumn_(header, 'Пароль', STAFF_SHEET),
         statusIndex: requireColumn_(header, 'Статус', STAFF_SHEET),
         personnelAccessIndex: requireColumn_(header, 'Управление кадрами', STAFF_SHEET),
-        rightsHeaders: header.slice(10),
+        rightsHeaders: header.slice(PERSONNEL_RIGHTS_START_INDEX),
     }
 }
 
@@ -667,7 +732,7 @@ function personnelEmployees_(context, departmentValue) {
 function personnelEmployee_(context, rowNumber, fio) {
     const row = requirePersonnelRow_(context, rowNumber, fio)
     const rights = []
-    for (let index = 10; index < context.schema.header.length; index += 1) {
+    for (let index = PERSONNEL_RIGHTS_START_INDEX; index < context.schema.header.length; index += 1) {
         const name = context.schema.header[index]
         if (!name) continue
         rights.push({name: name, value: normalizeCell_(row[index]).toLowerCase() === 'да' ? 'Да' : 'Нет'})
@@ -713,7 +778,7 @@ function setPersonnelValue_(sheet, row, columnIndex, value) {
 
 function writePersonnelRights_(context, row, rights) {
     const values = rights && typeof rights === 'object' ? rights : {}
-    for (let index = 10; index < context.schema.header.length; index += 1) {
+    for (let index = PERSONNEL_RIGHTS_START_INDEX; index < context.schema.header.length; index += 1) {
         const name = context.schema.header[index]
         if (!name || !Object.prototype.hasOwnProperty.call(values, name)) continue
         setPersonnelValue_(context.sheet, row, index, normalizeCell_(values[name]).toLowerCase() === 'да' ? 'Да' : 'Нет')
@@ -761,7 +826,7 @@ function createPersonnelEmployee_(context, payload) {
         row[context.schema.loginIndex] = toSheetLiteral_(normalizeCell_(payload.login))
         row[context.schema.passwordIndex] = toSheetLiteral_(generatePersonnelPassword_())
         row[context.schema.statusIndex] = toSheetLiteral_(ACTIVE_STATUS)
-        for (let index = 10; index < context.schema.header.length; index += 1) {
+        for (let index = PERSONNEL_RIGHTS_START_INDEX; index < context.schema.header.length; index += 1) {
             const name = context.schema.header[index]
             if (!name || !payload.rights || !Object.prototype.hasOwnProperty.call(payload.rights, name)) continue
             row[index] = toSheetLiteral_(normalizeCell_(payload.rights[name]).toLowerCase() === 'да' ? 'Да' : 'Нет')
