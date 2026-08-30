@@ -62,6 +62,17 @@ nothing errors.
 | Pending approvals | `scripts/push-notify-approvals.php` | `POST /api/internal/push-notify` | Reminds approvers of invoices awaiting their decision |
 | Supply status changes | `scripts/supply-notify-status.php` | `POST /api/internal/supply-notify-status` | Tells a supply request's author that its status changed |
 
+A third script, `scripts/push-broadcast.php`, is not scheduled — it is a
+one-off announcement for a release:
+
+```
+php scripts/push-broadcast.php "Заголовок" "Текст" "/register"
+```
+
+It reports how many subscriptions and employees it reached. Note that a
+notification only arrives for employees who granted permission in the app;
+the count of subscriptions is normally far below the headcount.
+
 Run either as a CLI job (preferred — no token needed, it reads the private
 config directly) or over HTTP with the `X-Cron-Token` header matching
 `push.cron_token` in `erp-api-config.php`. Every 5 minutes is enough for both;
