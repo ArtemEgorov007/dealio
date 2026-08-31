@@ -36,12 +36,23 @@ const isSubmitting = ref(false)
 
 // Ссылки на обёртку поля и на поле количества — по id строки. Нужны, чтобы
 // померить место под список и перевести фокус после выбора позиции.
+// fieldEls — только само поле: по его нижней границе считается место под
+// список. rowEls — вся область строки вместе со списком: список отрисован
+// соседом поля, а не внутри него, поэтому проверять «касание вне» по полю
+// нельзя — тап по позиции считался бы касанием снаружи и закрывал список
+// раньше, чем выбор успевал сработать.
 const fieldEls = new Map<number, HTMLElement>()
+const rowEls = new Map<number, HTMLElement>()
 const quantityEls = new Map<number, HTMLInputElement>()
 
 const setFieldEl = (id: number, el: unknown) => {
     if (el instanceof HTMLElement) fieldEls.set(id, el)
     else fieldEls.delete(id)
+}
+
+const setRowEl = (id: number, el: unknown) => {
+    if (el instanceof HTMLElement) rowEls.set(id, el)
+    else rowEls.delete(id)
 }
 
 const setQuantityEl = (id: number, el: unknown) => {
@@ -156,8 +167,8 @@ const toggleSuggestions = (row: FormRow) => {
 const onDocumentPointerDown = (event: PointerEvent) => {
     const id = activeSuggestRow.value
     if (id === null) return
-    const field = fieldEls.get(id)
-    if (field && event.target instanceof Node && field.contains(event.target)) return
+    const area = rowEls.get(id)
+    if (area && event.target instanceof Node && area.contains(event.target)) return
     activeSuggestRow.value = null
 }
 
@@ -186,6 +197,50 @@ const removeRow = (id: number) => {
     // Последнюю строку не убираем: форма осталась бы без единого поля ввода.
     if (rows.value.length <= 1) return
     rows.value = rows.value.filter(row => row.id !== id)
+}
+
+/**
+ * Тап по позиции против прокрутки списка.
+ *
+ * Раньше выбор висел на @pointerdown.prevent. preventDefault на pointerdown
+ * отменяет жест прокрутки — список нельзя было пролистать пальцем. Убрать
+ * .prevent и вернуться к click тоже нельзя: click приходит после blur.
+ *
+ * Поэтому решаем по самому касанию: палец не сдвинулся — это выбор, сдвинулся —
+ * это прокрутка, и мы не вмешиваемся. touchend приходит на тот же элемент, где
+ * началось касание, поэтому сдвиг вёрстки от закрывшейся клавиатуры не мешает.
+ */
+const TAP_TOLERANCE_PX = 10
+let touchStartY = 0
+
+const onItemTouchStart = (event: TouchEvent) => {
+    touchStartY = event.touches[0]?.clientY ?? 0
+}
+
+const onItemTouchEnd = (event: TouchEvent, row: FormRow, item: ErpSupplyCatalogItem) => {
+    const endY = event.changedTouches[0]?.clientY ?? 0
+    if (Math.abs(endY - touchStartY) > TAP_TOLERANCE_PX) return
+
+    // Гасим синтетический click, иначе позиция выберется дважды.
+    event.preventDefault()
+    pickSuggestion(row, item)
+}
+
+/**
+ * Фокус в поле номенклатуры.
+ *
+ * Если позиция уже выбрана, поле содержит полное название. Тап ставил курсор
+ * в середину текста, и набор давал «Перчатки х/бкруг» — совпадений ноль, а
+ * выглядело как «подсказки не работают». Выделяем текст, чтобы первый символ
+ * заменил его, и сразу показываем весь справочник: пользователь всё равно
+ * собирается менять позицию.
+ */
+const onNameFocus = (row: FormRow, event: FocusEvent) => {
+    const filled = isFromCatalog(row.name)
+    if (filled && event.target instanceof HTMLInputElement) {
+        event.target.select()
+    }
+    void openSuggestions(row, filled)
 }
 
 const pickSuggestion = (row: FormRow, item: ErpSupplyCatalogItem) => {
@@ -250,7 +305,7 @@ onMounted(load)
       <div class="supply-rows">
         <div v-for="row in rows" :key="row.id" class="supply-row">
           <div class="supply-row__fields">
-            <div class="supply-row__name">
+            <div :ref="el => setRowEl(row.id, el)" class="supply-row__name">
               <div :ref="el => setFieldEl(row.id, el)" class="supply-field">
                 <input
                     v-model="row.name"
@@ -262,9 +317,9 @@ onMounted(load)
                     autocorrect="off"
                     spellcheck="false"
                     enterkeyhint="done"
-                    @focus="openSuggestions(row)"
+                    @focus="onNameFocus(row, $event)"
                     @input="isBrowsingAll = false"
-                    @blur="closeSuggestions(row)"
+                    @blur="resolveRow(row)"
                     @keydown.enter.prevent="closeSuggestions(row)"
                 >
                 <button
@@ -301,7 +356,9 @@ onMounted(load)
                     :key="item.name"
                     type="button"
                     class="supply-suggest__item"
-                    @pointerdown.prevent="pickSuggestion(row, item)"
+                    @touchstart.passive="onItemTouchStart"
+                    @touchend="onItemTouchEnd($event, row, item)"
+                    @click="pickSuggestion(row, item)"
                 >
                   <span class="supply-suggest__name">{{ item.name }}</span>
                   <span class="supply-suggest__category">{{ item.category }}</span>
