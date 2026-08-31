@@ -322,5 +322,21 @@ test('кнопка списка показывает весь справочни
     assert.match(page, /const isBrowsingAll = ref\(false\)/)
     assert.match(page, /isBrowsingAll\.value\s*\n\s*\? rankByQuery\(catalog\.value, ''/)
     assert.match(page, /openSuggestions\(row, true\)/)
-    assert.match(page, /@input="isBrowsingAll = false"/, 'набор текста возвращает фильтрацию')
+    assert.match(page, /isBrowsingAll\.value = false/, 'набор текста возвращает фильтрацию')
+})
+
+test('поле номенклатуры не на v-model — иначе фильтр молчит при открытой клавиатуре', () => {
+    // Клавиатура iOS с автоподсказками держит ввод в состоянии композиции,
+    // пока пользователь не уберёт её или не тапнет мимо, а v-model по замыслу
+    // игнорирует input во время композиции. Замер: в поле «кас», а список всё
+    // ещё показывает все 5 позиций; фильтр срабатывал только после
+    // compositionend.
+    assert.doesNotMatch(page, /v-model="row\.name"/, 'v-model проглотит ввод во время композиции')
+    assert.match(page, /:value="row\.name"/)
+    assert.match(page, /@input="onNameInput\(row, \$event\)"/)
+    assert.match(page, /row\.name = event\.target\.value/)
+})
+
+test('плитка «Кадры» подписана', () => {
+    assert.match(hub, /label: 'Кадры', caption: 'Структуры и доступы'/)
 })

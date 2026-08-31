@@ -227,6 +227,25 @@ const onItemTouchEnd = (event: TouchEvent, row: FormRow, item: ErpSupplyCatalogI
 }
 
 /**
+ * Ввод в поле номенклатуры.
+ *
+ * Здесь намеренно не v-model. Клавиатура iOS с автоподсказками держит ввод в
+ * состоянии композиции, пока пользователь не уберёт её или не тапнет мимо, а
+ * v-model по замыслу игнорирует input во время композиции. Из-за этого список
+ * не фильтровался, пока клавиатура открыта, — а при завершении композиции
+ * список перерисовывался ровно в момент тапа, и позиция не подставлялась.
+ *
+ * Читаем значение поля напрямую: для строки поиска композиция ничего не
+ * добавляет, а живая фильтрация здесь и есть смысл экрана.
+ */
+const onNameInput = (row: FormRow, event: Event) => {
+    if (event.target instanceof HTMLInputElement) {
+        row.name = event.target.value
+    }
+    isBrowsingAll.value = false
+}
+
+/**
  * Фокус в поле номенклатуры.
  *
  * Если позиция уже выбрана, поле содержит полное название. Тап ставил курсор
@@ -308,7 +327,7 @@ onMounted(load)
             <div :ref="el => setRowEl(row.id, el)" class="supply-row__name">
               <div :ref="el => setFieldEl(row.id, el)" class="supply-field">
                 <input
-                    v-model="row.name"
+                    :value="row.name"
                     type="text"
                     class="supply-input"
                     placeholder="Номенклатура"
@@ -318,7 +337,7 @@ onMounted(load)
                     spellcheck="false"
                     enterkeyhint="done"
                     @focus="onNameFocus(row, $event)"
-                    @input="isBrowsingAll = false"
+                    @input="onNameInput(row, $event)"
                     @blur="resolveRow(row)"
                     @keydown.enter.prevent="closeSuggestions(row)"
                 >
