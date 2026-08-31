@@ -7,6 +7,9 @@
 - Прод: <https://erp-mt.ru>
 - Стенд: <https://erp-mt.online>
 - Карта проекта для новых участников: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- **Начать работу над проектом:** [`docs/onboarding/`](docs/onboarding/) — доступы,
+  локальный стенд, грабли, стиль
+- Инструкция для ИИ-исполнителя (Codex, Cursor, Claude): [`AGENTS.md`](AGENTS.md)
 
 ## Модули
 
