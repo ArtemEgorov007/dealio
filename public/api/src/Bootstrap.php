@@ -17,3 +17,4 @@ require_once __DIR__ . '/Approvals.php';
 require_once __DIR__ . '/Push.php';
 require_once __DIR__ . '/Warehouse.php';
 require_once __DIR__ . '/Supply.php';
+require_once __DIR__ . '/SupplyWork.php';

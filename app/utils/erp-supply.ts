@@ -44,3 +44,81 @@ export async function createSupplyRequest(
         body: JSON.stringify({items}),
     })
 }
+
+/** Заявка в выпадающем списке при заведении счёта. */
+export interface ErpInvoiceRequestOption {
+    requestCode: string
+    platform: string
+    department: string
+    category: string
+    employeeFio: string
+    requestedAt: string
+    status: string
+}
+
+/** Всё, что нужно форме счёта, одним запросом. */
+export interface ErpInvoiceFormData {
+    requests: ErpInvoiceRequestOption[]
+    contracts: string[]
+    approvers: string[]
+    /** Сколько байт реально примет сервер: настройки PHP бывают ниже нашей границы. */
+    maxFileBytes: number
+}
+
+/** Счёт в списке «Все счета». */
+export interface ErpInvoice {
+    id: number
+    invoice: string
+    contract: string
+    requestCode: string
+    department: string
+    platform: string
+    status: string
+    amount: number
+    category: string
+    approverFio: string
+    approvedRoAt: string
+    approvedGdAt: string
+    cancelledAt: string
+    hasFile: boolean
+}
+
+export async function fetchInvoiceFormData(): Promise<ErpInvoiceFormData> {
+    return erpApiRequest<ErpInvoiceFormData>('supply-work/form')
+}
+
+export async function fetchInvoices(): Promise<ErpInvoice[]> {
+    const data = await erpApiRequest<{invoices: ErpInvoice[]}>('supply-work/invoices')
+    return data.invoices ?? []
+}
+
+/**
+ * Заведение счёта.
+ *
+ * Отправляем FormData, а не JSON: PDF в JSON пришлось бы кодировать base64,
+ * это плюс треть к размеру при и без того низком лимите загрузки на хостинге.
+ */
+export async function createInvoice(payload: {
+    invoice: string
+    contract: string
+    requestCode: string
+    amount: string
+    approverFio: string
+    file: File
+}): Promise<{id: number; invoice: string}> {
+    const body = new FormData()
+    body.append('invoice', payload.invoice)
+    body.append('contract', payload.contract)
+    body.append('requestCode', payload.requestCode)
+    body.append('amount', payload.amount)
+    body.append('approverFio', payload.approverFio)
+    body.append('file', payload.file)
+
+    // Content-Type не задаём: браузер сам проставит boundary для multipart.
+    // Минута с запасом: 8 МБ по мобильной связи в общий таймаут не влезают.
+    return erpApiRequest<{id: number; invoice: string}>('supply-work/invoices', {
+        method: 'POST',
+        body,
+        timeoutMs: 120_000,
+    })
+}

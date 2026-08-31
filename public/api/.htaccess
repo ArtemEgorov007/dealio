@@ -10,6 +10,8 @@ RewriteEngine On
 # 404, а не 403: незачем подтверждать, что файл существует.
 RewriteRule ^(src|migrations|vendor)(/|$) - [R=404,L]
 RewriteRule ^composer\.(json|lock)$ - [R=404,L]
+# .user.ini Apache сам не прячет (в отличие от .ht*), а это настройки PHP.
+RewriteRule ^\.user\.ini$ - [R=404,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

@@ -49,4 +49,37 @@ foreach ($paths as $path) {
     expect_migration(is_readable($path), 'Every discovered migration must be readable');
 }
 
+// Разбор на выражения: точка с запятой внутри комментария однажды разорвала
+// файл посередине. Половина миграции применилась, вторая упала, миграция не
+// записалась как применённая — и повторный запуск спотыкался уже об
+// «Duplicate column name», из которого база сама не выбирается.
+expect_migration(
+    erp_migration_statements("-- список; и продолжение\nCREATE TABLE a (id INT);") === ['CREATE TABLE a (id INT)'],
+    'Semicolon inside a comment must not split the file'
+);
+expect_migration(
+    erp_migration_statements("INSERT INTO t (v) VALUES ('a;b');") === ["INSERT INTO t (v) VALUES ('a;b')"],
+    'Semicolon inside a string literal must not split the file'
+);
+expect_migration(
+    count(erp_migration_statements("CREATE TABLE a (id INT);\nCREATE TABLE b (id INT);")) === 2,
+    'Real statement separators must still split'
+);
+expect_migration(
+    erp_migration_statements("/* блок; с точкой */ CREATE TABLE c (id INT);") === ['CREATE TABLE c (id INT)'],
+    'Semicolon inside a block comment must not split the file'
+);
+
+// Каждое выражение всех реальных миграций должно быть исполняемым, а не
+// обрывком комментария.
+foreach ($paths as $path) {
+    $sql = file_get_contents($path);
+    foreach (erp_migration_statements((string) $sql) as $index => $statement) {
+        expect_migration(
+            (bool) preg_match('/^(CREATE|ALTER|INSERT|UPDATE|DROP|SET)/i', $statement),
+            sprintf('%s statement #%d is not executable SQL', basename($path), $index + 1)
+        );
+    }
+}
+
 echo "Migration runner tests passed\n";

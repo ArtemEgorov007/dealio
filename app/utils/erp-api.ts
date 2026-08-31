@@ -49,21 +49,35 @@ function getErpApiBase(): string {
     return useRuntimeConfig().public.erpApiBase || '/api'
 }
 
-export async function erpApiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+/**
+ * Запрос к SQL API.
+ *
+ * `timeoutMs` — для операций, которые заведомо не укладываются в общий
+ * таймаут: загрузка PDF-счёта по мобильной связи в цеху занимает минуту и
+ * больше, и обрыв на 12 секундах выглядел бы как «ничего не работает».
+ */
+export async function erpApiRequest<T>(
+    path: string,
+    init: RequestInit & {timeoutMs?: number} = {},
+): Promise<T> {
     let response: Response
     const controller = new AbortController()
     const abortFromCaller = () => controller.abort()
-    const timeout = globalThis.setTimeout(abortFromCaller, ERP_API_TIMEOUT_MS)
+    const timeout = globalThis.setTimeout(abortFromCaller, init.timeoutMs ?? ERP_API_TIMEOUT_MS)
     init.signal?.addEventListener('abort', abortFromCaller, {once: true})
 
     try {
         const base = getErpApiBase().replace(/\/$/, '')
         const route = path.replace(/^\//, '')
+        // FormData сам несёт Content-Type с boundary. Подставленный
+        // application/json ломает разбор multipart на сервере, и файл до
+        // него не доезжает вовсе.
+        const isMultipart = init.body instanceof FormData
         response = await fetch(base + '/' + route, {
             ...init,
             credentials: 'include',
             headers: {
-                'Content-Type': 'application/json',
+                ...(isMultipart ? {} : {'Content-Type': 'application/json'}),
                 ...init.headers,
             },
             signal: controller.signal,

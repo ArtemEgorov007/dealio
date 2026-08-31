@@ -164,7 +164,7 @@ jobs:
           # Внутренности API не должны отдаваться наружу: под webroot лежат
           # исходники, миграции со схемой базы и зависимости.
           fail=0
-          for path in api/composer.json api/src/Auth.php api/vendor/autoload.php; do
+          for path in api/composer.json api/src/Auth.php api/vendor/autoload.php api/.user.ini; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "$base/$path")
             echo "  $path -> $code"
             if [ "$code" != "404" ] && [ "$code" != "403" ]; then

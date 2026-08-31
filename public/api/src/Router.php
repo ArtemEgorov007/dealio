@@ -42,6 +42,18 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'POST' && $path === '/supply/requests') {
         return ['supply_create'];
     }
+    if ($method === 'GET' && $path === '/supply-work/form') {
+        return ['supply_work_form'];
+    }
+    if ($method === 'POST' && $path === '/supply-work/invoices') {
+        return ['supply_work_create_invoice'];
+    }
+    if ($method === 'GET' && $path === '/supply-work/invoices') {
+        return ['supply_work_invoices'];
+    }
+    if ($method === 'GET' && preg_match('#^/supply-work/invoices/(\d+)/file$#', $path, $m) === 1) {
+        return ['supply_work_invoice_file', $m[1]];
+    }
     if ($method === 'GET' && $path === '/auth/me') {
         return ['auth_me'];
     }

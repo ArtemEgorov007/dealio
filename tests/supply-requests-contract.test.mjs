@@ -11,6 +11,9 @@ const middleware = await readFile(new URL('../app/middleware/erp-flow.global.ts'
 const statusMigration = await readFile(new URL('../public/api/migrations/010_erp_supply_status_notifications.sql', import.meta.url), 'utf8')
 const pushPhp = await readFile(new URL('../public/api/src/Push.php', import.meta.url), 'utf8')
 const hub = await readFile(new URL('../app/pages/register.vue', import.meta.url), 'utf8')
+// Поведение выпадающего списка живёт в общем компоненте: копии такого поля
+// разъезжаются, а вместе с ними возвращаются уже починенные баги.
+const combobox = await readFile(new URL('../app/components/erp/ErpCombobox.vue', import.meta.url), 'utf8')
 
 test('одна заявка может содержать несколько позиций', () => {
     // ТЗ: сколько строк создал сотрудник — столько строк в таблице, но код
@@ -160,7 +163,7 @@ test('новый роут закрыт правом supply', () => {
     // Таб-бар прячет раздел без доступа, но прямой переход по URL раньше
     // не проверялся вовсе — поэтому роут обязан быть в обоих списках.
     assert.match(middleware, /'\/supply-requests',/)
-    assert.match(middleware, /'\/supply-requests': 'supply'/)
+    assert.match(middleware, /'\/supply-requests': 'orders'/)
 })
 
 test('количество из поля разбирается и числом, и строкой', () => {
@@ -181,30 +184,28 @@ test('заявки сортируются по времени, а не по ст
 })
 
 test('раздел больше не помечен заглушкой', () => {
-    assert.doesNotMatch(hub, /label: 'Снабжение', caption: 'В разработке'/)
-    assert.match(hub, /label: 'Снабжение', caption: 'Заявка на материалы'/)
+    assert.doesNotMatch(hub, /caption: 'В разработке'/)
+    assert.match(hub, /label: 'Заказ снабжения', caption: 'Заявка на материалы'/)
 })
 
 test('всю номенклатуру можно посмотреть списком', () => {
     // Сотрудник не обязан угадывать формулировку, чтобы увидеть, что бывает
     // на складе: пустое поле показывает весь справочник.
-    assert.match(page, /const suggestionsFor = \(row: FormRow\): ErpSupplyCatalogItem\[\] =>/)
-    assert.match(page, /rankByQuery\(catalog\.value, row\.name, item => item\.name\)/)
-    assert.doesNotMatch(page, /if \(!row\.name\.trim\(\)\) return \[\]/, 'пустой ввод не должен давать пустой список')
-    assert.doesNotMatch(page, /\.slice\(0, 8\)/, 'список не обрезаем — он прокручивается')
-    assert.match(page, /overflow-y: auto/)
+    assert.match(combobox, /rankByQuery\(props\.options, props\.modelValue, option => option\.value\)/)
+    assert.doesNotMatch(combobox, /\.slice\(0, 8\)/, 'список не обрезаем — он прокручивается')
+    assert.match(combobox, /overflow-y: auto/)
 })
 
 test('список открывается кнопкой, а не только вводом', () => {
-    assert.match(page, /Показать всю номенклатуру/)
-    assert.match(page, /toggleSuggestions\(row\)/)
+    assert.match(combobox, /Показать весь список/)
+    assert.match(combobox, /@pointerdown\.prevent="toggle"/)
 })
 
 test('набранное подставляется из номенклатуры', () => {
     // Заявка принимается только с позицией из справочника, поэтому «каска»
     // нужно превратить в «Каска защитная» самим, а не отбивать ошибкой.
-    assert.match(page, /resolveSingleMatch\(catalog\.value, row\.name, item => item\.name\)/)
-    assert.match(page, /@blur="resolveRow\(row\)"/)
+    assert.match(combobox, /resolveSingleMatch\(props\.options, value, option => option\.value\)/)
+    assert.match(combobox, /@blur="onBlur"/)
 })
 
 test('нераспознанная строка видна до отправки', () => {
@@ -216,7 +217,7 @@ test('нераспознанная строка видна до отправки
 })
 
 test('пустой результат поиска не тупик', () => {
-    assert.match(page, /Ничего не нашлось\. Очистите поле, чтобы увидеть всю номенклатуру\./)
+    assert.match(combobox, /Ничего не нашлось\. Очистите поле, чтобы увидеть весь список\./)
 })
 
 test('поле количества не растёт после выбора позиции', () => {
@@ -244,72 +245,73 @@ test('уменьшен плейсхолдер, а не само поле', () =>
 test('выбор позиции работает касанием, а не только мышью', () => {
     // mousedown на тач-устройстве синтезируется уже после blur: список к
     // этому моменту снят с DOM, и тап по позиции не доходил до обработчика.
-    assert.doesNotMatch(page, /@mousedown/, 'mousedown не работает на касании')
-    assert.match(page, /@pointerdown\.prevent="toggleSuggestions\(row\)"/)
+    assert.doesNotMatch(combobox, /@mousedown/, 'mousedown не работает на касании')
+    assert.match(combobox, /@pointerdown\.prevent="toggle"/)
 })
 
 test('прокрутку списка пальцем ничто не отменяет', () => {
     // preventDefault на pointerdown отменяет жест прокрутки: список нельзя
     // было пролистать. Выбор решается по самому касанию — сдвинулся палец
     // или нет.
-    assert.doesNotMatch(page, /@pointerdown\.prevent="pickSuggestion/, 'отменял бы прокрутку')
-    assert.match(page, /@touchstart\.passive="onItemTouchStart"/)
-    assert.match(page, /@touchend="onItemTouchEnd\(\$event, row, item\)"/)
-    assert.match(page, /@click="pickSuggestion\(row, item\)"/)
+    assert.doesNotMatch(combobox, /@pointerdown\.prevent="pick\(/, 'отменял бы прокрутку')
+    assert.match(combobox, /@touchstart\.passive="onItemTouchStart"/)
+    assert.match(combobox, /@touchend="onItemTouchEnd\(\$event, option\)"/)
+    assert.match(combobox, /@click="pick\(option\)"/)
 })
 
 test('прокрутка не считается выбором', () => {
-    const handler = page.slice(page.indexOf('const onItemTouchEnd'))
-    assert.match(handler.slice(0, 500), /Math\.abs\(endY - touchStartY\) > TAP_TOLERANCE_PX/)
+    const handler = combobox.slice(combobox.indexOf('const onItemTouchEnd'))
+    assert.match(handler.slice(0, 500), /Math\.abs\(.+\) > TAP_TOLERANCE_PX/)
     assert.match(handler.slice(0, 500), /event\.preventDefault\(\)/, 'иначе синтетический click выберет второй раз')
 })
 
 test('набор поверх выбранной позиции заменяет её, а не дописывается', () => {
     // Тап ставил курсор в середину названия, и набор давал «Перчатки х/бкруг»
     // — совпадений ноль, а выглядело как «подсказки не работают».
-    assert.match(page, /const onNameFocus = \(row: FormRow, event: FocusEvent\)/)
-    assert.match(page, /event\.target\.select\(\)/)
-    assert.match(page, /@focus="onNameFocus\(row, \$event\)"/)
+    assert.match(combobox, /const onFocus = \(event: FocusEvent\)/)
+    assert.match(combobox, /event\.target\.select\(\)/)
+    assert.match(combobox, /@focus="onFocus"/)
 })
 
 test('список закрывается по касанию вне всей строки, а не вне поля', () => {
     // Список отрисован соседом поля, а не внутри него: проверка по полю
     // считала тап по позиции касанием снаружи и закрывала список раньше,
     // чем срабатывал выбор.
-    assert.match(page, /const rowEls = new Map<number, HTMLElement>\(\)/)
-    assert.match(page, /area\.contains\(event\.target\)/)
-    assert.match(page, /:ref="el => setRowEl\(row\.id, el\)" class="supply-row__name"/)
+    assert.match(combobox, /const rootEl = ref<HTMLElement \| null>\(null\)/)
+    assert.match(combobox, /root\.contains\(event\.target\)/)
+    assert.match(combobox, /<div ref="rootEl" class="erp-combobox">/)
 })
 
 test('blur больше не закрывает список', () => {
     // Закрытие по blur не давало выбрать позицию касанием: список снимался
     // с DOM раньше, чем приходило событие выбора.
-    assert.match(page, /@blur="resolveRow\(row\)"/)
-    assert.doesNotMatch(page, /@blur="closeSuggestions/)
+    assert.match(combobox, /@blur="onBlur"/)
+    const onBlur = combobox.slice(combobox.indexOf('const onBlur'), combobox.indexOf('const pick ='))
+    assert.doesNotMatch(onBlur, /isOpen\.value = false/, 'blur не должен закрывать список')
 })
 
 test('список умещается в видимую часть экрана над клавиатурой', () => {
     // Экранная клавиатура не уменьшает обычный viewport, поэтому список,
     // отрисованный под полем, оказывался за ней: подсказки было видно
     // только после того, как клавиатуру убирали.
-    assert.match(page, /window\.visualViewport/)
-    assert.match(page, /viewport\.offsetTop \+ viewport\.height/)
-    assert.match(page, /:style="\{maxHeight: suggestMaxHeight \+ 'px'\}"/)
-    assert.match(page, /scrollIntoView/)
+    assert.match(combobox, /window\.visualViewport/)
+    assert.match(combobox, /viewport\.offsetTop \+ viewport\.height/)
+    assert.match(combobox, /:style="\{maxHeight: maxHeight \+ 'px'\}"/)
+    assert.match(combobox, /scrollIntoView/)
 })
 
 test('высота списка пересчитывается при появлении клавиатуры', () => {
-    assert.match(page, /visualViewport\?\.addEventListener\('resize', measureSuggestSpace\)/)
-    assert.match(page, /visualViewport\?\.addEventListener\('scroll', measureSuggestSpace\)/)
-    assert.match(page, /visualViewport\?\.removeEventListener\('resize', measureSuggestSpace\)/)
+    assert.match(combobox, /visualViewport\?\.addEventListener\('resize', measure\)/)
+    assert.match(combobox, /visualViewport\?\.addEventListener\('scroll', measure\)/)
+    assert.match(combobox, /visualViewport\?\.removeEventListener\('resize', measure\)/)
 })
 
 test('список закрывается касанием вне поля', () => {
     // Одного blur мало: список открывается кнопкой без фокуса в поле, и
     // blur тогда не приходит вовсе.
-    assert.match(page, /document\.addEventListener\('pointerdown', onDocumentPointerDown, true\)/)
-    assert.match(page, /document\.removeEventListener\('pointerdown', onDocumentPointerDown, true\)/)
-    assert.match(page, /area\.contains\(event\.target\)/)
+    assert.match(combobox, /document\.addEventListener\('pointerdown', onDocumentPointerDown, true\)/)
+    assert.match(combobox, /document\.removeEventListener\('pointerdown', onDocumentPointerDown, true\)/)
+    assert.match(combobox, /root\.contains\(event\.target\)/)
 })
 
 test('после выбора позиции фокус уходит в количество', () => {
@@ -319,10 +321,10 @@ test('после выбора позиции фокус уходит в коли
 test('кнопка списка показывает весь справочник даже у заполненной строки', () => {
     // Иначе у строки с уже выбранной позицией список показывал ровно её
     // одну, и сменить позицию можно было только очистив поле.
-    assert.match(page, /const isBrowsingAll = ref\(false\)/)
-    assert.match(page, /isBrowsingAll\.value\s*\n\s*\? rankByQuery\(catalog\.value, ''/)
-    assert.match(page, /openSuggestions\(row, true\)/)
-    assert.match(page, /isBrowsingAll\.value = false/, 'набор текста возвращает фильтрацию')
+    assert.match(combobox, /const isBrowsingAll = ref\(false\)/)
+    assert.match(combobox, /isBrowsingAll\.value\s*\n\s*\? rankByQuery\(props\.options, ''/)
+    assert.match(combobox, /open\(true\)/)
+    assert.match(combobox, /isBrowsingAll\.value = false/, 'набор текста возвращает фильтрацию')
 })
 
 test('поле номенклатуры не на v-model — иначе фильтр молчит при открытой клавиатуре', () => {
@@ -331,10 +333,10 @@ test('поле номенклатуры не на v-model — иначе фил�
     // игнорирует input во время композиции. Замер: в поле «кас», а список всё
     // ещё показывает все 5 позиций; фильтр срабатывал только после
     // compositionend.
-    assert.doesNotMatch(page, /v-model="row\.name"/, 'v-model проглотит ввод во время композиции')
-    assert.match(page, /:value="row\.name"/)
-    assert.match(page, /@input="onNameInput\(row, \$event\)"/)
-    assert.match(page, /row\.name = event\.target\.value/)
+    assert.doesNotMatch(combobox, /v-model=/, 'v-model проглотит ввод во время композиции')
+    assert.match(combobox, /:value="modelValue"/)
+    assert.match(combobox, /@input="onInput"/)
+    assert.match(combobox, /emit\('update:modelValue', event\.target\.value\)/)
 })
 
 test('плитка «Кадры» подписана', () => {

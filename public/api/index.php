@@ -57,6 +57,18 @@ try {
     if ($name === 'supply_create') {
         erp_supply_create($pdo, $config, $requestId);
     }
+    if ($name === 'supply_work_form') {
+        erp_supply_work_form($pdo, $config, $requestId);
+    }
+    if ($name === 'supply_work_create_invoice') {
+        erp_supply_work_create_invoice($pdo, $config, $requestId);
+    }
+    if ($name === 'supply_work_invoices') {
+        erp_supply_work_invoices($pdo, $config, $requestId);
+    }
+    if ($name === 'supply_work_invoice_file') {
+        erp_supply_work_invoice_file($pdo, $config, $requestId, (int) ($route[1] ?? 0));
+    }
     if ($name === 'reports_current') {
         erp_reports_current($pdo, $config, $requestId);
     }
