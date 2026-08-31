@@ -204,7 +204,7 @@ test('набранное подставляется из номенклатур�
     // Заявка принимается только с позицией из справочника, поэтому «каска»
     // нужно превратить в «Каска защитная» самим, а не отбивать ошибкой.
     assert.match(page, /resolveSingleMatch\(catalog\.value, row\.name, item => item\.name\)/)
-    assert.match(page, /@blur="closeSuggestions\(row\)"/)
+    assert.match(page, /@blur="resolveRow\(row\)"/)
 })
 
 test('нераспознанная строка видна до отправки', () => {
@@ -244,11 +244,48 @@ test('уменьшен плейсхолдер, а не само поле', () =>
 test('выбор позиции работает касанием, а не только мышью', () => {
     // mousedown на тач-устройстве синтезируется уже после blur: список к
     // этому моменту снят с DOM, и тап по позиции не доходил до обработчика.
-    // pointerdown приходит сразу по касанию, до blur, и .prevent сохраняет
-    // фокус в поле.
     assert.doesNotMatch(page, /@mousedown/, 'mousedown не работает на касании')
-    assert.match(page, /@pointerdown\.prevent="pickSuggestion\(row, item\)"/)
     assert.match(page, /@pointerdown\.prevent="toggleSuggestions\(row\)"/)
+})
+
+test('прокрутку списка пальцем ничто не отменяет', () => {
+    // preventDefault на pointerdown отменяет жест прокрутки: список нельзя
+    // было пролистать. Выбор решается по самому касанию — сдвинулся палец
+    // или нет.
+    assert.doesNotMatch(page, /@pointerdown\.prevent="pickSuggestion/, 'отменял бы прокрутку')
+    assert.match(page, /@touchstart\.passive="onItemTouchStart"/)
+    assert.match(page, /@touchend="onItemTouchEnd\(\$event, row, item\)"/)
+    assert.match(page, /@click="pickSuggestion\(row, item\)"/)
+})
+
+test('прокрутка не считается выбором', () => {
+    const handler = page.slice(page.indexOf('const onItemTouchEnd'))
+    assert.match(handler.slice(0, 500), /Math\.abs\(endY - touchStartY\) > TAP_TOLERANCE_PX/)
+    assert.match(handler.slice(0, 500), /event\.preventDefault\(\)/, 'иначе синтетический click выберет второй раз')
+})
+
+test('набор поверх выбранной позиции заменяет её, а не дописывается', () => {
+    // Тап ставил курсор в середину названия, и набор давал «Перчатки х/бкруг»
+    // — совпадений ноль, а выглядело как «подсказки не работают».
+    assert.match(page, /const onNameFocus = \(row: FormRow, event: FocusEvent\)/)
+    assert.match(page, /event\.target\.select\(\)/)
+    assert.match(page, /@focus="onNameFocus\(row, \$event\)"/)
+})
+
+test('список закрывается по касанию вне всей строки, а не вне поля', () => {
+    // Список отрисован соседом поля, а не внутри него: проверка по полю
+    // считала тап по позиции касанием снаружи и закрывала список раньше,
+    // чем срабатывал выбор.
+    assert.match(page, /const rowEls = new Map<number, HTMLElement>\(\)/)
+    assert.match(page, /area\.contains\(event\.target\)/)
+    assert.match(page, /:ref="el => setRowEl\(row\.id, el\)" class="supply-row__name"/)
+})
+
+test('blur больше не закрывает список', () => {
+    // Закрытие по blur не давало выбрать позицию касанием: список снимался
+    // с DOM раньше, чем приходило событие выбора.
+    assert.match(page, /@blur="resolveRow\(row\)"/)
+    assert.doesNotMatch(page, /@blur="closeSuggestions/)
 })
 
 test('список умещается в видимую часть экрана над клавиатурой', () => {
@@ -272,7 +309,7 @@ test('список закрывается касанием вне поля', () 
     // blur тогда не приходит вовсе.
     assert.match(page, /document\.addEventListener\('pointerdown', onDocumentPointerDown, true\)/)
     assert.match(page, /document\.removeEventListener\('pointerdown', onDocumentPointerDown, true\)/)
-    assert.match(page, /field\.contains\(event\.target\)/)
+    assert.match(page, /area\.contains\(event\.target\)/)
 })
 
 test('после выбора позиции фокус уходит в количество', () => {
