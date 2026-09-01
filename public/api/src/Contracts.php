@@ -13,11 +13,30 @@ function erp_contract_amount(string $raw): float
     return (float) str_replace(',', '.', str_replace([' ', "\u{00A0}", "\u{202F}", '₽'], '', $raw));
 }
 
-/** Необязательная цена: пустое поле — это NULL, а не ноль. */
-function erp_contract_optional_amount(mixed $raw): ?float
+/**
+ * Цена расценки: пустое поле — это ноль, а не NULL.
+ *
+ * NULL в расчётах даёт ни истину, ни ложь: любое сравнение с ним ложно, и
+ * незаполненная цена молча выпадала бы из выборок вместо того, чтобы честно
+ * считаться нулём.
+ */
+function erp_contract_price(mixed $raw): float
 {
     $value = trim((string) $raw);
-    return $value === '' ? null : erp_contract_amount($value);
+    return $value === '' ? 0.0 : erp_contract_amount($value);
+}
+
+/**
+ * Параметр расценки: пустое поле — это прочерк.
+ *
+ * Параметры участвуют в подборе расценки для журнала работ. Пустая строка
+ * совпала бы с любой другой пустой, то есть с чужой расценкой; прочерк
+ * говорит «здесь параметра нет» явно.
+ */
+function erp_contract_param(mixed $raw): string
+{
+    $value = trim((string) $raw);
+    return $value === '' ? '-' : mb_substr($value, 0, 255);
 }
 
 /**
@@ -93,8 +112,8 @@ function erp_contract_show(PDO $pdo, array $config, string $requestId, int $cont
             'param2' => (string) $row['param2'],
             'param3' => (string) $row['param3'],
             'param4' => (string) $row['param4'],
-            'priceM2' => $row['price_m2'] === null ? null : (float) $row['price_m2'],
-            'priceTon' => $row['price_ton'] === null ? null : (float) $row['price_ton'],
+            'priceM2' => (float) $row['price_m2'],
+            'priceTon' => (float) $row['price_ton'],
         ], $rates->fetchAll(PDO::FETCH_ASSOC)),
     ]]);
 }
@@ -162,12 +181,15 @@ function erp_contract_create(PDO $pdo, array $config, string $requestId): void
 }
 
 /**
- * Замена набора расценок договора.
+ * Сохранение расценок договора.
  *
- * Экран правит расценки целиком, поэтому и сохраняем целиком: удаление
- * прежних и запись присланных в одной транзакции. Отдельные операции
- * «изменить строку» и «удалить строку» дали бы тот же результат ценой трёх
- * ручек API и рассинхрона, если часть запросов не дойдёт.
+ * Экран открывает весь набор и присылает его целиком. Строки с id правим на
+ * месте, новые добавляем, пропавшие удаляем — так у расценки остаётся
+ * постоянный id. Прежняя реализация стирала набор и записывала заново: с ней
+ * id менялись на каждом сохранении, и сослаться на расценку было не из чего.
+ *
+ * Чужие id молча игнорировать нельзя: это была бы правка расценки соседнего
+ * договора, поэтому принадлежность проверяется явно.
  */
 function erp_contract_save_rates(PDO $pdo, array $config, string $requestId, int $contractId): void
 {
@@ -186,54 +208,77 @@ function erp_contract_save_rates(PDO $pdo, array $config, string $requestId, int
         erp_json(400, erp_error_payload('bad_request', 'Не переданы расценки', $requestId));
     }
 
+    $existing = $pdo->prepare('SELECT id FROM erp_contract_rates WHERE internal_number = :number');
+    $existing->execute(['number' => $internalNumber]);
+    $existingIds = array_map('intval', $existing->fetchAll(PDO::FETCH_COLUMN));
+
     $rates = [];
     foreach ($raw as $row) {
         if (!is_array($row)) {
             continue;
         }
         $params = [
-            trim((string) ($row['param1'] ?? '')),
-            trim((string) ($row['param2'] ?? '')),
-            trim((string) ($row['param3'] ?? '')),
-            trim((string) ($row['param4'] ?? '')),
+            erp_contract_param($row['param1'] ?? ''),
+            erp_contract_param($row['param2'] ?? ''),
+            erp_contract_param($row['param3'] ?? ''),
+            erp_contract_param($row['param4'] ?? ''),
         ];
-        $priceM2 = erp_contract_optional_amount($row['priceM2'] ?? '');
-        $priceTon = erp_contract_optional_amount($row['priceTon'] ?? '');
+        $priceM2 = erp_contract_price($row['priceM2'] ?? '');
+        $priceTon = erp_contract_price($row['priceTon'] ?? '');
+        $id = (int) ($row['id'] ?? 0);
 
-        // Пустая строка формы — это не расценка, а незаполненный бланк.
-        if (implode('', $params) === '' && $priceM2 === null && $priceTon === null) {
+        // Пустой бланк — не расценка: все параметры прочерки и обе цены нули.
+        if ($id === 0 && $params === ['-', '-', '-', '-'] && $priceM2 === 0.0 && $priceTon === 0.0) {
             continue;
         }
-        if ($priceM2 === null && $priceTon === null) {
+        if ($id !== 0 && !in_array($id, $existingIds, true)) {
             erp_json(422, erp_error_payload(
                 'invalid_input',
-                'В расценке нужна хотя бы одна цена — за м2 или за тонну',
+                'Расценка не принадлежит этому договору',
                 $requestId
             ));
         }
-        $rates[] = ['params' => $params, 'priceM2' => $priceM2, 'priceTon' => $priceTon];
+
+        $rates[] = ['id' => $id, 'params' => $params, 'priceM2' => $priceM2, 'priceTon' => $priceTon];
     }
+
+    $keptIds = array_values(array_filter(array_column($rates, 'id')));
+    $removedIds = array_values(array_diff($existingIds, $keptIds));
 
     $pdo->beginTransaction();
     try {
-        $pdo->prepare('DELETE FROM erp_contract_rates WHERE internal_number = :number')
-            ->execute(['number' => $internalNumber]);
+        if ($removedIds !== []) {
+            $placeholders = implode(',', array_fill(0, count($removedIds), '?'));
+            $pdo->prepare("DELETE FROM erp_contract_rates WHERE id IN ({$placeholders})")
+                ->execute($removedIds);
+        }
 
         $insert = $pdo->prepare(
             'INSERT INTO erp_contract_rates
                 (internal_number, param1, param2, param3, param4, price_m2, price_ton)
              VALUES (:number, :param1, :param2, :param3, :param4, :price_m2, :price_ton)'
         );
+        $update = $pdo->prepare(
+            'UPDATE erp_contract_rates
+             SET param1 = :param1, param2 = :param2, param3 = :param3, param4 = :param4,
+                 price_m2 = :price_m2, price_ton = :price_ton
+             WHERE id = :id'
+        );
+
         foreach ($rates as $rate) {
-            $insert->execute([
-                'number' => $internalNumber,
+            $values = [
                 'param1' => $rate['params'][0],
                 'param2' => $rate['params'][1],
                 'param3' => $rate['params'][2],
                 'param4' => $rate['params'][3],
                 'price_m2' => $rate['priceM2'],
                 'price_ton' => $rate['priceTon'],
-            ]);
+            ];
+            if ($rate['id'] !== 0) {
+                $update->execute($values + ['id' => $rate['id']]);
+            } else {
+                $insert->execute($values + ['number' => $internalNumber]);
+            }
         }
         $pdo->commit();
     } catch (Throwable $error) {
@@ -241,5 +286,8 @@ function erp_contract_save_rates(PDO $pdo, array $config, string $requestId, int
         throw $error;
     }
 
-    erp_json(200, ['ok' => true, 'data' => ['saved' => count($rates)]]);
+    erp_json(200, ['ok' => true, 'data' => [
+        'saved' => count($rates),
+        'removed' => count($removedIds),
+    ]]);
 }

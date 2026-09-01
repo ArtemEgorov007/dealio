@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import test from 'node:test'
 
-const migration = await readFile(new URL('../public/api/migrations/013_erp_contracts.sql', import.meta.url), 'utf8')
+const migration = (await readFile(new URL('../public/api/migrations/013_erp_contracts.sql', import.meta.url), 'utf8'))
+    + (await readFile(new URL('../public/api/migrations/015_erp_contract_rates_defaults.sql', import.meta.url), 'utf8'))
 const php = await readFile(new URL('../public/api/src/Contracts.php', import.meta.url), 'utf8')
 const auth = await readFile(new URL('../public/api/src/Auth.php', import.meta.url), 'utf8')
 const personnel = await readFile(new URL('../public/api/src/Personnel.php', import.meta.url), 'utf8')
@@ -75,18 +76,55 @@ test('Аванс, СМР, ИД и КС — нули до появления св
     assert.match(card, /КС/)
 })
 
-test('расценка без цены не сохраняется', () => {
-    assert.match(php, /нужна хотя бы одна цена/)
-    assert.match(ratesPage, /brokenRows/)
-    assert.match(ratesPage, /Укажите цену за м² или за тонну/)
+test('пустых значений в расценке не бывает', () => {
+    // Параметры участвуют в подборе расценки для журнала работ: пустая строка
+    // совпала бы с чужой расценкой. NULL в цене выпадает из любых сравнений.
+    assert.match(php, /function erp_contract_param/)
+    assert.match(php, /\$value === '' \? '-' :/)
+    assert.match(php, /function erp_contract_price/)
+    assert.match(php, /\$value === '' \? 0\.0 :/)
+    assert.match(migration, /param1 VARCHAR\(255\) NOT NULL DEFAULT '-'/i)
+    assert.match(migration, /price_m2 DECIMAL\(15,2\) NOT NULL DEFAULT 0/i)
+})
+
+test('прежние пустые значения переписаны, а не оставлены', () => {
+    // Иначе NOT NULL не применился бы к строкам, заведённым до правила.
+    assert.match(migration, /UPDATE erp_contract_rates SET param1 = '-' WHERE param1 = ''/i)
+    assert.match(migration, /UPDATE erp_contract_rates SET price_m2 = 0 WHERE price_m2 IS NULL/i)
+})
+
+test('расценка правится на месте и сохраняет свой id', () => {
+    // Прежняя реализация стирала набор и записывала заново: id менялись на
+    // каждом сохранении, и сослаться на расценку было не из чего.
+    const save = php.slice(php.indexOf('function erp_contract_save_rates'))
+    assert.match(save, /UPDATE erp_contract_rates/)
+    assert.doesNotMatch(save, /DELETE FROM erp_contract_rates WHERE internal_number/, 'набор больше не стирается целиком')
+    assert.match(save, /DELETE FROM erp_contract_rates WHERE id IN/)
+})
+
+test('чужую расценку через id не поправить', () => {
+    assert.match(php, /!in_array\(\$id, \$existingIds, true\)/)
+    assert.match(php, /не принадлежит этому договору/)
+})
+
+test('расценку можно открыть из карточки договора', () => {
+    assert.match(card, /const openRate = \(rateId: number\)/)
+    assert.match(card, /query: \{id: contractId\.value, rate: rateId\}/)
+    assert.match(card, /Нажмите на расценку, чтобы изменить или удалить/)
+})
+
+test('удалить можно любую расценку, включая единственную', () => {
+    // Раньше кнопка пряталась на последней строке, и последнюю расценку
+    // удалить было нечем.
+    assert.doesNotMatch(ratesPage, /v-if="rows\.length > 1"/, 'кнопка удаления должна быть у каждой строки')
+    assert.match(ratesPage, /rows\.value = \[emptyRow\(\)\]/)
 })
 
 test('набор расценок сохраняется одной транзакцией', () => {
-    // Экран правит набор целиком: удаление прежних и запись новых должны
-    // быть неделимы, иначе сбой посередине оставит договор без расценок.
+    // Правки, добавления и удаления должны быть неделимы, иначе сбой
+    // посередине оставит договор с половиной расценок.
     const save = php.slice(php.indexOf('function erp_contract_save_rates'))
     assert.match(save, /beginTransaction/)
-    assert.match(save, /DELETE FROM erp_contract_rates WHERE internal_number = :number/)
     assert.match(save, /rollBack/)
     assert.match(save, /commit/)
 })
@@ -121,7 +159,7 @@ test('форма договора требует все поля', () => {
 
 test('расценки добавляются кнопкой и убираются по одной', () => {
     assert.match(ratesPage, /const addRow = /)
-    assert.match(ratesPage, /if \(rows\.value\.length <= 1\) return/)
+    assert.match(ratesPage, /if \(rows\.value\.length <= 1\) \{/, 'последняя строка заменяется пустой, а не исчезает')
     assert.match(ratesPage, /Параметр 1/)
     assert.match(ratesPage, /Параметр 4/)
     assert.match(ratesPage, /Цена за м²/)

@@ -16,6 +16,9 @@ const loadError = ref('')
 const isSubmitting = ref(false)
 
 interface RateRow {
+    /** Ключ для v-for: у новых строк своего id ещё нет. */
+    key: number
+    /** id расценки в базе. Ноль — строка ещё не сохранялась. */
     id: number
     param1: string
     param2: string
@@ -25,12 +28,26 @@ interface RateRow {
     priceTon: string
 }
 
-let nextRowId = 1
+let nextKey = 1
 const emptyRow = (): RateRow => ({
-    id: nextRowId++, param1: '', param2: '', param3: '', param4: '', priceM2: '', priceTon: '',
+    key: nextKey++, id: 0, param1: '', param2: '', param3: '', param4: '', priceM2: '', priceTon: '',
 })
 
 const rows = ref<RateRow[]>([emptyRow()])
+
+// Расценка, ради которой пришли с карточки договора: подсвечиваем её и
+// подводим экран к ней, иначе в длинном списке непонятно, что открылось.
+const focusedRateId = computed(() => Number(route.query.rate ?? 0))
+const rateEls = new Map<number, HTMLElement>()
+
+const setRateEl = (id: number, el: unknown) => {
+    if (el instanceof HTMLElement) rateEls.set(id, el)
+    else rateEls.delete(id)
+}
+
+/** Пустое значение показываем пустым полем: прочерк и ноль — это «не задано». */
+const editable = (value: string): string => value === '-' ? '' : value
+const editablePrice = (value: number): string => value === 0 ? '' : String(value).replace('.', ',')
 
 const load = async () => {
     if (!contractId.value) {
@@ -46,15 +63,21 @@ const load = async () => {
         // Экран правит набор целиком, поэтому и открываем его целиком.
         rows.value = data.rates.length
             ? data.rates.map(rate => ({
-                id: nextRowId++,
-                param1: rate.param1,
-                param2: rate.param2,
-                param3: rate.param3,
-                param4: rate.param4,
-                priceM2: rate.priceM2 === null ? '' : String(rate.priceM2).replace('.', ','),
-                priceTon: rate.priceTon === null ? '' : String(rate.priceTon).replace('.', ','),
+                key: nextKey++,
+                id: rate.id,
+                param1: editable(rate.param1),
+                param2: editable(rate.param2),
+                param3: editable(rate.param3),
+                param4: editable(rate.param4),
+                priceM2: editablePrice(rate.priceM2),
+                priceTon: editablePrice(rate.priceTon),
             }))
             : [emptyRow()]
+
+        if (focusedRateId.value) {
+            await nextTick()
+            rateEls.get(focusedRateId.value)?.scrollIntoView({block: 'center', behavior: 'smooth'})
+        }
     } catch (error) {
         loadError.value = errorMessage(error, 'Не удалось загрузить расценки')
     } finally {
@@ -66,26 +89,32 @@ const addRow = () => {
     rows.value.push(emptyRow())
 }
 
-const removeRow = (id: number) => {
+/**
+ * Удаление расценки.
+ *
+ * Из базы она исчезнет при сохранении: сервер удаляет те строки, которых нет
+ * в присланном наборе. Отдельный запрос на удаление разошёлся бы с правками
+ * остальных строк, если бы одна из двух операций не дошла.
+ */
+const removeRow = (key: number) => {
     // Последнюю строку не убираем: экран остался бы без единого поля ввода.
-    if (rows.value.length <= 1) return
-    rows.value = rows.value.filter(row => row.id !== id)
+    if (rows.value.length <= 1) {
+        rows.value = [emptyRow()]
+        return
+    }
+    rows.value = rows.value.filter(row => row.key !== key)
 }
 
 const hasContent = (row: RateRow): boolean =>
-    [row.param1, row.param2, row.param3, row.param4, row.priceM2, row.priceTon].some(v => v.trim() !== '')
+    row.id !== 0
+    || [row.param1, row.param2, row.param3, row.param4, row.priceM2, row.priceTon].some(v => v.trim() !== '')
 
-const hasPrice = (row: RateRow): boolean => row.priceM2.trim() !== '' || row.priceTon.trim() !== ''
-
-// Расценка без цены — это не расценка. Показываем причину под строкой, а не
-// прячем её в отказе сервера после нажатия.
-const brokenRows = computed(() => rows.value.filter(row => hasContent(row) && !hasPrice(row)))
-
+// Незаполненные поля не запрещены: параметр сохранится прочерком, цена нулём.
+// Сохранять нечего только тогда, когда не осталось ни одной строки с данными —
+// но и это законно: так удаляют последнюю расценку.
 const filledRows = computed(() => rows.value.filter(hasContent))
 
-const canSubmit = computed(() =>
-    filledRows.value.length > 0 && brokenRows.value.length === 0 && !isSubmitting.value,
-)
+const canSubmit = computed(() => !isSubmitting.value)
 
 const submit = async () => {
     if (!canSubmit.value) return
@@ -94,6 +123,7 @@ const submit = async () => {
         const result = await saveContractRates(
             contractId.value,
             filledRows.value.map(row => ({
+                id: row.id,
                 param1: row.param1.trim(),
                 param2: row.param2.trim(),
                 param3: row.param3.trim(),
@@ -102,7 +132,10 @@ const submit = async () => {
                 priceTon: row.priceTon,
             })),
         )
-        showSuccess('Расценки сохранены', `Строк: ${result.saved}`)
+        showSuccess(
+            'Расценки сохранены',
+            result.removed ? `Строк: ${result.saved}, удалено: ${result.removed}` : `Строк: ${result.saved}`,
+        )
         await router.push({path: '/contract', query: {id: contractId.value}})
     } catch (error) {
         showError(error, 'Не удалось сохранить расценки')
@@ -132,19 +165,25 @@ onMounted(load)
 
     <template v-else>
       <ErpSectionLabel>Расценки договора</ErpSectionLabel>
+      <p class="rates__note">Правки применятся к договору после нажатия «Внести»</p>
 
       <div class="rates">
-        <section v-for="(row, index) in rows" :key="row.id" class="rate">
+        <section
+            v-for="(row, index) in rows"
+            :key="row.key"
+            :ref="el => setRateEl(row.id, el)"
+            class="rate"
+            :class="{'rate--focused': row.id !== 0 && row.id === focusedRateId}"
+        >
           <header class="rate__head">
             <span class="rate__index">Расценка {{ index + 1 }}</span>
             <button
-                v-if="rows.length > 1"
                 type="button"
                 class="rate__remove"
-                aria-label="Убрать расценку"
-                @click="removeRow(row.id)"
+                :aria-label="row.id ? 'Удалить расценку' : 'Убрать строку'"
+                @click="removeRow(row.key)"
             >
-              <Icon name="heroicons:x-mark" size="15"/>
+              <Icon name="heroicons:trash" size="15"/>
             </button>
           </header>
 
@@ -166,8 +205,8 @@ onMounted(load)
             </label>
           </div>
 
-          <p v-if="hasContent(row) && !hasPrice(row)" class="rate__hint">
-            Укажите цену за м² или за тонну
+          <p class="rate__hint">
+            Пустой параметр сохранится прочерком, пустая цена — нулём
           </p>
         </section>
       </div>
@@ -184,6 +223,11 @@ onMounted(load)
 </template>
 
 <style scoped lang="sass">
+.rates__note
+  margin: 0 0 2px 12px
+  font-size: 11px
+  color: var(--color-text-secondary)
+
 .rates
   display: flex
   flex-direction: column
@@ -260,10 +304,14 @@ onMounted(load)
   text-align: right
   font-variant-numeric: tabular-nums
 
+.rate--focused
+  outline: 2px solid var(--color-primary)
+  outline-offset: 2px
+
 .rate__hint
   margin: 8px 0 0 10px
   font-size: 11px
-  color: var(--erp-warn, #E7920B)
+  color: var(--color-text-secondary)
 
 .rates__add
   align-self: center
