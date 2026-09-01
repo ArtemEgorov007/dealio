@@ -2,21 +2,22 @@ import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import test from 'node:test'
 
-const hub = await readFile(new URL('../app/pages/register.vue', import.meta.url), 'utf8')
 const page = await readFile(new URL('../app/pages/personnel.vue', import.meta.url), 'utf8')
 const screen = await readFile(new URL('../app/components/erp/ErpScreen.vue', import.meta.url), 'utf8')
 const table = await readFile(new URL('../app/components/erp/ErpPersonnelEmployeeTable.vue', import.meta.url), 'utf8')
 const actionSheet = await readFile(new URL('../app/components/erp/ErpActionSheet.vue', import.meta.url), 'utf8')
-const tabbar = await readFile(new URL('../app/components/erp/ErpTabBar.vue', import.meta.url), 'utf8')
+const sections = await readFile(new URL('../app/utils/erp-sections.ts', import.meta.url), 'utf8')
 const layout = await readFile(new URL('../app/layouts/erp.vue', import.meta.url), 'utf8')
 const returnToDepartmentsStart = page.indexOf('const returnToDepartments = () =>')
 const returnToDepartmentsEnd = page.indexOf('const openEmployee', returnToDepartmentsStart)
 const returnToDepartments = page.slice(returnToDepartmentsStart, returnToDepartmentsEnd)
 
 test('Personnel is an active hub tile without development copy', () => {
-  const personnelTile = hub.match(/\{key: 'personnel',[^\n]+\}/)?.[0] ?? ''
+  // Плитка описана в общем реестре разделов, оттуда её берут и главный
+  // экран, и таб-бар.
+  const personnelTile = sections.match(/\{[^{}]*key: 'personnel'[\s\S]*?\}/)?.[0] ?? ''
   assert.doesNotMatch(personnelTile, /В разработке/)
-  assert.match(personnelTile, /tone: '#016ED7'/)
+  assert.match(personnelTile, /label: 'Кадры'/)
 })
 
 test('Personnel back control invokes the department reset instead of routing to the same page', () => {
@@ -59,5 +60,9 @@ test('employee rows visibly communicate that the card opens on click', () => {
 })
 
 test('Personnel stays active after a canonical trailing-slash refresh', () => {
-  assert.match(tabbar, /isPersonnelSection\s*=\s*computed\(\(\)\s*=>\s*route\.path\.startsWith\('\/personnel'\)\)/)
+  // Подсветка раздела держится на списке маршрутов из общего реестра, а
+  // конечный слэш срезается в erpSectionForRoute — прямой переход по ссылке
+  // и обновление страницы дают «/personnel/».
+  assert.match(sections, /routes: \['\/personnel'\]/)
+  assert.match(sections, /path\.replace\(\/\\\/\$\/, ''\)/)
 })

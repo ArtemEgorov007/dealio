@@ -38,23 +38,19 @@ const shiftOverline = computed(() => {
 })
 
 // Модули хаба — те же, что в таб-баре, фильтр по доступам сотрудника
-const modules = computed(() => {
-    const a = employeeStore.access
-    const all = [
-        {key: 'badges', to: '/workshop', icon: 'heroicons:tag', label: 'Бирки', caption: 'Выдать', tone: '#016ED7'},
-        {key: 'measurements', to: '/scan-measurement', icon: 'heroicons:beaker', label: 'Промеры', caption: 'Считать', tone: '#2FB463'},
-        {key: 'packing', to: '/scan-qr', icon: 'heroicons:qr-code', label: 'Упаковка', caption: 'QR-скан', tone: '#E7920B'},
-        {key: 'handover', to: '/scan-handover', icon: 'heroicons:check-badge', label: 'Сдача', caption: 'Приёмка', tone: '#8E4EC6'},
-        {key: 'reports', to: '/reports', icon: 'heroicons:chart-bar', label: 'Отчёты', caption: 'Оперативный срез', tone: '#016ED7'},
-        {key: 'approvals', to: '/approvals', icon: 'heroicons:check-circle', label: 'Согласования', caption: 'Счета', tone: '#0F766E', count: a.approvals && approvalsStore.pendingCount > 0 ? approvalsStore.pendingCount : null},
-        {key: 'orders', to: '/supply', icon: 'heroicons:clipboard-document-check', label: 'Заказ снабжения', caption: 'Заявка на материалы', tone: '#B45309'},
-        {key: 'supply', to: '/supply-work', icon: 'heroicons:briefcase', label: 'Работа со снабжением', caption: 'Счета и справочник', tone: '#0F766E'},
-        {key: 'warehouse', to: '/warehouse', icon: 'heroicons:archive-box', label: 'Склад', caption: 'Приём/выдача', tone: '#4F46E5'},
-        {key: 'personnel', to: '/personnel', icon: 'heroicons:user-group', label: 'Кадры', caption: 'Структуры и доступы', tone: '#016ED7'},
-        {key: 'contracts', to: '/contracts', icon: 'heroicons:document-duplicate', label: 'Договоры', caption: 'Договоры и расценки', tone: '#7C3AED'},
-    ]
-    return all.filter(m => a[m.key as keyof typeof a])
-})
+// Плитки строятся из общего реестра разделов — того же, что и таб-бар.
+// Пока список жил в двух местах, он разошёлся: «Договоры» были на плитках,
+// но не в нижнем меню.
+const modules = computed(() =>
+    erpSectionsFor(employeeStore.access).map(section => ({
+        ...section,
+        // Счётчик пока только у согласований: единственный раздел, где число
+        // ждущих решения нужно видеть, не заходя внутрь.
+        count: section.key === 'approvals' && approvalsStore.pendingCount > 0
+            ? approvalsStore.pendingCount
+            : null,
+    })),
+)
 
 const submit = async () => {
     if (!loginField.value.trim() || !password.value) {

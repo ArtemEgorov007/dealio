@@ -457,10 +457,10 @@ test('approvals UI shares its pending count and only notifies after an explicit 
   assert.match(page, /useErpApprovalsNotifications/)
   assert.doesNotMatch(page, /fetchApprovals/)
   assert.match(profile, /useErpApprovalsStore/)
-  assert.match(profile, /count:\s*a\.approvals\s*&&\s*approvalsStore\.pendingCount\s*>\s*0\s*\?\s*approvalsStore\.pendingCount\s*:\s*null/)
+  assert.match(profile, /count: section\.key === 'approvals' && approvalsStore\.pendingCount > 0/)
   assert.match(profile, /:count="m\.count"/)
   assert.match(tabbar, /useErpApprovalsStore/)
-  assert.match(tabbar, /v-if="access\.approvals\s*&&\s*approvalsStore\.pendingCount\s*>\s*0"/)
+  assert.match(tabbar, /key === 'approvals' && employeeStore\.access\.approvals && approvalsStore\.pendingCount > 0/)
   assert.match(plugin, /startErpApprovalsNotifications/)
   assert.match(plugin, /stopErpApprovalsNotifications/)
 

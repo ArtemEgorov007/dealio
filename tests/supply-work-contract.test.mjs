@@ -9,7 +9,7 @@ const form = await readFile(new URL('../app/pages/invoice-new.vue', import.meta.
 const hubPage = await readFile(new URL('../app/pages/supply-work.vue', import.meta.url), 'utf8')
 const list = await readFile(new URL('../app/pages/invoices.vue', import.meta.url), 'utf8')
 const middleware = await readFile(new URL('../app/middleware/erp-flow.global.ts', import.meta.url), 'utf8')
-const register = await readFile(new URL('../app/pages/register.vue', import.meta.url), 'utf8')
+const sections = await readFile(new URL('../app/utils/erp-sections.ts', import.meta.url), 'utf8')
 const api = await readFile(new URL('../app/utils/erp-api.ts', import.meta.url), 'utf8')
 const htaccess = await readFile(new URL('../public/api/.htaccess', import.meta.url), 'utf8')
 const catalogPage = await readFile(new URL('../app/pages/supply-catalog.vue', import.meta.url), 'utf8')
@@ -156,8 +156,8 @@ test('заявку создаёт право «Заказ снабжения», 
     assert.match(middleware, /'\/invoice-new': 'supply'/)
     assert.match(middleware, /'\/invoices': 'supply'/)
     assert.match(middleware, /'\/supply-catalog': 'supply'/)
-    assert.match(register, /key: 'orders', to: '\/supply'/)
-    assert.match(register, /key: 'supply', to: '\/supply-work'/)
+    assert.match(sections, /key: 'orders',\s*\n\s*to: '\/supply',/)
+    assert.match(sections, /key: 'supply',\s*\n\s*to: '\/supply-work',/)
 })
 
 test('справочник ТМЦ показывает три колонки ТЗ', () => {

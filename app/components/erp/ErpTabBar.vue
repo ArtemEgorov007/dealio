@@ -7,34 +7,23 @@ const router = useRouter()
 const employeeStore = useErpEmployeeStore()
 const approvalsStore = useErpApprovalsStore()
 
-const isPackingSection = computed(() => route.path === '/scan-qr')
-
-const isHandoverSection = computed(() =>
-    ['/scan-handover', '/handover-shift'].includes(route.path),
+// Разделы и их пути — из общего реестра: список жил в двух местах и разошёлся,
+// «Договоры» появились на плитках, но не в таб-баре.
+const sections = computed(() =>
+    // До входа показываем все вкладки: иначе бар пуст и выглядит сломанным.
+    employeeStore.hasFio ? erpSectionsFor(employeeStore.access) : ERP_SECTIONS,
 )
 
-const isMeasurementSection = computed(() =>
-    ['/scan-measurement', '/measurement'].includes(route.path),
-)
-
-const isBadgesSection = computed(() =>
-    !isPackingSection.value && !isHandoverSection.value && !isMeasurementSection.value
-    && ['/workshop', '/badges', '/receipt', '/shift'].includes(route.path),
-)
+const activeSectionKey = computed(() => erpSectionForRoute(route.path)?.key ?? null)
 
 const isProfileSection = computed(() => route.path === '/register')
 
-const isReportsSection = computed(() => route.path === '/reports')
-const isApprovalsSection = computed(() => route.path === '/approvals')
-// Заказ снабжения (право orders) — заявка на материалы и свои заявки.
-// Работа со снабжением (право supply) — счета и справочник.
-const ORDER_ROUTES = ['/supply', '/supply-requests']
-const SUPPLY_WORK_ROUTES = ['/supply-work', '/invoice-new', '/invoices', '/supply-catalog']
-
-const isOrdersSection = computed(() => ORDER_ROUTES.includes(route.path))
-const isSupplySection = computed(() => SUPPLY_WORK_ROUTES.includes(route.path))
-const isWarehouseSection = computed(() => route.path.startsWith('/warehouse'))
-const isPersonnelSection = computed(() => route.path.startsWith('/personnel'))
+// Счётчик пока только у согласований: это единственный раздел, где число
+// ждущих решения нужно видеть, не заходя внутрь.
+const sectionCount = (key: string): number | null =>
+    key === 'approvals' && employeeStore.access.approvals && approvalsStore.pendingCount > 0
+        ? approvalsStore.pendingCount
+        : null
 
 const access = computed(() => employeeStore.access)
 
@@ -111,16 +100,6 @@ const tabbarMaskStyle = computed(() => {
 })
 
 const goProfile = () => router.push('/register')
-const goBadges = () => router.push('/workshop')
-const goMeasurements = () => router.push('/scan-measurement')
-const goPacking = () => router.push('/scan-qr')
-const goHandover = () => router.push('/scan-handover')
-const goReports = () => router.push('/reports')
-const goApprovals = () => router.push('/approvals')
-const goSupply = () => router.push('/supply-work')
-const goOrders = () => router.push('/supply')
-const goWarehouse = () => router.push('/warehouse')
-const goPersonnel = () => router.push('/personnel')
 
 const goLogout = () => {
   employeeStore.logout()
@@ -157,129 +136,19 @@ const goLogout = () => {
     </button>
 
     <button
-        v-if="!employeeStore.hasFio || access.badges"
+        v-for="section in sections"
+        :key="section.key"
         type="button"
         class="erp-tabbar__item"
-        :class="{ 'erp-tabbar__item--active': isBadgesSection }"
-        :title="isRailCollapsed ? 'Бирки' : undefined"
-        @click="goBadges"
+        :class="{ 'erp-tabbar__item--active': activeSectionKey === section.key }"
+        :title="isRailCollapsed ? section.label : undefined"
+        @click="router.push(section.to)"
     >
-      <Icon name="heroicons:tag" size="22"/>
-      <span class="erp-tabbar__label">Бирки</span>
-    </button>
-
-    <button
-        v-if="!employeeStore.hasFio || access.measurements"
-        type="button"
-        class="erp-tabbar__item"
-        :class="{ 'erp-tabbar__item--active': isMeasurementSection }"
-        :title="isRailCollapsed ? 'Промеры' : undefined"
-        @click="goMeasurements"
-    >
-      <Icon name="heroicons:beaker" size="22"/>
-      <span class="erp-tabbar__label">Промеры</span>
-    </button>
-
-    <button
-        v-if="!employeeStore.hasFio || access.packing"
-        type="button"
-        class="erp-tabbar__item"
-        :class="{ 'erp-tabbar__item--active': isPackingSection }"
-        :title="isRailCollapsed ? 'Упаковка' : undefined"
-        @click="goPacking"
-    >
-      <Icon name="heroicons:qr-code" size="22"/>
-      <span class="erp-tabbar__label">Упаковка</span>
-    </button>
-
-    <button
-        v-if="!employeeStore.hasFio || access.handover"
-        type="button"
-        class="erp-tabbar__item"
-        :class="{ 'erp-tabbar__item--active': isHandoverSection }"
-        :title="isRailCollapsed ? 'Сдача' : undefined"
-        @click="goHandover"
-    >
-      <Icon name="heroicons:check-badge" size="22"/>
-      <span class="erp-tabbar__label">Сдача</span>
-    </button>
-
-    <button
-        v-if="!employeeStore.hasFio || access.reports"
-        type="button"
-        class="erp-tabbar__item"
-        :class="{ 'erp-tabbar__item--active': isReportsSection }"
-        :title="isRailCollapsed ? 'Отчеты' : undefined"
-        @click="goReports"
-    >
-      <Icon name="heroicons:chart-bar" size="22"/>
-      <span class="erp-tabbar__label">Отчеты</span>
-    </button>
-
-    <button
-        v-if="!employeeStore.hasFio || access.approvals"
-        type="button"
-        class="erp-tabbar__item"
-        :class="{ 'erp-tabbar__item--active': isApprovalsSection }"
-        :title="isRailCollapsed ? 'Согласования' : undefined"
-        @click="goApprovals"
-    >
-      <Icon name="heroicons:check-circle" size="22"/>
-      <span class="erp-tabbar__label">Согласования</span>
-      <span
-          v-if="access.approvals && approvalsStore.pendingCount > 0"
-          class="erp-tabbar__badge"
-      >
-        {{ approvalsStore.pendingCount }}
+      <Icon :name="section.icon" size="22"/>
+      <span class="erp-tabbar__label">{{ section.tabLabel }}</span>
+      <span v-if="sectionCount(section.key)" class="erp-tabbar__badge">
+        {{ sectionCount(section.key) }}
       </span>
-    </button>
-
-    <button
-        v-if="!employeeStore.hasFio || access.supply"
-        type="button"
-        class="erp-tabbar__item"
-        :class="{ 'erp-tabbar__item--active': isSupplySection }"
-        :title="isRailCollapsed ? 'Работа со снабжением' : undefined"
-        @click="goSupply"
-    >
-      <Icon name="heroicons:briefcase" size="22"/>
-      <span class="erp-tabbar__label">Снабжение</span>
-    </button>
-
-    <button
-        v-if="!employeeStore.hasFio || access.orders"
-        type="button"
-        class="erp-tabbar__item"
-        :class="{ 'erp-tabbar__item--active': isOrdersSection }"
-        :title="isRailCollapsed ? 'Заказ снабжения' : undefined"
-        @click="goOrders"
-    >
-      <Icon name="heroicons:clipboard-document-check" size="22"/>
-      <span class="erp-tabbar__label">Заказ</span>
-    </button>
-
-    <button
-        v-if="!employeeStore.hasFio || access.warehouse"
-        type="button"
-        class="erp-tabbar__item"
-        :class="{ 'erp-tabbar__item--active': isWarehouseSection }"
-        :title="isRailCollapsed ? 'Склад' : undefined"
-        @click="goWarehouse"
-    >
-      <Icon name="heroicons:archive-box" size="22"/>
-      <span class="erp-tabbar__label">Склад</span>
-    </button>
-
-    <button
-        v-if="!employeeStore.hasFio || access.personnel"
-        type="button"
-        class="erp-tabbar__item"
-        :class="{ 'erp-tabbar__item--active': isPersonnelSection }"
-        :title="isRailCollapsed ? 'Кадры' : undefined"
-        @click="goPersonnel"
-    >
-      <Icon name="heroicons:user-group" size="22"/>
-      <span class="erp-tabbar__label">Кадры</span>
     </button>
 
     <button
