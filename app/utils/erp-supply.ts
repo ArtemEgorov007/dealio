@@ -48,6 +48,17 @@ export async function createSupplyRequest(
     })
 }
 
+/**
+ * Договор в выпадающем списке при заведении счёта.
+ *
+ * Счёт связывается с договором по внутреннему номеру — он и попадает в поле,
+ * а заказчик показывается подписью, чтобы номер не приходилось помнить.
+ */
+export interface ErpInvoiceContractOption {
+    internalNumber: string
+    customer: string
+}
+
 /** Заявка в выпадающем списке при заведении счёта. */
 export interface ErpInvoiceRequestOption {
     requestCode: string
@@ -62,7 +73,7 @@ export interface ErpInvoiceRequestOption {
 /** Всё, что нужно форме счёта, одним запросом. */
 export interface ErpInvoiceFormData {
     requests: ErpInvoiceRequestOption[]
-    contracts: string[]
+    contracts: ErpInvoiceContractOption[]
     approvers: string[]
     /** Сколько байт реально примет сервер: настройки PHP бывают ниже нашей границы. */
     maxFileBytes: number
@@ -82,6 +93,8 @@ export interface ErpInvoice {
     amount: number
     category: string
     approverFio: string
+    /** Заказчик по договору. Пусто, если договор не указан или не из справочника. */
+    customer: string
     approvedRoAt: string
     approvedGdAt: string
     cancelledAt: string
