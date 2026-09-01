@@ -292,30 +292,245 @@ function erp_supply_work_units(): array
     return ['шт.', 'компл.', 'кг', 'тн', 'л', 'м', 'м2', 'м3', 'уп.', 'пар'];
 }
 
-/** Проставление единицы измерения позиции номенклатуры. */
-function erp_supply_work_set_unit(PDO $pdo, array $config, string $requestId, int $itemId): void
+/** Поля позиции справочника из тела запроса. */
+function erp_supply_work_item_input(string $requestId): array
+{
+    $input = erp_warehouse_input($requestId);
+    $name = trim((string) ($input['name'] ?? ''));
+    $category = trim((string) ($input['category'] ?? ''));
+    $unit = trim((string) ($input['unit'] ?? ''));
+
+    if ($name === '') {
+        erp_json(422, erp_error_payload('invalid_input', 'Укажите наименование', $requestId));
+    }
+    if (mb_strlen($name) > 255 || mb_strlen($category) > 255 || mb_strlen($unit) > 32) {
+        erp_json(422, erp_error_payload('invalid_input', 'Слишком длинное значение', $requestId));
+    }
+
+    return ['name' => $name, 'category' => $category, 'unit' => $unit];
+}
+
+/** Добавление позиции в справочник. */
+function erp_supply_work_create_item(PDO $pdo, array $config, string $requestId): void
 {
     $actor = erp_require_user($pdo, $config, $requestId);
     erp_require_permission($pdo, $actor, 'supply', $requestId);
 
-    $unit = trim((string) (erp_warehouse_input($requestId)['unit'] ?? ''));
-    if (mb_strlen($unit) > 32) {
-        erp_json(422, erp_error_payload('invalid_input', 'Слишком длинная единица измерения', $requestId));
+    $item = erp_supply_work_item_input($requestId);
+
+    $exists = $pdo->prepare('SELECT id FROM erp_warehouse_items WHERE name = :name');
+    $exists->execute(['name' => $item['name']]);
+    if ($exists->fetchColumn()) {
+        erp_json(409, erp_error_payload(
+            'conflict',
+            "«{$item['name']}» уже есть в справочнике",
+            $requestId
+        ));
     }
 
-    $statement = $pdo->prepare('UPDATE erp_warehouse_items SET unit = :unit WHERE id = :id');
-    $statement->execute(['unit' => $unit, 'id' => $itemId]);
-    if ($statement->rowCount() === 0) {
-        // rowCount = 0 бывает и когда значение не изменилось, поэтому
-        // отличаем «нет такой позиции» отдельной проверкой.
-        $exists = $pdo->prepare('SELECT 1 FROM erp_warehouse_items WHERE id = :id');
-        $exists->execute(['id' => $itemId]);
-        if (!$exists->fetchColumn()) {
-            erp_json(404, erp_error_payload('not_found', 'Позиция номенклатуры не найдена', $requestId));
+    try {
+        $pdo->prepare('INSERT INTO erp_warehouse_items (name, category, unit) VALUES (:name, :category, :unit)')
+            ->execute($item);
+    } catch (PDOException $error) {
+        // Проверка выше не спасает от гонки: имя закрыто уникальным индексом,
+        // и два одновременных добавления одного наименования дошли бы сюда.
+        // 23000 — нарушение уникальности; отвечаем тем же 409, а не 500.
+        if ($error->getCode() !== '23000') {
+            throw $error;
         }
+        erp_json(409, erp_error_payload('conflict', "«{$item['name']}» уже есть в справочнике", $requestId));
     }
 
-    erp_json(200, ['ok' => true, 'data' => ['id' => $itemId, 'unit' => $unit]]);
+    erp_json(200, ['ok' => true, 'data' => ['id' => (int) $pdo->lastInsertId()] + $item]);
+}
+
+/**
+ * Правка позиции справочника.
+ *
+ * Переименование тянет за собой склад: остаток хранится строкой с составным
+ * ключом «площадка|ячейка|наименование|тип|категория», а лог движений ссылается
+ * на тот же ключ. Оставить их со старым именем значило бы оторвать остатки от
+ * позиции — на стенде остатки есть у 271 позиции из 301, то есть почти у всех.
+ *
+ * Поэтому имя, категория и единица переносятся на складские строки в той же
+ * транзакции, а ключи пересобираются.
+ *
+ * Это единственное место, где лог движений правится, а не пополняется
+ * (см. запрет в 007_erp_warehouse.sql). Исключение вынужденное: ключ строки
+ * производный от наименования, и не переписать его значило бы оторвать
+ * движения от остатка. Переписываем строку целиком — и ключ, и текстовые
+ * поля: половинчатая правка оставила бы запись, где ключ от одного товара, а
+ * наименование от другого. Количества, даты и действия при этом
+ * неприкосновенны, восстановить остаток на любую дату по логу по-прежнему
+ * можно.
+ */
+function erp_supply_work_update_item(PDO $pdo, array $config, string $requestId, int $itemId): void
+{
+    $actor = erp_require_user($pdo, $config, $requestId);
+    erp_require_permission($pdo, $actor, 'supply', $requestId);
+
+    $item = erp_supply_work_item_input($requestId);
+
+    $current = $pdo->prepare('SELECT name, category, unit FROM erp_warehouse_items WHERE id = :id');
+    $current->execute(['id' => $itemId]);
+    $before = $current->fetch(PDO::FETCH_ASSOC);
+    if (!$before) {
+        erp_json(404, erp_error_payload('not_found', 'Позиция номенклатуры не найдена', $requestId));
+    }
+
+    $taken = $pdo->prepare('SELECT id FROM erp_warehouse_items WHERE name = :name AND id <> :id');
+    $taken->execute(['name' => $item['name'], 'id' => $itemId]);
+    if ($taken->fetchColumn()) {
+        erp_json(409, erp_error_payload('conflict', "«{$item['name']}» уже есть в справочнике", $requestId));
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare(
+            'UPDATE erp_warehouse_items SET name = :name, category = :category, unit = :unit WHERE id = :id'
+        )->execute($item + ['id' => $itemId]);
+
+        $rows = $pdo->prepare(
+            'SELECT id, stock_key, platform, cell, item_type FROM erp_warehouse_stock WHERE item_name = :name'
+        );
+        $rows->execute(['name' => (string) $before['name']]);
+
+        $updateStock = $pdo->prepare(
+            'UPDATE erp_warehouse_stock
+             SET stock_key = :stock_key, item_name = :name, category = :category, unit = :unit
+             WHERE id = :id'
+        );
+        $updateLog = $pdo->prepare(
+            'UPDATE erp_warehouse_log
+             SET stock_key = :new_key, item_name = :name, category = :category, unit = :unit
+             WHERE stock_key = :old_key'
+        );
+
+        foreach ($rows->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $newKey = erp_warehouse_stock_key(
+                (string) $row['platform'],
+                (string) $row['cell'],
+                $item['name'],
+                (string) $row['item_type'],
+                $item['category'],
+            );
+            if ($newKey === $row['stock_key']) {
+                $updateStock->execute($item + ['stock_key' => $newKey, 'id' => (int) $row['id']]);
+                continue;
+            }
+
+            // Ключ уникален: если такой уже занят, слияние двух складских
+            // позиций — не правка справочника, и молча терять остаток нельзя.
+            $busy = $pdo->prepare('SELECT id FROM erp_warehouse_stock WHERE stock_key = :key AND id <> :id');
+            $busy->execute(['key' => $newKey, 'id' => (int) $row['id']]);
+            if ($busy->fetchColumn()) {
+                $pdo->rollBack();
+                erp_json(409, erp_error_payload(
+                    'conflict',
+                    'На складе уже есть позиция с таким названием и категорией — переименование объединило бы остатки',
+                    $requestId
+                ));
+            }
+
+            $updateLog->execute($item + ['new_key' => $newKey, 'old_key' => (string) $row['stock_key']]);
+            $updateStock->execute($item + ['stock_key' => $newKey, 'id' => (int) $row['id']]);
+        }
+
+        $pdo->commit();
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        // Как и при добавлении: проверка «имя занято» выше не спасает от
+        // гонки, а два одновременных переименования в одно имя упрутся в
+        // уникальный индекс. Это конфликт, а не поломка сервера.
+        if ($error instanceof PDOException && $error->getCode() === '23000') {
+            erp_json(409, erp_error_payload('conflict', "«{$item['name']}» уже есть в справочнике", $requestId));
+        }
+        throw $error;
+    }
+
+    erp_json(200, ['ok' => true, 'data' => ['id' => $itemId] + $item]);
+}
+
+/**
+ * Удаление позиции справочника.
+ *
+ * Позицию с ненулевым остатком не удаляем: на складе физически лежит товар, и
+ * убирать его из справочника — почти наверняка ошибка.
+ *
+ * Смотрим именно остаток, а не наличие складской строки. У списанной позиции
+ * строка остаётся навсегда — с нулём и историей движений, — и запрет по самой
+ * строке означал бы «спишите остатки» тому, кто уже всё списал: позицию стало
+ * бы не убрать никогда. Нулевые строки после удаления остаются на месте: они
+ * держат историю движений, а справочник — это перечень номенклатуры, а не
+ * владелец складских записей.
+ */
+function erp_supply_work_delete_item(PDO $pdo, array $config, string $requestId, int $itemId): void
+{
+    $actor = erp_require_user($pdo, $config, $requestId);
+    erp_require_permission($pdo, $actor, 'supply', $requestId);
+
+    $current = $pdo->prepare('SELECT name FROM erp_warehouse_items WHERE id = :id');
+    $current->execute(['id' => $itemId]);
+    $name = $current->fetchColumn();
+    if ($name === false) {
+        erp_json(404, erp_error_payload('not_found', 'Позиция номенклатуры не найдена', $requestId));
+    }
+
+    $stock = $pdo->prepare(
+        'SELECT COUNT(*) FROM erp_warehouse_balance WHERE item_name = :name AND balance <> 0'
+    );
+    $stock->execute(['name' => $name]);
+    if ((int) $stock->fetchColumn() > 0) {
+        erp_json(409, erp_error_payload(
+            'conflict',
+            "«{$name}» есть на складе — сначала спишите остатки",
+            $requestId
+        ));
+    }
+
+    $pdo->prepare('DELETE FROM erp_warehouse_items WHERE id = :id')->execute(['id' => $itemId]);
+
+    erp_json(200, ['ok' => true, 'data' => ['id' => $itemId]]);
+}
+
+/** Остатки позиции по площадкам. */
+function erp_supply_work_item_stock(PDO $pdo, array $config, string $requestId, int $itemId): void
+{
+    $actor = erp_require_user($pdo, $config, $requestId);
+    erp_require_permission($pdo, $actor, 'supply', $requestId);
+
+    $current = $pdo->prepare('SELECT name, unit FROM erp_warehouse_items WHERE id = :id');
+    $current->execute(['id' => $itemId]);
+    $item = $current->fetch(PDO::FETCH_ASSOC);
+    if (!$item) {
+        erp_json(404, erp_error_payload('not_found', 'Позиция номенклатуры не найдена', $requestId));
+    }
+
+    // Остаток считается представлением из начального плюс движения лога —
+    // хранить его отдельным полем значило бы завести второй источник правды.
+    $rows = $pdo->prepare(
+        'SELECT platform, cell, item_type, unit, balance
+         FROM erp_warehouse_balance
+         WHERE item_name = :name
+         ORDER BY platform, cell'
+    );
+    $rows->execute(['name' => (string) $item['name']]);
+    $stock = $rows->fetchAll(PDO::FETCH_ASSOC);
+
+    erp_json(200, ['ok' => true, 'data' => [
+        'name' => (string) $item['name'],
+        'unit' => (string) $item['unit'],
+        'total' => array_sum(array_map(static fn (array $r): float => (float) $r['balance'], $stock)),
+        'stock' => array_map(static fn (array $r): array => [
+            'platform' => (string) $r['platform'],
+            'cell' => (string) $r['cell'],
+            'itemType' => (string) $r['item_type'],
+            'unit' => (string) $r['unit'],
+            'balance' => (float) $r['balance'],
+        ], $stock),
+    ]]);
 }
 
 /** Все счета раздела со статусами. */
