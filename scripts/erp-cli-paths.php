@@ -21,15 +21,18 @@ function erp_cli_api_src(): string
 
 function erp_cli_migrations_dir(): string
 {
-    // Единственный канонический каталог — public/api/migrations: его же читает
-    // рантайм (Approvals.php / Push.php) и только его заливает деплой API.
-    // Вариант '/migrations' — это тот же каталог, но уже на сервере, где корень
-    // приложения совпадает с public/api.
+    // Единственный канонический каталог — тот, что рядом с исходниками API:
+    // его читает рантайм и только его заливает деплой.
+    //
+    // Раньше в списке стоял ещё и '<каталог скриптов>/../migrations'. На
+    // сервере это отдельная копия в erp-ops, которая жила своей жизнью и
+    // отстала на пять миграций: скрипт отчитывался по ней, а применялись
+    // совсем другие файлы. Копию удалили, кандидат убран.
     $configured = getenv('ERP_MIGRATIONS_DIR');
     $candidates = [
         is_string($configured) ? $configured : '',
+        dirname(erp_cli_api_src()) . '/migrations',
         dirname(__DIR__) . '/public/api/migrations',
-        dirname(__DIR__) . '/migrations',
     ];
 
     foreach ($candidates as $candidate) {
