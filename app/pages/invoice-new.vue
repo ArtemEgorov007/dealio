@@ -44,8 +44,20 @@ const requestOptions = computed<ErpComboboxOption[]>(() =>
     })),
 )
 
+// В поле попадает внутренний номер — им счёт и связывается с договором.
+// Заказчик идёт подписью: номер помнить никто не обязан.
 const contractOptions = computed<ErpComboboxOption[]>(() =>
-    (form.value?.contracts ?? []).map(value => ({value})),
+    (form.value?.contracts ?? []).map(item => ({value: item.internalNumber, hint: item.customer})),
+)
+
+const selectedContract = computed(() =>
+    form.value?.contracts.find(item => item.internalNumber === contract.value.trim()) ?? null,
+)
+
+// Договор необязателен, но выбранный должен быть из справочника: иначе в
+// счёте окажется ссылка в никуда.
+const isContractKnown = computed(() =>
+    contract.value.trim() === '' || selectedContract.value !== null,
 )
 
 const approverOptions = computed<ErpComboboxOption[]>(() =>
@@ -115,6 +127,7 @@ const isApproverKnown = computed(() =>
 const canSubmit = computed(() =>
     invoice.value.trim() !== ''
     && isRequestKnown.value
+    && isContractKnown.value
     && parsedAmount.value > 0
     && isApproverKnown.value
     && file.value !== null
@@ -194,10 +207,11 @@ onMounted(load)
           <ErpCombobox
               v-model="contract"
               :options="contractOptions"
-              placeholder="Номер договора"
-              allow-free-text
+              placeholder="Внутренний номер договора"
+              unresolved-hint="Выберите договор из справочника"
           />
-          <span class="invoice-field__note">Если договора ещё нет в списке — впишите его номер</span>
+          <span v-if="selectedContract" class="invoice-field__note">{{ selectedContract.customer }}</span>
+          <span v-else class="invoice-field__note">Необязательно. Договоры заводятся в разделе «Договоры»</span>
         </label>
 
         <label class="invoice-field">

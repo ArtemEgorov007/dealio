@@ -84,7 +84,7 @@ onMounted(load)
           </div>
           <div v-if="item.contract" class="inv-row">
             <dt>Договор</dt>
-            <dd>{{ item.contract }}</dd>
+            <dd>{{ item.customer ? `${item.contract} · ${item.customer}` : item.contract }}</dd>
           </div>
           <div v-if="item.approverFio" class="inv-row">
             <dt>Согласующий</dt>

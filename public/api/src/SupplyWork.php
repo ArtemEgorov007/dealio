@@ -63,11 +63,12 @@ function erp_supply_work_form(PDO $pdo, array $config, string $requestId): void
          ORDER BY MAX(id) DESC"
     )->fetchAll(PDO::FETCH_ASSOC);
 
-    // Справочника договоров в системе нет — предлагаем те, что уже вводили.
+    // Договоры берём из справочника: счёт связывается с договором по
+    // внутреннему номеру, поэтому предлагать что-то помимо заведённых
+    // договоров значило бы плодить ссылки в никуда.
     $contracts = $pdo->query(
-        "SELECT DISTINCT contract FROM erp_approvals
-         WHERE contract IS NOT NULL AND contract <> '' ORDER BY contract"
-    )->fetchAll(PDO::FETCH_COLUMN);
+        'SELECT internal_number, customer FROM erp_contracts ORDER BY id DESC'
+    )->fetchAll(PDO::FETCH_ASSOC);
 
     // Согласующие — сотрудники с правом «Право согласования» (approvals).
     $approvers = $pdo->prepare(
@@ -88,7 +89,10 @@ function erp_supply_work_form(PDO $pdo, array $config, string $requestId): void
             'requestedAt' => (string) $row['requested_at'],
             'status' => (string) $row['status'],
         ], $requests),
-        'contracts' => array_map('strval', $contracts),
+        'contracts' => array_map(static fn (array $row): array => [
+            'internalNumber' => (string) $row['internal_number'],
+            'customer' => (string) $row['customer'],
+        ], $contracts),
         'approvers' => array_map('strval', $approvers->fetchAll(PDO::FETCH_COLUMN)),
         'maxFileBytes' => erp_invoice_upload_limit(),
         'units' => erp_supply_work_units(),
@@ -188,6 +192,25 @@ function erp_supply_work_create_invoice(PDO $pdo, array $config, string $request
     $row = $source->fetch(PDO::FETCH_ASSOC);
     if (!$row || $row['platform'] === null) {
         erp_json(422, erp_error_payload('invalid_input', "Заявки «{$requestCode}» нет в системе", $requestId));
+    }
+
+    // Договор необязателен, но если указан — должен существовать. Иначе в
+    // счёте окажется ссылка в никуда, и связать его с договором позже будет
+    // нечем.
+    //
+    // Внешним ключом это не закрыть: тем же полем пользуется импорт из
+    // таблицы (scripts/sql-import-warehouse.php), где договор — свободный
+    // текст источника. Жёсткая связь сломала бы импорт исторических счетов.
+    if ($contract !== '') {
+        $contractExists = $pdo->prepare('SELECT 1 FROM erp_contracts WHERE internal_number = :number');
+        $contractExists->execute(['number' => $contract]);
+        if (!$contractExists->fetchColumn()) {
+            erp_json(422, erp_error_payload(
+                'invalid_input',
+                "Договора с внутренним номером «{$contract}» нет в справочнике",
+                $requestId
+            ));
+        }
     }
 
     $approverExists = $pdo->prepare(
@@ -305,9 +328,10 @@ function erp_supply_work_invoices(PDO $pdo, array $config, string $requestId): v
     $rows = $pdo->query(
         'SELECT a.id, a.invoice, a.contract, a.request_code, a.department, a.platform, a.status,
                 a.amount, a.category, a.approver_fio, a.approved_ro_at, a.approved_gd_at, a.cancelled_at,
-                a.created_at, f.id AS file_id, f.byte_size
+                a.created_at, f.id AS file_id, f.byte_size, c.customer
          FROM erp_approvals a
          LEFT JOIN erp_invoice_files f ON f.approval_id = a.id
+         LEFT JOIN erp_contracts c ON c.internal_number = a.contract
          ORDER BY a.id DESC
          LIMIT 300'
     )->fetchAll(PDO::FETCH_ASSOC);
@@ -316,6 +340,7 @@ function erp_supply_work_invoices(PDO $pdo, array $config, string $requestId): v
         'id' => (int) $r['id'],
         'invoice' => (string) $r['invoice'],
         'contract' => (string) ($r['contract'] ?? ''),
+        'customer' => (string) ($r['customer'] ?? ''),
         'requestCode' => (string) ($r['request_code'] ?? ''),
         'department' => (string) $r['department'],
         'platform' => (string) $r['platform'],

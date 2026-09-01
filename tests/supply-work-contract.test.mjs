@@ -184,3 +184,35 @@ test('заведение счёта переводит заявку в «Ожи�
     assert.match(php, /UPDATE erp_supply_requests SET status = :status WHERE request_code = :code/)
     assert.match(php, /erp_supply_notify_status_changes\(\$pdo, \$config\)/)
 })
+
+test('договор в счёте связывается по внутреннему номеру', () => {
+    // Подсказки берутся из справочника договоров, а не из ранее введённых
+    // строк: иначе поле плодило бы ссылки в никуда.
+    assert.match(php, /SELECT internal_number, customer FROM erp_contracts/i)
+    assert.doesNotMatch(php, /SELECT DISTINCT contract FROM erp_approvals/i)
+    assert.match(form, /\{value: item\.internalNumber, hint: item\.customer\}/)
+})
+
+test('несуществующий договор в счёт не проходит', () => {
+    assert.match(php, /SELECT 1 FROM erp_contracts WHERE internal_number = :number/)
+    assert.match(php, /нет в справочнике/)
+    assert.match(form, /isContractKnown/)
+})
+
+test('договор остаётся необязательным', () => {
+    // Счета заводятся и до появления договора в справочнике.
+    assert.match(php, /if \(\$contract !== ''\) \{/)
+    assert.match(form, /contract\.value\.trim\(\) === '' \|\| selectedContract\.value !== null/)
+})
+
+test('жёсткой связи в базе нет — её сломал бы импорт', () => {
+    // scripts/sql-import-warehouse.php пишет в то же поле свободный текст из
+    // исходной таблицы; внешний ключ уронил бы импорт исторических счетов.
+    const contractsMigration = migration
+    assert.doesNotMatch(contractsMigration, /erp_approvals[\s\S]*FOREIGN KEY \(contract\)/i)
+})
+
+test('в списке счетов виден заказчик по договору', () => {
+    assert.match(php, /LEFT JOIN erp_contracts c ON c\.internal_number = a\.contract/i)
+    assert.match(list, /item\.customer/)
+})
