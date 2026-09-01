@@ -25,15 +25,21 @@ export interface ErpContract {
     ratesCount: number
 }
 
-/** Расценка договора. Смысл параметров задаёт сам договор. */
+/**
+ * Расценка договора. Смысл параметров задаёт сам договор.
+ *
+ * Пустых значений здесь не бывает: незаполненный параметр хранится прочерком,
+ * незаполненная цена — нулём. Параметры участвуют в подборе расценки для
+ * журнала работ, и пустая строка совпадала бы с чужой расценкой.
+ */
 export interface ErpContractRate {
-    id?: number
+    id: number
     param1: string
     param2: string
     param3: string
     param4: string
-    priceM2: number | null
-    priceTon: number | null
+    priceM2: number
+    priceTon: number
 }
 
 export async function fetchContracts(): Promise<ErpContract[]> {
@@ -59,17 +65,28 @@ export async function createContract(payload: {
 }
 
 /**
- * Сохранение расценок целиком.
+ * Сохранение набора расценок.
  *
- * Экран правит набор целиком, поэтому и отправляем целиком: отдельные ручки
- * «изменить строку» и «удалить строку» дали бы тот же результат ценой
- * рассинхрона, если часть запросов не дойдёт.
+ * Отправляем весь набор, который экран открыл: строки с id правятся на месте,
+ * новые добавляются, пропавшие удаляются. Отдельные ручки «изменить» и
+ * «удалить» дали бы тот же результат ценой рассинхрона, если часть запросов
+ * не дойдёт.
+ *
+ * `id: 0` — новая расценка.
  */
 export async function saveContractRates(
     id: number,
-    rates: Array<{param1: string; param2: string; param3: string; param4: string; priceM2: string; priceTon: string}>,
-): Promise<{saved: number}> {
-    return erpApiRequest<{saved: number}>(`contracts/${id}/rates`, {
+    rates: Array<{
+        id: number
+        param1: string
+        param2: string
+        param3: string
+        param4: string
+        priceM2: string
+        priceTon: string
+    }>,
+): Promise<{saved: number; removed: number}> {
+    return erpApiRequest<{saved: number; removed: number}>(`contracts/${id}/rates`, {
         method: 'POST',
         body: JSON.stringify({rates}),
     })

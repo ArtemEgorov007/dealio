@@ -47,7 +47,13 @@ const summaryRows = computed(() => {
     ]
 })
 
-const priceText = (value: number | null): string => value === null ? '—' : contractMoney.format(value)
+// Ноль показываем прочерком: цена «0 ₽» читается как настоящая, а нулём в
+// базе записано именно «цена не задана».
+const priceText = (value: number): string => value === 0 ? '—' : contractMoney.format(value)
+
+const openRate = (rateId: number) => {
+    router.push({path: '/contract-rates', query: {id: contractId.value, rate: rateId}})
+}
 
 onMounted(load)
 </script>
@@ -97,16 +103,23 @@ onMounted(load)
         <p>Расценок пока нет</p>
       </ErpEmptyState>
       <div v-else class="rate-list">
-        <article v-for="(rate, index) in rates" :key="rate.id ?? index" class="rate-card">
-          <p class="rate-card__params">
-            {{ [rate.param1, rate.param2, rate.param3, rate.param4].filter(Boolean).join(' · ') || '—' }}
-          </p>
-          <div class="rate-card__prices">
+        <button
+            v-for="rate in rates"
+            :key="rate.id"
+            type="button"
+            class="rate-card"
+            @click="openRate(rate.id)"
+        >
+          <span class="rate-card__params">
+            {{ [rate.param1, rate.param2, rate.param3, rate.param4].join(' · ') }}
+          </span>
+          <span class="rate-card__prices">
             <span><span class="rate-card__unit">за м²</span> {{ priceText(rate.priceM2) }}</span>
             <span><span class="rate-card__unit">за тн</span> {{ priceText(rate.priceTon) }}</span>
-          </div>
-        </article>
+          </span>
+        </button>
       </div>
+      <p v-if="rates.length" class="rate-list__hint">Нажмите на расценку, чтобы изменить или удалить</p>
     </template>
 
     <template #footer>
@@ -180,12 +193,23 @@ onMounted(load)
   gap: 8px
 
 .rate-card
+  display: block
+  width: 100%
   padding: 11px 14px
+  border: none
   background: var(--color-card-bg)
   border-radius: 12px
   box-shadow: var(--erp-shadow-card, 0 1px 0 rgba(0, 0, 0, 0.04))
+  text-align: left
+  cursor: pointer
+
+.rate-list__hint
+  margin: 6px 0 0 12px
+  font-size: 11px
+  color: var(--color-text-secondary)
 
 .rate-card__params
+  display: block
   margin: 0 0 6px
   font-size: 13.5px
   color: var(--color-text)
