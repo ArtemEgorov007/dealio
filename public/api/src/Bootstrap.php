@@ -11,6 +11,7 @@ require_once __DIR__ . '/Auth.php';
 require_once __DIR__ . '/Personnel.php';
 require_once __DIR__ . '/Badges.php';
 require_once __DIR__ . '/BadgeCatalogSync.php';
+require_once __DIR__ . '/WorkLog.php';
 require_once __DIR__ . '/Handover.php';
 require_once __DIR__ . '/Reports.php';
 require_once __DIR__ . '/Approvals.php';

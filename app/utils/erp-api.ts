@@ -274,7 +274,7 @@ export async function deleteIssuedBadgeViaApi(entry: {row: number; badge: string
     })
 }
 
-export async function recordHandoverViaApi(badgeContent: string, idempotencyKey?: string): Promise<{
+export async function recordHandoverViaApi(badgeContent: string, tag: string, idempotencyKey?: string): Promise<{
     id: number
     row: number
     badge: string
@@ -282,7 +282,7 @@ export async function recordHandoverViaApi(badgeContent: string, idempotencyKey?
 }> {
     const data = await erpApiRequest<{entry: {id: number; row: number; badge: string; time: string}}>('handover/entries', {
         method: 'POST',
-        body: JSON.stringify({badgeContent, idempotencyKey}),
+        body: JSON.stringify({badgeContent, tag, idempotencyKey}),
     })
     if (!data.entry) throw new ErpApiError('Не удалось записать сдачу', 500)
     return data.entry
@@ -332,4 +332,23 @@ export async function decideApprovalViaApi(input: {
         method: 'POST',
         body: JSON.stringify(input),
     })
+}
+
+/**
+ * Запись работы в журнал из раздела, который ещё живёт на Google Apps Script.
+ *
+ * Промеры и упаковка пишутся в GAS, поэтому сервер не узнаёт о работе сам —
+ * экран сообщает о ней после успешной записи. Сдача уже на SQL и пишет журнал
+ * внутри своей транзакции, эта функция ей не нужна.
+ *
+ * Ключ идемпотентности обязателен: повтор после потерянного ответа не должен
+ * задваивать работу в журнале.
+ */
+export async function recordWorkLogViaApi(work: {
+    tag: string
+    badge: string
+    thickness?: number | null
+    idempotencyKey: string
+}): Promise<void> {
+    await erpApiRequest('work-log', {method: 'POST', body: JSON.stringify(work)})
 }

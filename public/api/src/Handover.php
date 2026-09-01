@@ -79,6 +79,17 @@ function erp_handover_create(PDO $pdo, array $config, string $requestId): void
         }
     }
 
+    // Тег выбирает сотрудник под сканером: одна и та же бирка проходит очистку,
+    // ОГЗ и финиш, и без тега журнал не отличит эти работы друг от друга.
+    $tag = trim((string) ($payload['tag'] ?? ''));
+    if (!in_array($tag, erp_work_handover_tags(), true)) {
+        erp_json(422, erp_error_payload(
+            'invalid_input',
+            'Выберите вид работы: ' . implode(', ', erp_work_handover_tags()),
+            $requestId
+        ));
+    }
+
     $dup = $pdo->prepare(
         'SELECT id FROM erp_handover_entries
          WHERE badge_hash = :badge_hash AND deleted_at IS NULL
@@ -112,6 +123,14 @@ function erp_handover_create(PDO $pdo, array $config, string $requestId): void
             'event_type' => 'handover',
             'platform' => (string) $actor['platform'],
             'business_key' => 'handover:' . $entryId,
+        ]);
+
+        // Журнал работ пишем здесь же: сдача уже на SQL, и запись отдельным
+        // запросом с клиента терялась бы при обрыве связи после сдачи.
+        erp_work_log_record($pdo, $actor, [
+            'tag' => $tag,
+            'badge' => $badgeContent,
+            'idempotencyKey' => $idempotencyKey === null ? null : 'handover:' . $idempotencyKey,
         ]);
 
         $pdo->commit();
@@ -241,6 +260,14 @@ function erp_handover_undo(PDO $pdo, array $config, string $requestId, int $entr
         $revoke->execute([
             'event_type' => 'handover',
             'business_key' => 'handover:' . $entryId,
+        ]);
+
+        // Журнал работ пишем здесь же: сдача уже на SQL, и запись отдельным
+        // запросом с клиента терялась бы при обрыве связи после сдачи.
+        erp_work_log_record($pdo, $actor, [
+            'tag' => $tag,
+            'badge' => $badgeContent,
+            'idempotencyKey' => $idempotencyKey === null ? null : 'handover:' . $idempotencyKey,
         ]);
 
         $pdo->commit();

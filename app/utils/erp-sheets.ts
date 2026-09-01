@@ -28,6 +28,7 @@ import {
     issueBadgeViaApi,
     loginErpEmployeeViaApi,
     recordHandoverViaApi,
+    recordWorkLogViaApi,
     savePersonnelEmployeeViaApi,
     undoHandoverViaApi,
 } from '~/utils/erp-api'
@@ -259,10 +260,11 @@ export async function fetchCurrentReports(): Promise<ErpCurrentReport> {
     return await fetchReportsCurrentViaApi()
 }
 
-export async function recordHandoverEntry(fio: string, badgeContent: string): Promise<void> {
+export async function recordHandoverEntry(fio: string, badgeContent: string, tag: string): Promise<void> {
     if (getErpBackendMode() === 'sql') {
         await recordHandoverViaApi(
             badgeContent,
+            tag,
             typeof crypto !== 'undefined' && 'randomUUID' in crypto
                 ? crypto.randomUUID().replace(/-/g, '').slice(0, 32)
                 : undefined,
@@ -507,6 +509,29 @@ export async function decideApproval(input: {
     throw new Error(APPROVALS_SQL_ONLY)
 }
 
+/** Ключ идемпотентности для журнала работ: повтор не задваивает работу. */
+function workLogKey(): string {
+    return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID().replace(/-/g, '').slice(0, 32)
+        : `${Date.now()}${Math.random()}`.replace(/\D/g, '').slice(0, 32)
+}
+
+/**
+ * Запись работы в журнал после успешной записи в GAS.
+ *
+ * Журнал ведётся в SQL, поэтому в режиме gas писать некуда — молча выходим.
+ * Сбой самой записи не отменяет уже выполненную работу: сотрудник получил
+ * подтверждение, и падать после него значило бы врать про результат.
+ */
+async function logWork(work: {tag: string; badge: string; thickness?: number | null}): Promise<void> {
+    if (getErpBackendMode() !== 'sql') return
+    try {
+        await recordWorkLogViaApi({...work, idempotencyKey: workLogKey()})
+    } catch (error) {
+        console.error('Работа выполнена, но не попала в журнал работ', error)
+    }
+}
+
 export async function recordMeasurement(
     fio: string,
     badge: string,
@@ -536,6 +561,17 @@ export async function recordMeasurement(
     if (!result.ok) {
         throw new Error(result.error || 'Не удалось записать промер')
     }
+
+    // В журнал кладём среднюю фактическую толщину по заполненным зонам:
+    // сценарий промера требует её записать, а зон в журнале одна колонка.
+    const measured = zones.filter((zone): zone is number => zone != null)
+    await logWork({
+        tag: 'Промер',
+        badge,
+        thickness: measured.length
+            ? Math.round((measured.reduce((sum, zone) => sum + zone, 0) / measured.length) * 1000) / 1000
+            : null,
+    })
 }
 
 export async function recordPackingEntry(platform: string, fio: string, machine: string, qrText: string): Promise<void> {
@@ -555,6 +591,12 @@ export async function recordPackingEntry(platform: string, fio: string, machine:
 
     if (!result.ok) {
         throw new Error(result.error || 'Не удалось записать упаковку')
+    }
+
+    // Две записи: по ТЗ упаковка закрывает и упаковку, и исполнительную
+    // документацию, а колонка тега одна.
+    for (const tag of ['Упаковка', 'ИД']) {
+        await logWork({tag, badge: qrText})
     }
 }
 
