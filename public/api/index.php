@@ -72,6 +72,12 @@ try {
     if ($name === 'supply_work_set_unit') {
         erp_supply_work_set_unit($pdo, $config, $requestId, (int) ($route[1] ?? 0));
     }
+    if ($name === 'work_log_create') {
+        erp_work_log_create($pdo, $config, $requestId);
+    }
+    if ($name === 'work_log_today') {
+        erp_work_log_today($pdo, $config, $requestId);
+    }
     if ($name === 'contracts_list') {
         erp_contracts_list($pdo, $config, $requestId);
     }

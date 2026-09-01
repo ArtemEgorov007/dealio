@@ -39,8 +39,19 @@ let lastCode = ''
 let lastScannedAt = 0
 const DEDUPE_WINDOW_MS = 4000
 
+// Одна и та же бирка за смену проходит очистку, ОГЗ и финиш. Без выбора
+// журнал работ не отличит эти работы друг от друга, поэтому сканирование
+// без выбранного вида не начинаем.
+const HANDOVER_TAGS = ['Очистка', 'ОГЗ', 'Финиш']
+const tag = ref('')
+
 const onDecode = async (qrText: string) => {
     if (!qrText) return
+
+    if (!tag.value) {
+        showError(null, 'Сначала выберите вид работы')
+        return
+    }
 
     if (status.value === 'saving') {
         if (qrText !== lastCode) showError(null, 'Идёт запись предыдущей бирки — поднесите эту ещё раз')
@@ -57,9 +68,9 @@ const onDecode = async (qrText: string) => {
     status.value = 'saving'
 
     try {
-        await recordHandoverEntry(employeeStore.fio, qrText)
+        await recordHandoverEntry(employeeStore.fio, qrText, tag.value)
         vibrate(200)
-        showSuccess('Сдача записана', qrText)
+        showSuccess(`${tag.value} записана`, qrText)
         if (handedCount.value != null) handedCount.value += 1
     } catch (error) {
         vibrate([100, 50, 100])
@@ -134,11 +145,48 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <p class="erp-scan-hint">Наведите камеру на QR-код бирки</p>
+    <ErpSectionLabel>Вид работы</ErpSectionLabel>
+    <div class="handover-tags">
+      <button
+          v-for="item in HANDOVER_TAGS"
+          :key="item"
+          type="button"
+          class="handover-tags__item"
+          :class="{'handover-tags__item--active': tag === item}"
+          @click="tag = item"
+      >
+        {{ item }}
+      </button>
+    </div>
+
+    <p class="erp-scan-hint">
+      {{ tag ? 'Наведите камеру на QR-код бирки' : 'Выберите вид работы, затем сканируйте бирку' }}
+    </p>
   </ErpScreen>
 </template>
 
 <style scoped lang="sass">
+.handover-tags
+  display: grid
+  // Три вида работы в ряд: на 390px помещаются, и не надо целиться в список.
+  grid-template-columns: repeat(3, 1fr)
+  gap: 8px
+
+.handover-tags__item
+  padding: 12px 6px
+  border: none
+  border-radius: 12px
+  background: var(--color-card-bg)
+  box-shadow: var(--erp-shadow-card, 0 1px 0 rgba(0, 0, 0, 0.04))
+  color: var(--color-text)
+  font-size: 14px
+  font-weight: 600
+  cursor: pointer
+
+.handover-tags__item--active
+  background: var(--color-primary)
+  color: #fff
+
 .erp-scan-video
   width: 100%
   height: 100%

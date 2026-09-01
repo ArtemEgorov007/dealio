@@ -57,6 +57,12 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'POST' && preg_match('#^/supply-work/items/(\d+)/unit$#', $path, $m) === 1) {
         return ['supply_work_set_unit', $m[1]];
     }
+    if ($method === 'POST' && $path === '/work-log') {
+        return ['work_log_create'];
+    }
+    if ($method === 'GET' && $path === '/work-log/today') {
+        return ['work_log_today'];
+    }
     if ($method === 'GET' && $path === '/contracts') {
         return ['contracts_list'];
     }
