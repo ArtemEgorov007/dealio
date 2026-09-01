@@ -169,15 +169,115 @@ test('справочник ТМЦ показывает три колонки Т�
 test('единицу измерения можно проставить из приложения', () => {
     // В исходной таблице этих данных нет вовсе — заполняют снабженцы.
     assert.match(unitMigration, /ADD COLUMN unit VARCHAR\(32\) NOT NULL DEFAULT ''/i)
-    assert.match(php, /function erp_supply_work_set_unit/)
-    assert.match(php, /UPDATE erp_warehouse_items SET unit = :unit WHERE id = :id/)
-    assert.match(catalogPage, /setCatalogItemUnit\(item\.id, value\)/)
+    assert.match(php, /UPDATE erp_warehouse_items SET name = :name, category = :category, unit = :unit/)
+    assert.match(catalogPage, /updateCatalogItem\(item\.id/)
 })
 
 test('правится по одной позиции, а не все сразу', () => {
-    // 300 полей ввода на экране — это и тормоза, и промахи пальцем.
+    // 300 открытых форм на экране — это и тормоза, и промахи пальцем.
     assert.match(catalogPage, /const editingId = ref<number \| null>\(null\)/)
     assert.match(catalogPage, /editingId === item\.id/)
+})
+
+test('правка справочника прячется за режимом «Изменить»', () => {
+    // В просмотре нажатие на позицию показывает остатки, в правке — форму:
+    // два разных смысла одного жеста нельзя держать одновременно.
+    assert.match(catalogPage, /const isEditing = ref\(false\)/)
+    assert.match(catalogPage, /isEditing \? 'Готово' : 'Изменить'/)
+    assert.match(catalogPage, /if \(isEditing\.value\) \{/)
+    assert.match(catalogPage, /v-if="isEditing"[\s\S]{0,200}Удалить позицию/)
+    // «Добавить» живёт над таб-баром, но уходит, пока открыта любая форма:
+    // иначе он перекрывает собой её «Сохранить».
+    assert.match(catalogPage, /v-if="isEditing && !isAdding && editingId === null" #footer/)
+})
+
+test('поля форм справочника подписаны', () => {
+    // Заполненные «СИЗ» и «Перчатки х/б» без подписи выглядят одинаково:
+    // в форме переименования не видно, где категория, а где наименование.
+    for (const label of ['Категория', 'Наименование', 'Ед. изм.']) {
+        const labels = catalogPage.match(
+            new RegExp(`<span class="tmc-field__label">${label}</span>`, 'g'),
+        )
+        // По одной подписи в форме правки и в форме новой позиции.
+        assert.equal(labels?.length, 2, `подпись «${label}» должна стоять в обеих формах`)
+    }
+})
+
+test('позицию можно добавить и удалить', () => {
+    assert.match(php, /function erp_supply_work_create_item/)
+    assert.match(php, /function erp_supply_work_delete_item/)
+    assert.match(router, /'POST' && \$path === '\/supply-work\/items'/)
+    assert.ok(router.includes("'DELETE' && preg_match('#^/supply-work/items/(\\d+)$#'"), 'нет маршрута удаления')
+    assert.match(catalogPage, /createCatalogItem\(/)
+    assert.match(catalogPage, /deleteCatalogItem\(item\.id\)/)
+})
+
+test('двух позиций с одним названием не завести', () => {
+    // Номенклатура связывается со складом по наименованию: тёзка увёл бы
+    // остатки не туда.
+    assert.match(php, /уже есть в справочнике/)
+
+    // Проверка «уже есть» не спасает от гонки: имя закрыто уникальным
+    // индексом, и одновременные добавления доходят до вставки. Нарушение
+    // уникальности должно вернуть тот же 409, а не 500 «ERP недоступна».
+    const create = php.slice(
+        php.indexOf('function erp_supply_work_create_item'),
+        php.indexOf('function erp_supply_work_update_item'),
+    )
+    assert.match(create, /catch \(PDOException \$error\)/)
+    assert.match(create, /getCode\(\) !== '23000'/)
+})
+
+test('удаление смотрит на остаток, а не на наличие складской строки', () => {
+    // У списанной позиции строка остаётся навсегда — с нулём и историей.
+    // Запрет по самой строке означал бы «спишите остатки» тому, кто уже всё
+    // списал: позицию стало бы не убрать никогда.
+    const remove = php.slice(php.indexOf('function erp_supply_work_delete_item'))
+    assert.match(remove, /FROM erp_warehouse_balance WHERE item_name = :name AND balance <> 0/)
+    assert.doesNotMatch(
+        remove.slice(0, remove.indexOf('DELETE FROM erp_warehouse_items')),
+        /FROM erp_warehouse_stock WHERE item_name/,
+        'запрет должен считать остаток, а не строки склада',
+    )
+})
+
+test('переименование переносится на складские строки', () => {
+    // Остаток хранится с составным ключом, куда входит наименование, а лог
+    // движений ссылается на тот же ключ. На стенде остатки есть у 271 позиции
+    // из 301 — оставить их со старым именем значило бы оторвать почти всё.
+    const update = php.slice(php.indexOf('function erp_supply_work_update_item'))
+    assert.match(update, /SELECT id, stock_key, platform, cell, item_type FROM erp_warehouse_stock WHERE item_name = :name/)
+    assert.match(update, /erp_warehouse_stock_key\(/)
+    // Строку лога переписываем целиком: половинчатая правка оставила бы
+    // запись, где ключ от одного товара, а наименование от другого.
+    assert.match(
+        update,
+        /UPDATE erp_warehouse_log\s+SET stock_key = :new_key, item_name = :name, category = :category, unit = :unit\s+WHERE stock_key = :old_key/,
+    )
+    assert.match(update, /beginTransaction/)
+    assert.match(update, /rollBack/)
+    // Гонка двух переименований в одно имя — конфликт, а не 500.
+    assert.match(update, /\$error instanceof PDOException && \$error->getCode\(\) === '23000'/)
+})
+
+test('переименование не сливает две складские позиции молча', () => {
+    assert.match(php, /переименование объединило бы остатки/)
+})
+
+test('позицию с остатками не удалить', () => {
+    // На складе физически лежит товар: убирать его из справочника — почти
+    // наверняка ошибка. Чистить мусор это не мешает, у него остатков нет.
+    const remove = php.slice(php.indexOf('function erp_supply_work_delete_item'))
+    assert.match(remove, /сначала спишите остатки/)
+})
+
+test('остатки показываются по площадкам', () => {
+    // Считаются представлением из начального плюс движения лога: хранить
+    // остаток отдельным полем значило бы завести второй источник правды.
+    assert.match(php, /FROM erp_warehouse_balance\s*\n\s*WHERE item_name = :name/)
+    assert.match(catalogPage, /fetchItemStock\(item\.id\)/)
+    assert.match(catalogPage, /stockId === item\.id/)
+    assert.match(catalogPage, /На складах не числится/)
 })
 
 test('заведение счёта переводит заявку в «Ожидает РО» и уведомляет автора', () => {

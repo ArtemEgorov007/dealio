@@ -141,10 +141,50 @@ export async function createInvoice(payload: {
     })
 }
 
-/** Проставление единицы измерения позиции справочника ТМЦ. */
-export async function setCatalogItemUnit(id: number, unit: string): Promise<{id: number; unit: string}> {
-    return erpApiRequest<{id: number; unit: string}>(`supply-work/items/${id}/unit`, {
+/** Остаток позиции на одной складской ячейке. */
+export interface ErpItemStockRow {
+    platform: string
+    cell: string
+    itemType: string
+    unit: string
+    balance: number
+}
+
+export interface ErpItemStock {
+    name: string
+    unit: string
+    total: number
+    stock: ErpItemStockRow[]
+}
+
+export async function createCatalogItem(item: {name: string; category: string; unit: string}): Promise<ErpSupplyCatalogItem> {
+    return erpApiRequest<ErpSupplyCatalogItem>('supply-work/items', {
         method: 'POST',
-        body: JSON.stringify({unit}),
+        body: JSON.stringify(item),
     })
+}
+
+/**
+ * Правка позиции справочника.
+ *
+ * Переименование сервер переносит на складские строки в своей транзакции:
+ * остаток хранится с составным ключом, куда входит наименование.
+ */
+export async function updateCatalogItem(
+    id: number,
+    item: {name: string; category: string; unit: string},
+): Promise<ErpSupplyCatalogItem> {
+    return erpApiRequest<ErpSupplyCatalogItem>(`supply-work/items/${id}`, {
+        method: 'POST',
+        body: JSON.stringify(item),
+    })
+}
+
+export async function deleteCatalogItem(id: number): Promise<void> {
+    await erpApiRequest(`supply-work/items/${id}`, {method: 'DELETE'})
+}
+
+/** Остатки позиции по площадкам. */
+export async function fetchItemStock(id: number): Promise<ErpItemStock> {
+    return erpApiRequest<ErpItemStock>(`supply-work/items/${id}/stock`)
 }

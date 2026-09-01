@@ -54,8 +54,17 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'GET' && preg_match('#^/supply-work/invoices/(\d+)/file$#', $path, $m) === 1) {
         return ['supply_work_invoice_file', $m[1]];
     }
-    if ($method === 'POST' && preg_match('#^/supply-work/items/(\d+)/unit$#', $path, $m) === 1) {
-        return ['supply_work_set_unit', $m[1]];
+    if ($method === 'POST' && $path === '/supply-work/items') {
+        return ['supply_work_create_item'];
+    }
+    if ($method === 'POST' && preg_match('#^/supply-work/items/(\d+)$#', $path, $m) === 1) {
+        return ['supply_work_update_item', $m[1]];
+    }
+    if ($method === 'DELETE' && preg_match('#^/supply-work/items/(\d+)$#', $path, $m) === 1) {
+        return ['supply_work_delete_item', $m[1]];
+    }
+    if ($method === 'GET' && preg_match('#^/supply-work/items/(\d+)/stock$#', $path, $m) === 1) {
+        return ['supply_work_item_stock', $m[1]];
     }
     if ($method === 'POST' && $path === '/work-log') {
         return ['work_log_create'];

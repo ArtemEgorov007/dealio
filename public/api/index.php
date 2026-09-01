@@ -69,8 +69,17 @@ try {
     if ($name === 'supply_work_invoice_file') {
         erp_supply_work_invoice_file($pdo, $config, $requestId, (int) ($route[1] ?? 0));
     }
-    if ($name === 'supply_work_set_unit') {
-        erp_supply_work_set_unit($pdo, $config, $requestId, (int) ($route[1] ?? 0));
+    if ($name === 'supply_work_create_item') {
+        erp_supply_work_create_item($pdo, $config, $requestId);
+    }
+    if ($name === 'supply_work_update_item') {
+        erp_supply_work_update_item($pdo, $config, $requestId, (int) ($route[1] ?? 0));
+    }
+    if ($name === 'supply_work_delete_item') {
+        erp_supply_work_delete_item($pdo, $config, $requestId, (int) ($route[1] ?? 0));
+    }
+    if ($name === 'supply_work_item_stock') {
+        erp_supply_work_item_stock($pdo, $config, $requestId, (int) ($route[1] ?? 0));
     }
     if ($name === 'work_log_create') {
         erp_work_log_create($pdo, $config, $requestId);
