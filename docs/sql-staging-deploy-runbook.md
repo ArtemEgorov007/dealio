@@ -79,6 +79,18 @@ It reports how many subscriptions and employees it reached. Note that a
 notification only arrives for employees who granted permission in the app;
 the count of subscriptions is normally far below the headcount.
 
+The script lives in the repository, not on the server: deployment uploads the
+built site, not `scripts/`. Run it from the **Разослать уведомление** workflow
+(Actions → Run workflow → title, body, target path). It copies the script into a
+per-run temp directory over the same SSH credentials the deploy uses, runs it
+with `ERP_API_SRC` pointing at the deployed API, and removes the directory
+afterwards — nothing persistent is added to the webroot.
+
+The broadcast deliberately has **no HTTP route**, unlike the two scheduled jobs.
+An externally reachable "notify everyone" endpoint is a bad idea even behind a
+token; the manual workflow gives the same reach plus a run history and the
+notification text in the log.
+
 Run either as a CLI job (preferred — no token needed, it reads the private
 config directly) or over HTTP with the `X-Cron-Token` header matching
 `push.cron_token` in `erp-api-config.php`. Every 5 minutes is enough for both;
