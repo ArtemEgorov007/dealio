@@ -47,10 +47,11 @@ const modules = computed(() => {
         {key: 'handover', to: '/scan-handover', icon: 'heroicons:check-badge', label: 'Сдача', caption: 'Приёмка', tone: '#8E4EC6'},
         {key: 'reports', to: '/reports', icon: 'heroicons:chart-bar', label: 'Отчёты', caption: 'Оперативный срез', tone: '#016ED7'},
         {key: 'approvals', to: '/approvals', icon: 'heroicons:check-circle', label: 'Согласования', caption: 'Счета', tone: '#0F766E', count: a.approvals && approvalsStore.pendingCount > 0 ? approvalsStore.pendingCount : null},
-        {key: 'supply', to: '/supply', icon: 'heroicons:truck', label: 'Снабжение', caption: 'Заявка на материалы', tone: '#B45309'},
-        {key: 'orders', to: '/orders', icon: 'heroicons:shopping-bag', label: 'Заказы', caption: 'В разработке', tone: '#5B6B7F'},
+        {key: 'orders', to: '/supply', icon: 'heroicons:clipboard-document-check', label: 'Заказ снабжения', caption: 'Заявка на материалы', tone: '#B45309'},
+        {key: 'supply', to: '/supply-work', icon: 'heroicons:briefcase', label: 'Работа со снабжением', caption: 'Счета и справочник', tone: '#0F766E'},
         {key: 'warehouse', to: '/warehouse', icon: 'heroicons:archive-box', label: 'Склад', caption: 'Приём/выдача', tone: '#4F46E5'},
         {key: 'personnel', to: '/personnel', icon: 'heroicons:user-group', label: 'Кадры', caption: 'Структуры и доступы', tone: '#016ED7'},
+        {key: 'contracts', to: '/contracts', icon: 'heroicons:document-duplicate', label: 'Договоры', caption: 'Договоры и расценки', tone: '#7C3AED'},
     ]
     return all.filter(m => a[m.key as keyof typeof a])
 })

@@ -26,8 +26,13 @@ const isProfileSection = computed(() => route.path === '/register')
 
 const isReportsSection = computed(() => route.path === '/reports')
 const isApprovalsSection = computed(() => route.path === '/approvals')
-const isSupplySection = computed(() => route.path === '/supply')
-const isOrdersSection = computed(() => route.path === '/orders')
+// Заказ снабжения (право orders) — заявка на материалы и свои заявки.
+// Работа со снабжением (право supply) — счета и справочник.
+const ORDER_ROUTES = ['/supply', '/supply-requests']
+const SUPPLY_WORK_ROUTES = ['/supply-work', '/invoice-new', '/invoices', '/supply-catalog']
+
+const isOrdersSection = computed(() => ORDER_ROUTES.includes(route.path))
+const isSupplySection = computed(() => SUPPLY_WORK_ROUTES.includes(route.path))
 const isWarehouseSection = computed(() => route.path.startsWith('/warehouse'))
 const isPersonnelSection = computed(() => route.path.startsWith('/personnel'))
 
@@ -112,8 +117,8 @@ const goPacking = () => router.push('/scan-qr')
 const goHandover = () => router.push('/scan-handover')
 const goReports = () => router.push('/reports')
 const goApprovals = () => router.push('/approvals')
-const goSupply = () => router.push('/supply')
-const goOrders = () => router.push('/orders')
+const goSupply = () => router.push('/supply-work')
+const goOrders = () => router.push('/supply')
 const goWarehouse = () => router.push('/warehouse')
 const goPersonnel = () => router.push('/personnel')
 
@@ -234,10 +239,10 @@ const goLogout = () => {
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isSupplySection }"
-        :title="isRailCollapsed ? 'Снабжение' : undefined"
+        :title="isRailCollapsed ? 'Работа со снабжением' : undefined"
         @click="goSupply"
     >
-      <Icon name="heroicons:truck" size="22"/>
+      <Icon name="heroicons:briefcase" size="22"/>
       <span class="erp-tabbar__label">Снабжение</span>
     </button>
 
@@ -246,11 +251,11 @@ const goLogout = () => {
         type="button"
         class="erp-tabbar__item"
         :class="{ 'erp-tabbar__item--active': isOrdersSection }"
-        :title="isRailCollapsed ? 'Заказы' : undefined"
+        :title="isRailCollapsed ? 'Заказ снабжения' : undefined"
         @click="goOrders"
     >
-      <Icon name="heroicons:shopping-bag" size="22"/>
-      <span class="erp-tabbar__label">Заказы</span>
+      <Icon name="heroicons:clipboard-document-check" size="22"/>
+      <span class="erp-tabbar__label">Заказ</span>
     </button>
 
     <button

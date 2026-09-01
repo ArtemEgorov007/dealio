@@ -34,7 +34,7 @@ fi
 echo "── Внутренности API закрыты ──"
 # Всё из public/ отдаётся статикой, поэтому исходники, схема базы и список
 # зависимостей обязаны быть недоступны. Закрывает их public/api/.htaccess.
-paths=(api/src/Auth.php api/vendor/autoload.php api/composer.json api/composer.lock)
+paths=(api/src/Auth.php api/vendor/autoload.php api/composer.json api/composer.lock api/.user.ini)
 last_migration=$(ls -1 public/api/migrations 2>/dev/null | tail -1)
 [ -n "$last_migration" ] && paths+=("api/migrations/$last_migration")
 for p in "${paths[@]}"; do

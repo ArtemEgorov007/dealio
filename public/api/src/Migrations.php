@@ -45,12 +45,108 @@ function erp_apply_migrations(PDO $pdo, string $directory): int
         if ($sql === false) {
             throw new RuntimeException('Migration file is unavailable: ' . basename($path));
         }
-        foreach (array_filter(array_map('trim', explode(';', $sql))) as $statement) {
-            $pdo->exec($statement);
+        foreach (erp_migration_statements($sql) as $index => $statement) {
+            try {
+                $pdo->exec($statement);
+            } catch (Throwable $error) {
+                // DDL в MySQL коммитится неявно, откатить середину миграции
+                // нельзя. Значит цена ошибки — база в промежуточном состоянии,
+                // и единственное, что мы можем дать человеку, это точное место.
+                throw new RuntimeException(sprintf(
+                    'Migration %s failed on statement #%d: %s',
+                    basename($path),
+                    $index + 1,
+                    $error->getMessage()
+                ), 0, $error);
+            }
         }
         $recordApplied->execute(['migration_name' => basename($path)]);
         $count++;
     }
 
     return $count;
+}
+
+/**
+ * Разбор файла миграции на отдельные выражения.
+ *
+ * Наивный explode(';') разрывал файл по точке с запятой внутри комментария:
+ * первая половина миграции применялась, вторая падала, миграция не
+ * записывалась как применённая — и повторный запуск спотыкался уже об
+ * «Duplicate column name». База оставалась в состоянии, из которого не
+ * выбраться без ручной правки.
+ *
+ * Поэтому идём по тексту и разделяем только те «;», что лежат вне строк,
+ * кавычек и комментариев.
+ *
+ * @return list<string>
+ */
+function erp_migration_statements(string $sql): array
+{
+    $statements = [];
+    $current = '';
+    $length = strlen($sql);
+    $quote = null;
+
+    for ($i = 0; $i < $length; $i++) {
+        $char = $sql[$i];
+
+        if ($quote !== null) {
+            $current .= $char;
+            // Экранирование внутри строки: \' не закрывает её.
+            if ($char === '\\' && $i + 1 < $length) {
+                $current .= $sql[++$i];
+                continue;
+            }
+            if ($char === $quote) {
+                $quote = null;
+            }
+            continue;
+        }
+
+        if ($char === "'" || $char === '"' || $char === '`') {
+            $quote = $char;
+            $current .= $char;
+            continue;
+        }
+
+        // Строчный комментарий: -- до конца строки.
+        if ($char === '-' && ($sql[$i + 1] ?? '') === '-') {
+            $newline = strpos($sql, "\n", $i);
+            if ($newline === false) {
+                break;
+            }
+            $current .= "\n";
+            $i = $newline;
+            continue;
+        }
+
+        // Блочный комментарий.
+        if ($char === '/' && ($sql[$i + 1] ?? '') === '*') {
+            $end = strpos($sql, '*/', $i + 2);
+            if ($end === false) {
+                break;
+            }
+            $i = $end + 1;
+            continue;
+        }
+
+        if ($char === ';') {
+            $statement = trim($current);
+            if ($statement !== '') {
+                $statements[] = $statement;
+            }
+            $current = '';
+            continue;
+        }
+
+        $current .= $char;
+    }
+
+    $tail = trim($current);
+    if ($tail !== '') {
+        $statements[] = $tail;
+    }
+
+    return $statements;
 }
