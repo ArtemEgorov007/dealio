@@ -1,0 +1,98 @@
+# Разовая рассылка системного уведомления сотрудникам.
+#
+# Рассылка — это CLI-скрипт на хостинге, а туда есть только SSH из CI. Своего
+# HTTP-маршрута у неё нет и заводить его не стоит: ручка «разослать всем»,
+# доступная снаружи, — плохая идея даже под токеном. Поэтому запуск живёт
+# здесь: ручное нажатие, история запусков и текст уведомления в логе.
+#
+# Скрипт не входит в состав сайта. Он заезжает во временный каталог,
+# отрабатывает и удаляется — в вебруте после запуска не остаётся ничего.
+name: Разослать уведомление
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Заголовок уведомления'
+        required: true
+        type: string
+      body:
+        description: 'Текст уведомления'
+        required: true
+        type: string
+      url:
+        description: 'Куда ведёт нажатие (путь в приложении)'
+        required: false
+        default: '/register'
+        type: string
+
+jobs:
+  broadcast:
+    runs-on: ubuntu-latest
+    # Только стенд: боевой контур рассылкой отсюда не трогаем.
+    environment:
+      name: staging
+      url: ${{ vars.DEPLOY_URL }}
+    concurrency:
+      group: erp-push-broadcast
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SSH client
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Configure trusted host
+        env:
+          SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SFTP_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Send broadcast
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_PORT: ${{ vars.SFTP_PORT }}
+          SFTP_SERVER_DIR: ${{ vars.SFTP_SERVER_DIR }}
+          TITLE: ${{ inputs.title }}
+          BODY: ${{ inputs.body }}
+          TARGET_URL: ${{ inputs.url }}
+        run: |
+          set -euo pipefail
+          export SSHPASS="$SFTP_PASSWORD"
+          remote="$SFTP_USERNAME@$SFTP_HOST"
+          common=(-o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+
+          # Каталог на один запуск: два нажатия не наступят друг другу на файлы.
+          tmp="erp-broadcast-${{ github.run_id }}"
+          # erp_cli_api_src() читает ERP_API_SRC, поэтому скрипту всё равно,
+          # из какого каталога он запущен.
+          api_src="${SFTP_SERVER_DIR%/}/api/src"
+
+          cleanup() {
+            sshpass -e ssh -p "$SFTP_PORT" "${common[@]}" "$remote" "rm -rf '$tmp'" || true
+          }
+          trap cleanup EXIT
+
+          sshpass -e ssh -p "$SFTP_PORT" "${common[@]}" "$remote" "mkdir -p '$tmp'"
+          sshpass -e scp -P "$SFTP_PORT" "${common[@]}" \
+            scripts/push-broadcast.php scripts/erp-cli-paths.php \
+            "$remote:$tmp/"
+
+          # Заголовок и текст едут в base64: ssh склеивает аргументы в одну
+          # строку для удалённой оболочки, и кавычки с кириллицей в тексте
+          # уведомления иначе развалили бы команду.
+          t=$(printf '%s' "$TITLE" | base64 | tr -d '\n')
+          b=$(printf '%s' "$BODY" | base64 | tr -d '\n')
+          u=$(printf '%s' "$TARGET_URL" | base64 | tr -d '\n')
+
+          echo "Отправляем «$TITLE» — $BODY (ведёт на $TARGET_URL)"
+          sshpass -e ssh -p "$SFTP_PORT" "${common[@]}" "$remote" \
+            "ERP_API_SRC='$api_src' php '$tmp/push-broadcast.php' \
+               \"\$(printf %s '$t' | base64 -d)\" \
+               \"\$(printf %s '$b' | base64 -d)\" \
+               \"\$(printf %s '$u' | base64 -d)\""
