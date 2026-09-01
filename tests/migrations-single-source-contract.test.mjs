@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import {existsSync, readdirSync} from 'node:fs'
+import {readFile} from 'node:fs/promises'
 import {fileURLToPath} from 'node:url'
 import test from 'node:test'
+const cliPaths = await readFile(new URL('../scripts/erp-cli-paths.php', import.meta.url), 'utf8')
 
 // Миграции применяет PHP-рантайм на сервере (Approvals.php / Push.php ->
 // erp_apply_migrations(__DIR__ . '/../migrations')), а деплой заливает только
@@ -44,4 +46,13 @@ test('второго каталога миграций в репозитории
         !existsSync(`${repoRoot}database/migrations`),
         'database/migrations вернулся: миграции должны жить только в public/api/migrations',
     )
+})
+
+test('CLI не ищет миграции в собственной копии рядом со скриптами', () => {
+    // На сервере такая копия жила в erp-ops своей жизнью и отстала на пять
+    // миграций: sql-migrate.php отчитывался по ней, а применялись совсем
+    // другие файлы. Каталог берём рядом с исходниками API — тот же, что
+    // читает рантайм.
+    assert.match(cliPaths, /dirname\(erp_cli_api_src\(\)\) \. '\/migrations'/)
+    assert.doesNotMatch(cliPaths, /dirname\(__DIR__\) \. '\/migrations'/, 'сосед скриптов — это отдельная копия')
 })

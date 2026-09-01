@@ -36,6 +36,12 @@ python3 scripts/staging-approvals-auth-smoke.py
    (`erp_database`), so this step verifies rather than performs them: it prints
    `applied/total` and exits non-zero if any migration is missing. Do not continue on a
    non-zero exit — the schema the API expects is not the schema on the server.
+
+   `ERP_MIGRATIONS_DIR` is no longer needed: the script derives the directory from
+   `ERP_API_SRC`, so it always reports on the files the runtime actually applies. A
+   second copy of the migrations used to sit in `erp-ops/` and drifted five files
+   behind — the script reported on that copy while entirely different files were being
+   applied. Do not recreate it.
 4. Run `ERP_API_SRC=/absolute/path/to/staging/api/src php /absolute/path/to/erp-ops/scripts/sql-import-workshop-badges.php`; retain its JSON result as
    the initial catalog-sync audit record.
 5. Confirm the sync report has the expected workshop counts and no error.
