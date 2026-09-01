@@ -10,7 +10,7 @@ const router = await readFile(new URL('../public/api/src/Router.php', import.met
 const middleware = await readFile(new URL('../app/middleware/erp-flow.global.ts', import.meta.url), 'utf8')
 const statusMigration = await readFile(new URL('../public/api/migrations/010_erp_supply_status_notifications.sql', import.meta.url), 'utf8')
 const pushPhp = await readFile(new URL('../public/api/src/Push.php', import.meta.url), 'utf8')
-const hub = await readFile(new URL('../app/pages/register.vue', import.meta.url), 'utf8')
+const sections = await readFile(new URL('../app/utils/erp-sections.ts', import.meta.url), 'utf8')
 // Поведение выпадающего списка живёт в общем компоненте: копии такого поля
 // разъезжаются, а вместе с ними возвращаются уже починенные баги.
 const combobox = await readFile(new URL('../app/components/erp/ErpCombobox.vue', import.meta.url), 'utf8')
@@ -184,8 +184,9 @@ test('заявки сортируются по времени, а не по ст
 })
 
 test('раздел больше не помечен заглушкой', () => {
-    assert.doesNotMatch(hub, /caption: 'В разработке'/)
-    assert.match(hub, /label: 'Заказ снабжения', caption: 'Заявка на материалы'/)
+    assert.doesNotMatch(sections, /caption: 'В разработке'/)
+    assert.match(sections, /label: 'Заказ снабжения'/)
+    assert.match(sections, /caption: 'Заявка на материалы'/)
 })
 
 test('всю номенклатуру можно посмотреть списком', () => {
@@ -340,5 +341,6 @@ test('поле номенклатуры не на v-model — иначе фил�
 })
 
 test('плитка «Кадры» подписана', () => {
-    assert.match(hub, /label: 'Кадры', caption: 'Структуры и доступы'/)
+    assert.match(sections, /label: 'Кадры'/)
+    assert.match(sections, /caption: 'Структуры и доступы'/)
 })
