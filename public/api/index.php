@@ -69,6 +69,21 @@ try {
     if ($name === 'supply_work_invoice_file') {
         erp_supply_work_invoice_file($pdo, $config, $requestId, (int) ($route[1] ?? 0));
     }
+    if ($name === 'supply_work_set_unit') {
+        erp_supply_work_set_unit($pdo, $config, $requestId, (int) ($route[1] ?? 0));
+    }
+    if ($name === 'contracts_list') {
+        erp_contracts_list($pdo, $config, $requestId);
+    }
+    if ($name === 'contract_create') {
+        erp_contract_create($pdo, $config, $requestId);
+    }
+    if ($name === 'contract_show') {
+        erp_contract_show($pdo, $config, $requestId, (int) ($route[1] ?? 0));
+    }
+    if ($name === 'contract_save_rates') {
+        erp_contract_save_rates($pdo, $config, $requestId, (int) ($route[1] ?? 0));
+    }
     if ($name === 'reports_current') {
         erp_reports_current($pdo, $config, $requestId);
     }

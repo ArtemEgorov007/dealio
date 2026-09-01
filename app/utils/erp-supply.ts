@@ -1,9 +1,12 @@
 import {erpApiRequest} from '~/utils/erp-api'
 
-/** Позиция справочника номенклатуры для подсказки в форме заявки. */
+/** Позиция справочника номенклатуры. */
 export interface ErpSupplyCatalogItem {
+    id: number
     name: string
     category: string
+    /** Единица измерения. Пустая, пока снабженец её не проставил. */
+    unit: string
 }
 
 /** Строка заявки: что и сколько заказал сотрудник. */
@@ -63,6 +66,8 @@ export interface ErpInvoiceFormData {
     approvers: string[]
     /** Сколько байт реально примет сервер: настройки PHP бывают ниже нашей границы. */
     maxFileBytes: number
+    /** Часто используемые единицы измерения — подсказки в справочнике ТМЦ. */
+    units: string[]
 }
 
 /** Счёт в списке «Все счета». */
@@ -120,5 +125,13 @@ export async function createInvoice(payload: {
         method: 'POST',
         body,
         timeoutMs: 120_000,
+    })
+}
+
+/** Проставление единицы измерения позиции справочника ТМЦ. */
+export async function setCatalogItemUnit(id: number, unit: string): Promise<{id: number; unit: string}> {
+    return erpApiRequest<{id: number; unit: string}>(`supply-work/items/${id}/unit`, {
+        method: 'POST',
+        body: JSON.stringify({unit}),
     })
 }

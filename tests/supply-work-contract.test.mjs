@@ -12,6 +12,8 @@ const middleware = await readFile(new URL('../app/middleware/erp-flow.global.ts'
 const register = await readFile(new URL('../app/pages/register.vue', import.meta.url), 'utf8')
 const api = await readFile(new URL('../app/utils/erp-api.ts', import.meta.url), 'utf8')
 const htaccess = await readFile(new URL('../public/api/.htaccess', import.meta.url), 'utf8')
+const catalogPage = await readFile(new URL('../app/pages/supply-catalog.vue', import.meta.url), 'utf8')
+const unitMigration = await readFile(new URL('../public/api/migrations/012_erp_warehouse_unit.sql', import.meta.url), 'utf8')
 
 test('счёт привязан к заявке', () => {
     assert.match(migration, /ALTER TABLE erp_approvals\s*\n\s*ADD COLUMN request_code VARCHAR\(64\) NULL/i)
@@ -87,8 +89,14 @@ test('настройки PHP не отдаются по HTTP', () => {
 })
 
 test('весь раздел закрыт правом supply', () => {
-    const handlers = php.match(/erp_require_permission\(\$pdo, \$actor, 'supply', \$requestId\)/g) ?? []
-    assert.equal(handlers.length, 4, 'все четыре обработчика раздела')
+    // Считаем не «сколько их сейчас», а «у каждого ли есть проверка»: иначе
+    // тест придётся править при каждой новой ручке, и однажды его поправят
+    // не глядя вместе с забытой проверкой.
+    const handlers = php.match(/^function (erp_supply_work_\w+)\(PDO /gm) ?? []
+    const guards = php.match(/erp_require_permission\(\$pdo, \$actor, 'supply', \$requestId\)/g) ?? []
+    assert.ok(handlers.length > 0, 'обработчики раздела не найдены')
+    assert.equal(guards.length, handlers.length,
+        `обработчиков ${handlers.length}, проверок права ${guards.length}`)
 })
 
 test('маршруты раздела объявлены', () => {
@@ -150,4 +158,29 @@ test('заявку создаёт право «Заказ снабжения», 
     assert.match(middleware, /'\/supply-catalog': 'supply'/)
     assert.match(register, /key: 'orders', to: '\/supply'/)
     assert.match(register, /key: 'supply', to: '\/supply-work'/)
+})
+
+test('справочник ТМЦ показывает три колонки ТЗ', () => {
+    assert.match(catalogPage, /Категория/)
+    assert.match(catalogPage, /Наименование/)
+    assert.match(catalogPage, /Ед\. изм\./)
+})
+
+test('единицу измерения можно проставить из приложения', () => {
+    // В исходной таблице этих данных нет вовсе — заполняют снабженцы.
+    assert.match(unitMigration, /ADD COLUMN unit VARCHAR\(32\) NOT NULL DEFAULT ''/i)
+    assert.match(php, /function erp_supply_work_set_unit/)
+    assert.match(php, /UPDATE erp_warehouse_items SET unit = :unit WHERE id = :id/)
+    assert.match(catalogPage, /setCatalogItemUnit\(item\.id, value\)/)
+})
+
+test('правится по одной позиции, а не все сразу', () => {
+    // 300 полей ввода на экране — это и тормоза, и промахи пальцем.
+    assert.match(catalogPage, /const editingId = ref<number \| null>\(null\)/)
+    assert.match(catalogPage, /editingId === item\.id/)
+})
+
+test('заведение счёта переводит заявку в «Ожидает РО» и уведомляет автора', () => {
+    assert.match(php, /UPDATE erp_supply_requests SET status = :status WHERE request_code = :code/)
+    assert.match(php, /erp_supply_notify_status_changes\(\$pdo, \$config\)/)
 })

@@ -322,11 +322,17 @@ function erp_supply_catalog(PDO $pdo, array $config, string $requestId): void
     $actor = erp_require_user($pdo, $config, $requestId);
     erp_require_permission($pdo, $actor, 'supply', $requestId);
 
-    $rows = $pdo->query('SELECT name, category FROM erp_warehouse_items ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $pdo->query('SELECT id, name, category, unit FROM erp_warehouse_items ORDER BY category, name')
+        ->fetchAll(PDO::FETCH_ASSOC);
 
     $items = [];
     foreach ($rows as $row) {
-        $items[] = ['name' => (string) $row['name'], 'category' => (string) $row['category']];
+        $items[] = [
+            'id' => (int) $row['id'],
+            'name' => (string) $row['name'],
+            'category' => (string) $row['category'],
+            'unit' => (string) $row['unit'],
+        ];
     }
 
     erp_json(200, ['ok' => true, 'data' => ['items' => $items]]);

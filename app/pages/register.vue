@@ -51,6 +51,7 @@ const modules = computed(() => {
         {key: 'supply', to: '/supply-work', icon: 'heroicons:briefcase', label: 'Работа со снабжением', caption: 'Счета и справочник', tone: '#0F766E'},
         {key: 'warehouse', to: '/warehouse', icon: 'heroicons:archive-box', label: 'Склад', caption: 'Приём/выдача', tone: '#4F46E5'},
         {key: 'personnel', to: '/personnel', icon: 'heroicons:user-group', label: 'Кадры', caption: 'Структуры и доступы', tone: '#016ED7'},
+        {key: 'contracts', to: '/contracts', icon: 'heroicons:document-duplicate', label: 'Договоры', caption: 'Договоры и расценки', tone: '#7C3AED'},
     ]
     return all.filter(m => a[m.key as keyof typeof a])
 })

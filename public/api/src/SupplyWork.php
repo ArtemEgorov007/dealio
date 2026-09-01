@@ -91,6 +91,7 @@ function erp_supply_work_form(PDO $pdo, array $config, string $requestId): void
         'contracts' => array_map('strval', $contracts),
         'approvers' => array_map('strval', $approvers->fetchAll(PDO::FETCH_COLUMN)),
         'maxFileBytes' => erp_invoice_upload_limit(),
+        'units' => erp_supply_work_units(),
     ]]);
 }
 
@@ -236,13 +237,62 @@ function erp_supply_work_create_invoice(PDO $pdo, array $config, string $request
             'uploaded_by' => $actor['id'] ?? null,
         ]);
 
+        // Счёт заведён — заявка больше не «Ожидает счёт». Статус меняем в той
+        // же транзакции: счёт без перевода заявки означал бы, что автор так и
+        // ждёт счёт, который уже есть.
+        $pdo->prepare(
+            'UPDATE erp_supply_requests SET status = :status WHERE request_code = :code'
+        )->execute(['status' => ERP_INVOICE_STATUS_NEW, 'code' => $requestCode]);
+
         $pdo->commit();
     } catch (Throwable $error) {
         $pdo->rollBack();
         throw $error;
     }
 
+    // Автор заявки узнаёт о смене статуса сразу, а не через пять минут крона.
+    // Тот же обработчик и отмечает заявку как сообщённую, поэтому крон её
+    // повторно не возьмёт.
+    try {
+        erp_supply_notify_status_changes($pdo, $config);
+    } catch (Throwable) {
+        // Счёт уже заведён: непришедшее уведомление — повод посмотреть логи,
+        // а не потерять счёт.
+    }
+
     erp_json(200, ['ok' => true, 'data' => ['id' => $approvalId, 'invoice' => $invoice]]);
+}
+
+/** Часто используемые единицы: подсказки в справочнике ТМЦ. */
+function erp_supply_work_units(): array
+{
+    return ['шт.', 'компл.', 'кг', 'тн', 'л', 'м', 'м2', 'м3', 'уп.', 'пар'];
+}
+
+/** Проставление единицы измерения позиции номенклатуры. */
+function erp_supply_work_set_unit(PDO $pdo, array $config, string $requestId, int $itemId): void
+{
+    $actor = erp_require_user($pdo, $config, $requestId);
+    erp_require_permission($pdo, $actor, 'supply', $requestId);
+
+    $unit = trim((string) (erp_warehouse_input($requestId)['unit'] ?? ''));
+    if (mb_strlen($unit) > 32) {
+        erp_json(422, erp_error_payload('invalid_input', 'Слишком длинная единица измерения', $requestId));
+    }
+
+    $statement = $pdo->prepare('UPDATE erp_warehouse_items SET unit = :unit WHERE id = :id');
+    $statement->execute(['unit' => $unit, 'id' => $itemId]);
+    if ($statement->rowCount() === 0) {
+        // rowCount = 0 бывает и когда значение не изменилось, поэтому
+        // отличаем «нет такой позиции» отдельной проверкой.
+        $exists = $pdo->prepare('SELECT 1 FROM erp_warehouse_items WHERE id = :id');
+        $exists->execute(['id' => $itemId]);
+        if (!$exists->fetchColumn()) {
+            erp_json(404, erp_error_payload('not_found', 'Позиция номенклатуры не найдена', $requestId));
+        }
+    }
+
+    erp_json(200, ['ok' => true, 'data' => ['id' => $itemId, 'unit' => $unit]]);
 }
 
 /** Все счета раздела со статусами. */
