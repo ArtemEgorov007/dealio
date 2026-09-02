@@ -75,16 +75,16 @@ ALTER TABLE erp_approvals
     ADD COLUMN notified_status VARCHAR(64) NOT NULL DEFAULT '' AFTER status,
     ADD CONSTRAINT erp_approvals_author_fk
         FOREIGN KEY (created_by) REFERENCES erp_users (id) ON DELETE SET NULL;
-
--- Уведомления о согласованиях больше не про номер строки листа — про
--- конкретный счёт с настоящим первичным ключом. Реальный внешний ключ
--- заменяет ничем не подкреплённый int, который раньше не мог сослаться ни
--- на что и мог случайно совпасть с чужим номером строки.
-ALTER TABLE erp_approval_notifications
-    CHANGE COLUMN approval_row_number approval_id BIGINT UNSIGNED NOT NULL,
-    ADD CONSTRAINT erp_approval_notifications_approval_fk
-        FOREIGN KEY (approval_id) REFERENCES erp_approvals (id) ON DELETE CASCADE;
 ```
+
+`erp_approval_notifications.approval_row_number` и `erp_push_sent.approval_row_number`
+**не трогаются** — при планировании нашёлся реальный конфликт: обе колонки
+переиспользует `erp_approvals_notify_all_with_access()` (тестовая рассылка
+«всем согласующим») с синтетическим отрицательным номером
+(`-1 * ($userId * 10000 + $broadcastStamp)`), который никогда не был и не
+будет строкой `erp_approvals` — FK на них немедленно ломает эту рассылку.
+Задача не просила чистить эти таблицы, ТЗ про сценарий согласования, а не про
+внутренний трекинг рассылок — оставляю как есть.
 
 `approved_ro_at`/`approved_gd_at`/`cancelled_at` остаются `DATE` — тип не
 меняется, клиент (`invoices.vue`) уже форматирует их как дату без времени, и
@@ -99,10 +99,12 @@ const ERP_INVOICE_STATUS_APPROVED = 'Согласован ГД';
 const ERP_INVOICE_STATUS_REJECTED = 'Отклонен';
 ```
 
-`rowNumber` переименовывается в `id` по всей цепочке — API-ответ, TS-тип
-`ErpApproval`, клиентские компоненты (`ErpApprovalCard`, `approvals.vue`),
-таблица уведомлений. Решение пользователя: «имя больше не соответствует сути»
-перевешивает размер диффа.
+`rowNumber` переименовывается в `id` в API-ответе, TS-типе `ErpApproval` и
+клиентских компонентах (`ErpApprovalCard`, `approvals.vue`) — не в
+`erp_approval_notifications`/`erp_push_sent` (см. ниже, почему их колонка
+остаётся `approval_row_number`). Решение пользователя: «имя больше не
+соответствует сути» перевешивает размер диффа там, где это не ломает ничего
+постороннего.
 
 ## Видимость и право решать
 
