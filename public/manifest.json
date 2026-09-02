@@ -1,6 +1,6 @@
 {
-    "name": "Морфлот Технология — выдача бирок",
-    "short_name": "Бирки МТ",
+    "name": "Морфлот Технология",
+    "short_name": "Морфлот",
     "start_url": ".",
     "scope": ".",
     "display": "standalone",
