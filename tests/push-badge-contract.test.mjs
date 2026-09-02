@@ -9,6 +9,8 @@ const manifest = JSON.parse(await readFile(new URL('../public/manifest.json', im
 const nuxtConfig = await readFile(new URL('../nuxt.config.ts', import.meta.url), 'utf8')
 const push = await readFile(new URL('../public/api/src/Push.php', import.meta.url), 'utf8')
 const router = await readFile(new URL('../public/api/src/Router.php', import.meta.url), 'utf8')
+const auth = await readFile(new URL('../public/api/src/Auth.php', import.meta.url), 'utf8')
+const store = await readFile(new URL('../store/erp-employee.store.ts', import.meta.url), 'utf8')
 const init = await readFile(new URL('../app/plugins/erp-init.client.ts', import.meta.url), 'utf8')
 const guide = await readFile(new URL('../app/pages/notifications-guide.vue', import.meta.url), 'utf8')
 const migration = await readFile(
@@ -182,4 +184,37 @@ test('разрешение на уведомления можно выдать �
     assert.match(guide, /Включить уведомления/)
     assert.match(guide, /enableApprovalsNotifications\(\)/)
     assert.doesNotMatch(guide, /включите уведомления в разделе «Согласования»/)
+})
+
+test('выход отписывает только своё устройство, а не все сразу', () => {
+    // Сервер отзывал ВСЕ push-подписки сотрудника при любом выходе, а не
+    // только устройство, с которого вышли. Выход на рабочем компьютере
+    // глушил телефон, планшет — всё разом.
+    const logout = auth.slice(
+        auth.indexOf('function erp_auth_logout'),
+        auth.indexOf('function erp_auth_logout') + 900,
+    )
+    assert.doesNotMatch(
+        logout,
+        /erp_push_revoke_user_subscriptions/,
+        'выход не должен глушить остальные устройства',
+    )
+
+    // Своё устройство отписывает клиент, до инвалидации сессии — иначе
+    // отписаться будет уже нечем.
+    assert.match(store, /unregisterErpPushSubscription\(\)/)
+    const clientLogout = store.slice(store.indexOf('logout()'))
+    assert.ok(
+        clientLogout.indexOf('unregisterErpPushSubscription') < clientLogout.indexOf('logoutErpEmployee'),
+        'своя подписка должна сниматься до инвалидации сессии',
+    )
+})
+
+test('отписаться от уведомлений может любой сотрудник', () => {
+    // Симметрично подписке: право «Согласования» здесь тоже было лишним.
+    const unsubscribe = push.slice(
+        push.indexOf('function erp_push_unsubscribe'),
+        push.indexOf('function erp_push_unsubscribe') + 400,
+    )
+    assert.doesNotMatch(unsubscribe, /erp_require_permission\([^)]*'approvals'/)
 })
