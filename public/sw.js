@@ -55,6 +55,28 @@ function showPushNotification(payload) {
   return Promise.all(tasks)
 }
 
+// Подтверждение показа. «Принято push-сервисом» и «показано человеку» — разные
+// события: Apple и FCM отвечают успехом и для устройства, где уведомления
+// потом выключили. Без этого отстука отправитель не знает, дошло ли, и
+// остаётся только гадать.
+//
+// Отстукиваем ПОСЛЕ showNotification и не даём отказу сети что-либо сломать:
+// неподтверждённая доставка — это неполный отчёт, а упавший обработчик push
+// на iOS ведёт к отзыву подписки, то есть к молчанию навсегда.
+function confirmDelivery(token) {
+  if (!token) return Promise.resolve()
+
+  return fetch('/api/push/delivered', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({deliveryToken: token}),
+    // Токен сам себе право, но подтверждение вошедшего пусть остаётся
+    // подтверждением вошедшего — cookie отправляем, если она есть.
+    credentials: 'include',
+    keepalive: true,
+  }).catch(() => undefined)
+}
+
 self.addEventListener('push', (event) => {
   let payload = {
     title: 'Новое согласование',
@@ -72,7 +94,9 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  event.waitUntil(showPushNotification(payload))
+  event.waitUntil(
+    showPushNotification(payload).then(() => confirmDelivery(payload.deliveryToken)),
+  )
 })
 
 self.addEventListener('notificationclick', (event) => {

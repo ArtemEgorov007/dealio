@@ -105,6 +105,12 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'POST' && $path === '/push/unsubscribe') {
         return ['push_unsubscribe'];
     }
+    // Подтверждение показа уведомления. Без сессии намеренно: приходит из
+    // service worker, который переживает истёкший вход. Право — одноразовый
+    // токен внутри самого уведомления.
+    if ($method === 'POST' && $path === '/push/delivered') {
+        return ['push_delivered'];
+    }
     if ($method === 'POST' && $path === '/internal/push-notify') {
         return ['push_notify_cron'];
     }

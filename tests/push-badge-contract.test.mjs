@@ -7,6 +7,12 @@ const appBadge = await readFile(new URL('../app/utils/erp-app-badge.ts', import.
 const broadcast = await readFile(new URL('../scripts/push-broadcast.php', import.meta.url), 'utf8')
 const manifest = JSON.parse(await readFile(new URL('../public/manifest.json', import.meta.url), 'utf8'))
 const nuxtConfig = await readFile(new URL('../nuxt.config.ts', import.meta.url), 'utf8')
+const push = await readFile(new URL('../public/api/src/Push.php', import.meta.url), 'utf8')
+const router = await readFile(new URL('../public/api/src/Router.php', import.meta.url), 'utf8')
+const migration = await readFile(
+    new URL('../public/api/migrations/018_erp_push_deliveries.sql', import.meta.url),
+    'utf8',
+)
 
 test('значок непрочитанного ставится через navigator', () => {
     // Badging API живёт на navigator, а не на ServiceWorkerRegistration.
@@ -55,12 +61,78 @@ test('уведомление подписано именем продукта, �
     assert.equal(manifest.lang, 'ru')
 })
 
+test('воркер подтверждает показ уведомления', () => {
+    // «Принято push-сервисом» и «показано человеку» — разные события: Apple и
+    // FCM отвечают успехом и для устройства, где уведомления выключили.
+    assert.match(sw, /function confirmDelivery\(token\)/)
+    assert.match(sw, /fetch\('\/api\/push\/delivered'/)
+    assert.match(sw, /deliveryToken: token/)
+
+    // Подтверждение идёт ПОСЛЕ показа: не показали — не подтверждаем, иначе
+    // отчёт врал бы ровно в том случае, ради которого он и заводился.
+    assert.match(sw, /showPushNotification\(payload\)\.then\(\(\) => confirmDelivery\(payload\.deliveryToken\)\)/)
+
+    // Отказ сети не должен ронять обработчик push: на iOS упавший обработчик
+    // ведёт к отзыву подписки, то есть к молчанию навсегда.
+    assert.match(sw, /\.catch\(\(\) => undefined\)/)
+})
+
+test('подтверждение доставки доступно без сессии, но по токену', () => {
+    // Подтверждение приходит из воркера, где сессии может уже не быть:
+    // уведомление переживает истёкший вход. Правом служит сам токен.
+    assert.match(router, /\$path === '\/push\/delivered'/)
+    assert.match(push, /function erp_push_confirm_delivery/)
+    assert.doesNotMatch(
+        push.slice(push.indexOf('function erp_push_confirm_delivery')),
+        /erp_require_user|erp_require_permission/,
+        'ручка намеренно без сессии — иначе подтверждать будет некому',
+    )
+
+    // Токен обязан быть 32 шестнадцатеричными знаками: угадать нельзя.
+    assert.match(push, /\^\[0-9a-f\]\{32\}\$/)
+    assert.match(push, /bin2hex\(random_bytes\(16\)\)/)
+
+    // Повторное подтверждение не сдвигает время первого показа.
+    assert.match(push, /SET delivered_at = CURRENT_TIMESTAMP\(6\)\s+WHERE delivery_token = :token AND delivered_at IS NULL/)
+})
+
+test('неизвестный токен неотличим от повторного подтверждения', () => {
+    // Иначе по ответу можно было бы перебирать токены.
+    const confirm = push.slice(
+        push.indexOf('function erp_push_confirm_delivery'),
+        push.indexOf('function erp_push_delivery_report'),
+    )
+    assert.doesNotMatch(confirm, /rowCount\(\)/, 'ответ не должен зависеть от того, нашлась ли строка')
+    assert.match(confirm, /'confirmed' => true/)
+})
+
 test('отчёт рассылки показывает, на какие устройства ушло', () => {
     // «Принято push-сервисом» — это ещё не «показано на экране»: сервис
     // принимает сообщение и для устройства, где уведомления потом выключили.
     // Без разбивки по устройствам «отправлено 5» ничего не даёт.
-    assert.match(broadcast, /'devices' => \$devices/)
-    assert.match(broadcast, /function erp_broadcast_device/)
+    assert.match(broadcast, /'устройства' => \$devices/)
+    assert.match(broadcast, /erp_push_device_label\(/)
     assert.match(broadcast, /s\.user_agent, s\.created_at/)
     assert.match(broadcast, /'подписке дней'/)
+
+    // Разбор устройства живёт в Push.php: у рассылки была своя копия той же
+    // функции, и две копии одного разбора разошлись бы при первой правке.
+    assert.match(push, /function erp_push_device_label/)
+    assert.doesNotMatch(broadcast, /function erp_broadcast_device/, 'дубль разбора устройства')
+
+    // Отчёт различает «принято сервисом» и «показано».
+    assert.match(broadcast, /'принято сервисом' => \$sent/)
+    assert.match(broadcast, /erp_push_delivery_report\(/)
+    assert.match(broadcast, /'доставка' => \$delivery\['подробно'\]/)
+})
+
+test('строка доставки хранит токен и время показа', () => {
+    assert.match(migration, /CREATE TABLE IF NOT EXISTS erp_push_deliveries/)
+    assert.match(migration, /delivery_token CHAR\(32\) NOT NULL/)
+    assert.match(migration, /UNIQUE KEY erp_push_deliveries_token_unique/)
+    // NULL значит «подтверждения не было» — отличать спящее устройство от
+    // отброшенного уведомления мы не умеем и не притворяемся.
+    assert.match(migration, /delivered_at DATETIME\(6\) NULL/)
+    // Адрес подписки целиком не храним: он длинный и в отчёте не нужен.
+    assert.doesNotMatch(migration, /endpoint /)
 })

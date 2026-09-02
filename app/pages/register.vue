@@ -31,10 +31,11 @@ const greetingWord = () => {
     return 'Добрый вечер'
 }
 const greeting = computed(() => firstName.value ? `${greetingWord()}, ${firstName.value}` : greetingWord())
-// Строка над именем: «Смена · Площадка · 4 июля»
+// Строка над именем: «Площадка · 4 июля». Слово «Смена» убрано — оно ничего
+// не сообщало сверх того, что человек и так знает, открыв рабочее приложение.
 const shiftOverline = computed(() => {
     const date = new Intl.DateTimeFormat('ru-RU', {day: 'numeric', month: 'long'}).format(new Date())
-    return ['Смена', employeeStore.platform, date].filter(Boolean).join(' · ')
+    return [employeeStore.platform, date].filter(Boolean).join(' · ')
 })
 
 // Модули хаба — те же, что в таб-баре, фильтр по доступам сотрудника
@@ -170,7 +171,7 @@ const copyText = async (text: string, label: string) => {
       v-else
       center-brand
       title="Морфлот Технология"
-      subtitle="Производственная ERP-платформа"
+      subtitle="Цифровой контур предприятия"
   >
     <div class="login-card">
       <h2 class="login-card__title">Вход</h2>

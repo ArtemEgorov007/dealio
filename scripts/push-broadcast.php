@@ -11,46 +11,14 @@ require_once __DIR__ . '/erp-cli-paths.php';
 
 require_once erp_cli_api_src() . '/Bootstrap.php';
 
-/**
- * Короткое имя устройства из User-Agent — только чтобы отличить телефон от
- * рабочего компьютера в отчёте рассылки.
- *
- * На iOS веб-пуш приходит лишь в приложение, установленное на домашний экран,
- * поэтому важно видеть, что у человека вообще есть подписка с телефона.
- */
-function erp_broadcast_device(string $userAgent): string
-{
-    if ($userAgent === '') {
-        return 'неизвестно';
-    }
-
-    $platform = match (true) {
-        str_contains($userAgent, 'iPhone') => 'iPhone',
-        str_contains($userAgent, 'iPad') => 'iPad',
-        str_contains($userAgent, 'Android') => 'Android',
-        str_contains($userAgent, 'Windows') => 'Windows',
-        str_contains($userAgent, 'Macintosh') => 'Mac',
-        default => 'прочее',
-    };
-
-    $browser = match (true) {
-        str_contains($userAgent, 'YaBrowser') => 'Яндекс',
-        str_contains($userAgent, 'Edg/') => 'Edge',
-        str_contains($userAgent, 'Chrome') => 'Chrome',
-        str_contains($userAgent, 'Firefox') => 'Firefox',
-        str_contains($userAgent, 'Safari') => 'Safari',
-        default => '?',
-    };
-
-    return $platform . ' · ' . $browser;
-}
-
 $title = trim((string) ($argv[1] ?? ''));
 $body = trim((string) ($argv[2] ?? ''));
 $url = trim((string) ($argv[3] ?? '/register'));
+// Сколько ждать подтверждений показа перед печатью отчёта. Ноль — не ждать.
+$waitSeconds = max(0, min(120, (int) ($argv[4] ?? 25)));
 
 if ($title === '' || $body === '') {
-    fwrite(STDERR, "Использование: php push-broadcast.php \"Заголовок\" \"Текст\" [/путь]\n");
+    fwrite(STDERR, "Использование: php push-broadcast.php \"Заголовок\" \"Текст\" [/путь] [секунд ожидания]\n");
     exit(2);
 }
 
@@ -69,13 +37,9 @@ try {
         ],
     ]);
 
-    $payload = json_encode([
-        'title' => $title,
-        'body' => $body,
-        'url' => $url,
-        'tag' => 'erp-broadcast-' . gmdate('Ymd-His'),
-        'badgeCount' => 1,
-    ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+    // Номер рассылки: по нему собирается отчёт о доставке, в том числе тот,
+    // что придёт уже после завершения скрипта.
+    $broadcastId = 'erp-broadcast-' . gmdate('Ymd-His');
 
     // Берём только живые подписки: у сотрудника их может быть несколько
     // (телефон и рабочий компьютер), отозванные пропускаем.
@@ -100,16 +64,26 @@ try {
     foreach ($rows as $row) {
         $recipients[(int) $row['user_id']] = (string) $row['fio'];
 
-        // «Отправлено 5» ничего не говорит о том, на что именно отправлено.
-        // Push-сервис принимает сообщение и для устройства, где уведомления
-        // потом выключили: ответ тот же самый. Поэтому вместе со счётчиком
-        // показываем, чьи это подписки, через какой сервис и какой давности —
-        // по этому уже видно, есть ли у человека живая подписка с телефона.
-        $endpointHost = parse_url((string) $row['endpoint'], PHP_URL_HOST) ?: '?';
+        // Свой токен на каждую подписку: воркер вернёт именно его, и станет
+        // видно не только «принято push-сервисом», но и «показано на экране».
+        $token = erp_push_open_delivery(
+            $pdo,
+            $broadcastId,
+            (int) $row['user_id'],
+            (string) $row['endpoint'],
+            (string) $row['user_agent'],
+            $title,
+        );
+
+        // «Отправлено 5» ничего не говорит о том, на что именно отправлено:
+        // push-сервис принимает сообщение и для устройства, где уведомления
+        // потом выключили. Показываем, чьи это подписки, через какой сервис и
+        // какой давности — по этому видно, есть ли у человека живая подписка
+        // с телефона.
         $devices[] = [
             'fio' => (string) $row['fio'],
-            'сервис' => $endpointHost,
-            'устройство' => erp_broadcast_device((string) $row['user_agent']),
+            'сервис' => parse_url((string) $row['endpoint'], PHP_URL_HOST) ?: '?',
+            'устройство' => erp_push_device_label((string) $row['user_agent']),
             'подписке дней' => (int) ((time() - strtotime((string) $row['created_at'])) / 86400),
         ];
 
@@ -118,7 +92,14 @@ try {
                 'endpoint' => (string) $row['endpoint'],
                 'keys' => ['p256dh' => (string) $row['p256dh'], 'auth' => (string) $row['auth']],
             ]),
-            $payload,
+            json_encode([
+                'title' => $title,
+                'body' => $body,
+                'url' => $url,
+                'tag' => $broadcastId,
+                'badgeCount' => 1,
+                'deliveryToken' => $token,
+            ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
             ['TTL' => 86400, 'urgency' => 'normal'],
         );
     }
@@ -133,17 +114,29 @@ try {
         $failures[] = ['endpoint' => substr($report->getEndpoint(), 0, 60), 'reason' => $report->getReason()];
     }
 
+    // Ждём подтверждений от устройств. Включённый телефон отстукивает за
+    // секунды, спящий — когда проснётся, поэтому это не «сколько дошло
+    // всего», а «сколько дошло сразу». Остальное досчитывается позже по
+    // номеру рассылки: строки в erp_push_deliveries никуда не денутся.
+    if ($waitSeconds > 0) {
+        sleep($waitSeconds);
+    }
+    $delivery = erp_push_delivery_report($pdo, $broadcastId);
+
     fwrite(STDOUT, json_encode([
-        'subscriptions' => count($rows),
-        'employees' => count($recipients),
-        'sent' => $sent,
-        'failed' => count($failures),
-        'recipients' => array_values($recipients),
-        // «Принято push-сервисом» — это ещё не «показано на экране». Разбор
-        // недоставленного начинается отсюда: у кого вообще есть подписка с
-        // телефона и не протухла ли она.
-        'devices' => $devices,
-        'failures' => $failures,
+        'рассылка' => $broadcastId,
+        'подписок' => count($rows),
+        'сотрудников' => count($recipients),
+        'принято сервисом' => $sent,
+        'отказов' => count($failures),
+        // Главное отличие от прежнего отчёта: «принято push-сервисом» — это
+        // ещё не «показано человеку». Ждали столько-то секунд, вот сколько
+        // устройств успело подтвердить показ.
+        'показано за ' . $waitSeconds . ' с' => $delivery['показано'] . ' из ' . $delivery['всего'],
+        'получатели' => array_values($recipients),
+        'устройства' => $devices,
+        'доставка' => $delivery['подробно'],
+        'отказы' => $failures,
     ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . PHP_EOL);
 
     exit(0);
