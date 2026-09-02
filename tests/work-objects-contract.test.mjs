@@ -14,6 +14,12 @@ const rateDefaults = await readFile(
     new URL('../public/api/migrations/015_erp_contract_rates_defaults.sql', import.meta.url),
     'utf8',
 )
+// Формат бирки задаёт 017: 016 создала колонку, 017 переопределила выражение.
+// Проверяем действующее определение, а не историческое.
+const badgeLines = await readFile(
+    new URL('../public/api/migrations/017_erp_work_objects_badge_lines.sql', import.meta.url),
+    'utf8',
+)
 
 test('объект работы не может сослаться на несуществующий договор', () => {
     // Ссылка на внутренний номер, а не на суррогатный id: им договор называют
@@ -35,17 +41,41 @@ test('индекс и бирка вычисляются, а не заполня�
 })
 
 test('бирка собирается по формату ТЗ', () => {
-    const badge = migration.slice(migration.indexOf('badge VARCHAR(512)'))
     // Титул, объект работы, «Вес: <вес> <цвет>», система покрытия — по строке.
-    assert.match(badge, /CONCAT_WS\(\s*'\\n',\s*title,\s*work_object,/)
-    assert.match(badge, /'Вес: '/)
+    assert.match(badgeLines, /CONCAT\(\s*title, '\\n',\s*work_object, '\\n',/)
+    assert.match(badgeLines, /'Вес: '/)
     // Вес по-русски: запятая и без хвостовых нулей, иначе DECIMAL дал бы
     // «1.570» там, где на существующих бирках стоит «1,57».
-    assert.match(badge, /TRIM\(TRAILING '\.' FROM TRIM\(TRAILING '0' FROM weight\)\)/)
-    assert.match(badge, /REPLACE\(/)
-    // Пустые части не оставляют висящего «Вес:» и пустых строк.
-    assert.match(badge, /WHEN weight IS NULL THEN NULL/)
-    assert.match(badge, /NULLIF\(NULLIF\(coating_system, ''\), '-'\)/)
+    assert.match(badgeLines, /TRIM\(TRAILING '\.' FROM TRIM\(TRAILING '0' FROM weight\)\)/)
+    assert.match(badgeLines, /REPLACE\(/)
+    // Прочерк — «параметра нет», печатать его незачем.
+    assert.match(badgeLines, /WHEN coating_system IN \('', '-'\) THEN ''/)
+})
+
+test('строки бирки не съезжают', () => {
+    // Смотрим само выражение, а не пояснения к нему: в комментариях
+    // отвергнутый CONCAT_WS упоминается по имени.
+    const expression = badgeLines.slice(badgeLines.indexOf('ALTER TABLE'))
+
+    // CONCAT_WS выбрасывает пустые части вместе с разделителями: у объекта без
+    // веса «Система покрытия» уезжала с четвёртой строки на третью, и номер
+    // строки переставал что-либо значить.
+    assert.doesNotMatch(expression, /CONCAT_WS/, 'разделители должны стоять явно')
+
+    // Три разделителя — всегда четыре строки, сколько бы частей ни пустовало.
+    const separators = expression.match(/'\\n'/g) ?? []
+    assert.equal(separators.length, 3, 'в бирке должно быть ровно четыре строки')
+
+    // Отсутствующая часть даёт пустую строку, а не исчезает.
+    assert.match(expression, /WHEN weight IS NULL THEN ''/)
+    assert.match(expression, /WHEN color = '' THEN ''/)
+})
+
+test('формат бирки правится отдельной миграцией, а не задним числом', () => {
+    // 016 уже применена, повторно её никто не выполнит: правка на месте
+    // разошлась бы с базами, где таблица уже создана.
+    assert.match(badgeLines, /ALTER TABLE erp_work_objects\s+MODIFY COLUMN badge/)
+    assert.match(migration, /badge VARCHAR\(512\)\s+GENERATED ALWAYS AS \(/, '016 остаётся историей')
 })
 
 test('бирка помещается в журнал работ', () => {
@@ -56,7 +86,8 @@ test('бирка помещается в журнал работ', () => {
     assert.ok(logWidth, 'в журнале работ должна быть колонка badge')
 
     const limit = Number(logWidth[1])
-    const declared = Number(migration.match(/badge VARCHAR\((\d+)\)\s+GENERATED/)[1])
+    // Действующее объявление — из 017: она переопределила колонку последней.
+    const declared = Number(badgeLines.match(/MODIFY COLUMN badge VARCHAR\((\d+)\)/)[1])
     assert.equal(declared, limit, 'ширина бирки должна совпадать с колонкой журнала')
 
     // Самая длинная возможная бирка складывается из полей-источников и
