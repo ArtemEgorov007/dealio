@@ -11,6 +11,40 @@ require_once __DIR__ . '/erp-cli-paths.php';
 
 require_once erp_cli_api_src() . '/Bootstrap.php';
 
+/**
+ * Короткое имя устройства из User-Agent — только чтобы отличить телефон от
+ * рабочего компьютера в отчёте рассылки.
+ *
+ * На iOS веб-пуш приходит лишь в приложение, установленное на домашний экран,
+ * поэтому важно видеть, что у человека вообще есть подписка с телефона.
+ */
+function erp_broadcast_device(string $userAgent): string
+{
+    if ($userAgent === '') {
+        return 'неизвестно';
+    }
+
+    $platform = match (true) {
+        str_contains($userAgent, 'iPhone') => 'iPhone',
+        str_contains($userAgent, 'iPad') => 'iPad',
+        str_contains($userAgent, 'Android') => 'Android',
+        str_contains($userAgent, 'Windows') => 'Windows',
+        str_contains($userAgent, 'Macintosh') => 'Mac',
+        default => 'прочее',
+    };
+
+    $browser = match (true) {
+        str_contains($userAgent, 'YaBrowser') => 'Яндекс',
+        str_contains($userAgent, 'Edg/') => 'Edge',
+        str_contains($userAgent, 'Chrome') => 'Chrome',
+        str_contains($userAgent, 'Firefox') => 'Firefox',
+        str_contains($userAgent, 'Safari') => 'Safari',
+        default => '?',
+    };
+
+    return $platform . ' · ' . $browser;
+}
+
 $title = trim((string) ($argv[1] ?? ''));
 $body = trim((string) ($argv[2] ?? ''));
 $url = trim((string) ($argv[3] ?? '/register'));
@@ -46,7 +80,7 @@ try {
     // Берём только живые подписки: у сотрудника их может быть несколько
     // (телефон и рабочий компьютер), отозванные пропускаем.
     $rows = $pdo->query(
-        'SELECT s.user_id, s.endpoint, s.p256dh, s.auth, u.fio
+        'SELECT s.user_id, s.endpoint, s.p256dh, s.auth, s.user_agent, s.created_at, u.fio
          FROM erp_push_subscriptions s
          JOIN erp_users u ON u.id = s.user_id
          WHERE s.revoked_at IS NULL AND u.status = \'Работает\'
@@ -62,8 +96,23 @@ try {
     }
 
     $recipients = [];
+    $devices = [];
     foreach ($rows as $row) {
         $recipients[(int) $row['user_id']] = (string) $row['fio'];
+
+        // «Отправлено 5» ничего не говорит о том, на что именно отправлено.
+        // Push-сервис принимает сообщение и для устройства, где уведомления
+        // потом выключили: ответ тот же самый. Поэтому вместе со счётчиком
+        // показываем, чьи это подписки, через какой сервис и какой давности —
+        // по этому уже видно, есть ли у человека живая подписка с телефона.
+        $endpointHost = parse_url((string) $row['endpoint'], PHP_URL_HOST) ?: '?';
+        $devices[] = [
+            'fio' => (string) $row['fio'],
+            'сервис' => $endpointHost,
+            'устройство' => erp_broadcast_device((string) $row['user_agent']),
+            'подписке дней' => (int) ((time() - strtotime((string) $row['created_at'])) / 86400),
+        ];
+
         $webPush->queueNotification(
             Minishlink\WebPush\Subscription::create([
                 'endpoint' => (string) $row['endpoint'],
@@ -90,6 +139,10 @@ try {
         'sent' => $sent,
         'failed' => count($failures),
         'recipients' => array_values($recipients),
+        // «Принято push-сервисом» — это ещё не «показано на экране». Разбор
+        // недоставленного начинается отсюда: у кого вообще есть подписка с
+        // телефона и не протухла ли она.
+        'devices' => $devices,
         'failures' => $failures,
     ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . PHP_EOL);
 
