@@ -78,7 +78,7 @@ function erp_supply_notify_engineers(PDO $pdo, array $config, string $requestCod
             return;
         }
 
-        erp_supply_push($pdo, $config, $engineers, 'Новая заявка на снабжение', "{$requestCode} — {$authorFio}", '/supply');
+        erp_push_send_to_users($pdo, $config, $engineers, 'Новая заявка на снабжение', "{$requestCode} — {$authorFio}", '/supply');
     } catch (Throwable) {
         // Молча: заявка важнее уведомления.
     }
@@ -98,7 +98,7 @@ function erp_supply_notify_author(PDO $pdo, array $config, string $requestCode, 
             return;
         }
 
-        erp_supply_push($pdo, $config, $authors, 'Заявка ' . $requestCode, 'Статус: ' . $status, '/supply-requests');
+        erp_push_send_to_users($pdo, $config, $authors, 'Заявка ' . $requestCode, 'Статус: ' . $status, '/supply-requests');
     } catch (Throwable) {
         // Молча: смена статуса важнее уведомления.
     }
@@ -155,51 +155,6 @@ function erp_supply_notify_status_cron(PDO $pdo, array $config, string $requestI
     erp_json(200, ['ok' => true, 'data' => erp_supply_notify_status_changes($pdo, $config)]);
 }
 
-function erp_supply_push(PDO $pdo, array $config, array $userIds, string $title, string $body, string $url): void
-{
-    erp_push_autoload();
-    $keys = erp_push_config($config);
-
-    $webPush = new Minishlink\WebPush\WebPush([
-        'VAPID' => [
-            'subject' => $keys['subject'],
-            'publicKey' => $keys['publicKey'],
-            'privateKey' => $keys['privateKey'],
-        ],
-    ]);
-
-    $payload = json_encode([
-        'title' => $title,
-        'body' => $body,
-        'url' => $url,
-        'tag' => 'erp-supply-' . gmdate('Ymd-His'),
-        'badgeCount' => 1,
-    ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-
-    $queued = 0;
-    foreach ($userIds as $userId) {
-        foreach (erp_push_active_subscriptions($pdo, (int) $userId) as $subscription) {
-            $webPush->queueNotification(
-                Minishlink\WebPush\Subscription::create([
-                    'endpoint' => (string) $subscription['endpoint'],
-                    'keys' => [
-                        'p256dh' => (string) $subscription['p256dh'],
-                        'auth' => (string) $subscription['auth'],
-                    ],
-                ]),
-                $payload,
-                ['TTL' => 86400, 'urgency' => 'normal'],
-            );
-            $queued++;
-        }
-    }
-
-    if ($queued > 0) {
-        foreach ($webPush->flush() as $ignored) {
-            // Отчёты не разбираем: отвалившиеся подписки чистит push-слой.
-        }
-    }
-}
 
 /** Создание заявки. Все позиции пишутся одной транзакцией. */
 function erp_supply_create(PDO $pdo, array $config, string $requestId): void

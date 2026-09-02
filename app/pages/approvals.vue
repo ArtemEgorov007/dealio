@@ -3,6 +3,7 @@ import {storeToRefs} from 'pinia'
 
 import {decideApproval} from '~/utils/erp-sheets'
 import type {ErpApproval} from '~/utils/erp-api'
+import {invoiceFileUrl} from '~/utils/erp-supply'
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useErpApprovalsStore} from '~~/store/erp-approvals.store'
 import {useErpApprovalsNotifications} from '~/composables/useErpApprovalsNotifications'
@@ -28,7 +29,7 @@ const reload = async () => {
 }
 
 const openViewer = (approval: ErpApproval) => {
-  if (pendingRow.value === approval.rowNumber) return
+  if (pendingRow.value === approval.id) return
   viewerApproval.value = approval
 }
 
@@ -37,7 +38,7 @@ const closeViewer = () => {
 }
 
 const requestDecision = (approval: ErpApproval, action: 'approve' | 'reject') => {
-  if (pendingRow.value !== null || finalStates.value[approval.rowNumber]) return
+  if (pendingRow.value !== null || finalStates.value[approval.id]) return
   pendingDecision.value = {approval, action}
 }
 
@@ -49,13 +50,13 @@ const cancelDecision = () => {
 const confirmDecision = async () => {
   if (!pendingDecision.value) return
   const {approval, action} = pendingDecision.value
-  pendingRow.value = approval.rowNumber
+  pendingRow.value = approval.id
 
   try {
-    const result = await decideApproval({rowNumber: approval.rowNumber, action})
+    const result = await decideApproval({id: approval.id, action})
     finalStates.value = {
       ...finalStates.value,
-      [approval.rowNumber]: result.status,
+      [approval.id]: result.status,
     }
     pendingDecision.value = null
   } catch {
@@ -110,10 +111,10 @@ onMounted(() => {
       <ErpSectionLabel>Ожидают решения: {{ approvals.length }}</ErpSectionLabel>
       <ErpApprovalCard
           v-for="approval in approvals"
-          :key="approval.rowNumber"
+          :key="approval.id"
           :approval="approval"
-          :pending="pendingRow === approval.rowNumber"
-          :final-status="finalStates[approval.rowNumber] ?? null"
+          :pending="pendingRow === approval.id"
+          :final-status="finalStates[approval.id] ?? null"
           @open="openViewer(approval)"
           @request-decision="requestDecision(approval, $event)"
       />
@@ -123,7 +124,7 @@ onMounted(() => {
   <ErpInvoiceViewer
       :open="!!viewerApproval"
       :invoice="viewerApproval?.invoice ?? ''"
-      :invoice-url="viewerApproval?.invoiceUrl ?? ''"
+      :invoice-url="viewerApproval ? invoiceFileUrl(viewerApproval.id) : ''"
       @dismiss="closeViewer"
   />
 

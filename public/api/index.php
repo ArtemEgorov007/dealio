@@ -123,6 +123,9 @@ try {
     if ($name === 'push_notify_cron') {
         erp_push_notify_cron($pdo, $config, $requestId);
     }
+    if ($name === 'approvals_notify_status_cron') {
+        erp_approvals_notify_status_cron($pdo, $config, $requestId);
+    }
     if ($name === 'approvals_notify_all_cron') {
         erp_approvals_notify_all_cron($pdo, $config, $requestId);
     }

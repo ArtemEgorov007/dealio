@@ -59,7 +59,7 @@ separate production gate is approved.
 
 ## Notification schedules
 
-Two notification jobs run on a schedule. Neither is triggered by user
+Three notification jobs run on a schedule. None is triggered by user
 activity, so an unscheduled job fails silently — nobody gets notified and
 nothing errors.
 
@@ -67,6 +67,13 @@ nothing errors.
 | --- | --- | --- | --- |
 | Pending approvals | `scripts/push-notify-approvals.php` | `POST /api/internal/push-notify` | Reminds approvers of invoices awaiting their decision |
 | Supply status changes | `scripts/supply-notify-status.php` | `POST /api/internal/supply-notify-status` | Tells a supply request's author that its status changed |
+| Approval status changes | `scripts/approvals-notify-status.php` | `POST /api/internal/approvals-notify-status` | Tells an invoice's author that its approval status changed |
+
+The third job is a safety net, not the primary path: `erp_supply_work_create_invoice`
+and `erp_approvals_decide` already call `erp_approvals_notify_status_changes()`
+inline right after their own commit, so the author normally hears about a
+status change within the same request. This schedule only catches the case
+where that inline send failed.
 
 A third script, `scripts/push-broadcast.php`, is not scheduled — it is a
 one-off announcement for a release:
@@ -108,9 +115,9 @@ An externally reachable "notify everyone" endpoint is a bad idea even behind a
 token; the manual workflow gives the same reach plus a run history and the
 notification text in the log.
 
-Run either as a CLI job (preferred — no token needed, it reads the private
-config directly) or over HTTP with the `X-Cron-Token` header matching
-`push.cron_token` in `erp-api-config.php`. Every 5 minutes is enough for both;
+Run any of the three as a CLI job (preferred — no token needed, it reads the
+private config directly) or over HTTP with the `X-Cron-Token` header matching
+`push.cron_token` in `erp-api-config.php`. Every 5 minutes is enough for all;
 they are idempotent, so an overlapping run sends nothing twice.
 
 The supply job detects a change by comparing `status` against

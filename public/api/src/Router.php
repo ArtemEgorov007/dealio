@@ -114,6 +114,9 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'POST' && $path === '/internal/push-notify') {
         return ['push_notify_cron'];
     }
+    if ($method === 'POST' && $path === '/internal/approvals-notify-status') {
+        return ['approvals_notify_status_cron'];
+    }
     if ($method === 'POST' && $path === '/internal/approvals-notify-all') {
         return ['approvals_notify_all_cron'];
     }
