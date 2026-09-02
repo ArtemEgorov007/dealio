@@ -40,9 +40,16 @@ function showPushNotification(payload) {
     }),
   ]
 
-  if ('setAppBadge' in self.registration) {
+  // Badging API живёт на navigator, а не на ServiceWorkerRegistration.
+  // Проверка стояла на self.registration, где такого метода нет вовсе:
+  // она всегда была ложной, и значок непрочитанного не ставился ни разу —
+  // ни на одном пуше, ни на одном устройстве. Своя утилита приложения
+  // (app/utils/erp-app-badge.ts) с самого начала обращалась к navigator.
+  if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator) {
     const badgeCount = Number(payload.badgeCount) || 1
-    tasks.push(self.registration.setAppBadge(badgeCount))
+    // Значок — дополнение к уведомлению, а не его условие: если Badging
+    // недоступен или откажет, уведомление всё равно должно показаться.
+    tasks.push(navigator.setAppBadge(badgeCount).catch(() => undefined))
   }
 
   return Promise.all(tasks)
