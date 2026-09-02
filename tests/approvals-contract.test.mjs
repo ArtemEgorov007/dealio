@@ -78,14 +78,13 @@ async function createApprovalsStore(fetchQueue) {
   return store
 }
 
-const approvalRow = (rowNumber, invoice = `INV-${rowNumber}`) => ({
-  rowNumber,
+const approvalRow = (id, invoice = `INV-${id}`) => ({
+  id,
   stage: 'manager',
   site: 'North',
   departmentType: 'Sales',
   invoice,
   amount: 100,
-  invoiceUrl: `https://example.test/${rowNumber}`,
 })
 
 async function createApprovalsNotificationsController({refreshQueue, permission = 'granted', notificationsAvailable = true} = {}) {
@@ -375,8 +374,8 @@ test('approvals store retains the last pending count when refresh is rejected', 
     if (rejectRefresh) throw new Error('temporary outage')
     return {
       rows: [
-        {rowNumber: 2, stage: 'manager', site: 'North', departmentType: 'Sales', invoice: 'INV-1', amount: 100, invoiceUrl: 'https://example.test/1'},
-        {rowNumber: 3, stage: 'director', site: 'South', departmentType: 'Ops', invoice: 'INV-2', amount: 200, invoiceUrl: 'https://example.test/2'},
+        {id: 2, stage: 'manager', site: 'North', departmentType: 'Sales', invoice: 'INV-1', amount: 100},
+        {id: 3, stage: 'director', site: 'South', departmentType: 'Ops', invoice: 'INV-2', amount: 200},
       ],
       pendingCount: 2,
     }

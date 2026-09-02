@@ -13,8 +13,14 @@ const safeUrl = computed(() => {
   const value = props.invoiceUrl.trim()
   if (!value) return ''
   try {
-    const parsed = new URL(value)
-    if (parsed.protocol !== 'https:') return ''
+    // Ссылка теперь всегда наш собственный API — /supply-work/invoices/{id}/file,
+    // относительный путь. Раньше здесь проверялся протокол https, потому что
+    // ссылка приходила из внешнего листа (могла быть чем угодно); внешних
+    // ссылок больше нет вовсе, поэтому проверяем то, что стало настоящей
+    // границей: адрес обязан разрешиться в пределах ТЕКУЩЕГО источника, а не
+    // отправлять iframe куда-то ещё.
+    const parsed = new URL(value, window.location.origin)
+    if (parsed.origin !== window.location.origin) return ''
     return parsed.toString()
   } catch {
     return ''

@@ -92,11 +92,22 @@ test('весь раздел закрыт правом supply', () => {
     // Считаем не «сколько их сейчас», а «у каждого ли есть проверка»: иначе
     // тест придётся править при каждой новой ручке, и однажды его поправят
     // не глядя вместе с забытой проверкой.
-    const handlers = php.match(/^function (erp_supply_work_\w+)\(PDO /gm) ?? []
+    //
+    // Одно исключение: erp_supply_work_invoice_file пускает ещё и `approvals`
+    // — согласующему нужно открыть PDF того счёта, который он решает, а не
+    // только снабжению. У неё свой, двойной guard — проверяется отдельно.
+    const handlers = (php.match(/^function (erp_supply_work_\w+)\(PDO /gm) ?? [])
+        .filter(line => !line.includes('erp_supply_work_invoice_file'))
     const guards = php.match(/erp_require_permission\(\$pdo, \$actor, 'supply', \$requestId\)/g) ?? []
     assert.ok(handlers.length > 0, 'обработчики раздела не найдены')
     assert.equal(guards.length, handlers.length,
         `обработчиков ${handlers.length}, проверок права ${guards.length}`)
+
+    const fileHandler = php.slice(
+        php.indexOf('function erp_supply_work_invoice_file'),
+        php.indexOf('function erp_supply_work_invoice_file') + 500,
+    )
+    assert.match(fileHandler, /empty\(\$access\['supply'\]\) && empty\(\$access\['approvals'\]\)/)
 })
 
 test('маршруты раздела объявлены', () => {
@@ -140,10 +151,16 @@ test('счёт не отправить с неполными данными', ()
 })
 
 test('в списке счетов видны даты согласования', () => {
-    // Руководство просило показывать их в блоке счёта.
+    // Руководство просило показывать их в блоке счёта. Ярлык «Отклонён», а не
+    // «Отменён»: это ровно то, что происходит по сценарию согласования —
+    // счёт не «отменяют», его решением отклоняет согласующий.
     assert.match(list, /Согласовано РО/)
     assert.match(list, /Согласовано ГД/)
-    assert.match(list, /Отменён/)
+    assert.match(list, /Отклонён/)
+    // «Кем и когда» — приписка одной строкой, а не два отдельных факта.
+    assert.match(list, /item\.approverFio \? `\$\{item\.approverFio\}, ` : ''/)
+    assert.match(list, /item\.approvedGdFio \? `\$\{item\.approvedGdFio\}, ` : ''/)
+    assert.match(list, /item\.rejectedByFio \? `\$\{item\.rejectedByFio\}, ` : ''/)
 })
 
 test('заявку создаёт право «Заказ снабжения», счета — «Работа со снабжением»', () => {

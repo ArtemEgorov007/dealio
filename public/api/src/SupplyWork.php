@@ -9,6 +9,9 @@ declare(strict_types=1);
  */
 
 const ERP_INVOICE_STATUS_NEW = 'Ожидает РО';
+const ERP_INVOICE_STATUS_PENDING_GD = 'Ожидает ГД';
+const ERP_INVOICE_STATUS_APPROVED = 'Согласован ГД';
+const ERP_INVOICE_STATUS_REJECTED = 'Отклонен';
 
 /** Больше сюда не пролезет: жёсткая граница на стороне PHP (см. .user.ini). */
 const ERP_INVOICE_MAX_BYTES = 8 * 1024 * 1024;
@@ -230,10 +233,10 @@ function erp_supply_work_create_invoice(PDO $pdo, array $config, string $request
         $insert = $pdo->prepare(
             'INSERT INTO erp_approvals
                 (invoice, contract, request_code, department, platform, status, amount, category,
-                 approver_fio, approved_ro_at, approved_gd_at, cancelled_at)
+                 approver_fio, created_by, author_fio, approved_ro_at, approved_gd_at, cancelled_at)
              VALUES
                 (:invoice, :contract, :request_code, :department, :platform, :status, :amount, :category,
-                 :approver_fio, NULL, NULL, NULL)'
+                 :approver_fio, :created_by, :author_fio, NULL, NULL, NULL)'
         );
         $insert->execute([
             'invoice' => $invoice,
@@ -245,6 +248,11 @@ function erp_supply_work_create_invoice(PDO $pdo, array $config, string $request
             'amount' => $amount,
             'category' => (string) $row['category'],
             'approver_fio' => $approverFio,
+            // Снимок автора: тот же приём, что в erp_work_objects/erp_work_log.
+            // Увольнение автора не должно обнулять счёт, который он завёл, а
+            // «Инженеру снабжения» из п.7 ТЗ иначе некого будет уведомлять.
+            'created_by' => $actor['id'] ?? null,
+            'author_fio' => (string) ($actor['fio'] ?? ''),
         ]);
         $approvalId = (int) $pdo->lastInsertId();
 
@@ -273,11 +281,11 @@ function erp_supply_work_create_invoice(PDO $pdo, array $config, string $request
         throw $error;
     }
 
-    // Автор заявки узнаёт о смене статуса сразу, а не через пять минут крона.
-    // Тот же обработчик и отмечает заявку как сообщённую, поэтому крон её
-    // повторно не возьмёт.
+    // Мгновенно, не через пять минут крона: назначенный РО узнаёт о счёте,
+    // ждущем его решения, сразу — тот же приём, что и у заявок снабжения.
     try {
         erp_supply_notify_status_changes($pdo, $config);
+        erp_approvals_notify_responsible($pdo, $config, $approvalId);
     } catch (Throwable) {
         // Счёт уже заведён: непришедшее уведомление — повод посмотреть логи,
         // а не потерять счёт.
@@ -543,6 +551,7 @@ function erp_supply_work_invoices(PDO $pdo, array $config, string $requestId): v
     $rows = $pdo->query(
         'SELECT a.id, a.invoice, a.contract, a.request_code, a.department, a.platform, a.status,
                 a.amount, a.category, a.approver_fio, a.approved_ro_at, a.approved_gd_at, a.cancelled_at,
+                a.approved_gd_fio, a.rejected_by_fio, a.author_fio,
                 a.created_at, f.id AS file_id, f.byte_size, c.customer
          FROM erp_approvals a
          LEFT JOIN erp_invoice_files f ON f.approval_id = a.id
@@ -563,18 +572,50 @@ function erp_supply_work_invoices(PDO $pdo, array $config, string $requestId): v
         'amount' => (float) $r['amount'],
         'category' => (string) $r['category'],
         'approverFio' => (string) ($r['approver_fio'] ?? ''),
+        'authorFio' => (string) ($r['author_fio'] ?? ''),
         'approvedRoAt' => (string) ($r['approved_ro_at'] ?? ''),
         'approvedGdAt' => (string) ($r['approved_gd_at'] ?? ''),
+        'approvedGdFio' => (string) ($r['approved_gd_fio'] ?? ''),
         'cancelledAt' => (string) ($r['cancelled_at'] ?? ''),
+        'rejectedByFio' => (string) ($r['rejected_by_fio'] ?? ''),
         'hasFile' => $r['file_id'] !== null,
     ], $rows)]]);
 }
 
-/** Отдача PDF. Файл лежит в базе, поэтому это единственный путь к нему. */
+/**
+ * Отдача PDF. Файл лежит в базе, поэтому это единственный путь к нему.
+ *
+ * Право двойное: `supply` видит все счета без разбора (тот же охват, что на
+ * «Все счета»). `approvals` — только счёт, к которому согласующий реально
+ * причастен: он ответственен за активный этап (тот РО, либо любой директор)
+ * или сам его завёл. Маршрут отдаёт файл по голому id — без этой проверки
+ * согласующий перебором id скачал бы PDF любого чужого счёта с любой
+ * площадки, хотя в самой очереди такой счёт ему не показан.
+ */
 function erp_supply_work_invoice_file(PDO $pdo, array $config, string $requestId, int $approvalId): void
 {
     $actor = erp_require_user($pdo, $config, $requestId);
-    erp_require_permission($pdo, $actor, 'supply', $requestId);
+    $access = erp_user_access($pdo, (int) $actor['id']);
+    if (empty($access['supply']) && empty($access['approvals'])) {
+        erp_json(403, erp_error_payload('forbidden', 'Недостаточно прав', $requestId));
+    }
+
+    $approval = $pdo->prepare('SELECT approver_fio, created_by FROM erp_approvals WHERE id = :id');
+    $approval->execute(['id' => $approvalId]);
+    $invoiceRow = $approval->fetch(PDO::FETCH_ASSOC);
+    if (!$invoiceRow) {
+        erp_json(404, erp_error_payload('not_found', 'Файл счёта не найден', $requestId));
+    }
+
+    if (empty($access['supply'])) {
+        $fio = trim((string) ($actor['fio'] ?? ''));
+        $isRelated = erp_approvals_is_director((string) ($actor['position'] ?? ''))
+            || trim((string) $invoiceRow['approver_fio']) === $fio
+            || (int) ($invoiceRow['created_by'] ?? 0) === (int) $actor['id'];
+        if (!$isRelated) {
+            erp_json(403, erp_error_payload('forbidden', 'Недостаточно прав', $requestId));
+        }
+    }
 
     $statement = $pdo->prepare(
         'SELECT file_name, mime_type, byte_size, content FROM erp_invoice_files WHERE approval_id = :id'

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {fetchInvoices} from '~/utils/erp-supply'
+import {fetchInvoices, invoiceFileUrl} from '~/utils/erp-supply'
 import type {ErpInvoice} from '~/utils/erp-supply'
 
 definePageMeta({layout: 'erp'})
@@ -36,8 +36,6 @@ const formatDate = (value: string): string => {
     const parts = value.split('-')
     return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : value
 }
-
-const fileUrl = (id: number): string => `${useRuntimeConfig().public.erpApiBase || '/api'}/supply-work/invoices/${id}/file`
 
 onMounted(load)
 </script>
@@ -86,25 +84,29 @@ onMounted(load)
             <dt>Договор</dt>
             <dd>{{ item.customer ? `${item.contract} · ${item.customer}` : item.contract }}</dd>
           </div>
+          <div v-if="item.authorFio" class="inv-row">
+            <dt>Завёл</dt>
+            <dd>{{ item.authorFio }}</dd>
+          </div>
           <div v-if="item.approverFio" class="inv-row">
             <dt>Согласующий</dt>
             <dd>{{ item.approverFio }}</dd>
           </div>
           <div v-if="item.approvedRoAt" class="inv-row">
             <dt>Согласовано РО</dt>
-            <dd>{{ formatDate(item.approvedRoAt) }}</dd>
+            <dd>{{ item.approverFio ? `${item.approverFio}, ` : '' }}{{ formatDate(item.approvedRoAt) }}</dd>
           </div>
           <div v-if="item.approvedGdAt" class="inv-row">
             <dt>Согласовано ГД</dt>
-            <dd>{{ formatDate(item.approvedGdAt) }}</dd>
+            <dd>{{ item.approvedGdFio ? `${item.approvedGdFio}, ` : '' }}{{ formatDate(item.approvedGdAt) }}</dd>
           </div>
           <div v-if="item.cancelledAt" class="inv-row">
-            <dt>Отменён</dt>
-            <dd>{{ formatDate(item.cancelledAt) }}</dd>
+            <dt>Отклонён</dt>
+            <dd>{{ item.rejectedByFio ? `${item.rejectedByFio}, ` : '' }}{{ formatDate(item.cancelledAt) }}</dd>
           </div>
         </dl>
 
-        <a v-if="item.hasFile" :href="fileUrl(item.id)" target="_blank" rel="noopener" class="inv-card__file">
+        <a v-if="item.hasFile" :href="invoiceFileUrl(item.id)" target="_blank" rel="noopener" class="inv-card__file">
           <Icon name="heroicons:document-text" size="15"/>
           <span>Открыть PDF</span>
         </a>

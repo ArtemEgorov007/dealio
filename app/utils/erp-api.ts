@@ -304,13 +304,12 @@ export async function undoHandoverViaApi(entry: {row: number; badge: string}, fi
 }
 
 export interface ErpApproval {
-    rowNumber: number
+    id: number
     stage: 'manager' | 'director'
     site: string
     departmentType: string
     invoice: string
     amount: number
-    invoiceUrl: string
 }
 
 export interface ErpApprovalsResponse {
@@ -325,7 +324,7 @@ export async function fetchApprovalsViaApi(): Promise<ErpApprovalsResponse> {
 }
 
 export async function decideApprovalViaApi(input: {
-    rowNumber: number
+    id: number
     action: 'approve' | 'reject'
 }): Promise<{status: ErpApprovalDecisionStatus}> {
     return erpApiRequest<{status: ErpApprovalDecisionStatus}>('approvals/decisions', {

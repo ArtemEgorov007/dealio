@@ -49,22 +49,29 @@ function extract_function_body(string $source, string $name): string
     throw new RuntimeException("Function {$name} body is unbalanced");
 }
 
-function assert_auth_guard_before_bridge(string $body, string $handler): void
+function assert_auth_guard_before_sql(string $body, string $handler, string $marker): void
 {
     $userPos = strpos($body, 'erp_require_user');
     $permissionPos = strpos($body, "erp_require_permission(\$pdo, \$actor, 'approvals'");
-    $bridgePos = strpos($body, 'erp_approvals_bridge');
+    $sqlPos = strpos($body, $marker);
 
     expect_auth($userPos !== false, "{$handler} must require an authenticated user");
     expect_auth($permissionPos !== false, "{$handler} must require approvals permission");
-    expect_auth($bridgePos !== false, "{$handler} must call the approvals bridge");
-    expect_auth($userPos < $bridgePos, "{$handler} must authenticate before bridge access");
-    expect_auth($permissionPos < $bridgePos, "{$handler} must check approvals before bridge access");
+    expect_auth($sqlPos !== false, "{$handler} must reach its SQL work ({$marker})");
+    expect_auth($userPos < $sqlPos, "{$handler} must authenticate before SQL access");
+    expect_auth($permissionPos < $sqlPos, "{$handler} must check approvals before SQL access");
 }
 
 $source = file_get_contents($approvals) ?: '';
-assert_auth_guard_before_bridge(extract_function_body($source, 'erp_approvals_current'), 'erp_approvals_current');
-assert_auth_guard_before_bridge(extract_function_body($source, 'erp_approvals_decide'), 'erp_approvals_decide');
+// erp_approvals_current не проверяет erp_require_permission напрямую перед
+// SQL для decide (decide читает право у erp_require_user раньше строки) —
+// достаточно первого запроса к erp_approvals в каждом обработчике.
+assert_auth_guard_before_sql(extract_function_body($source, 'erp_approvals_current'), 'erp_approvals_current', 'FROM erp_approvals');
+assert_auth_guard_before_sql(extract_function_body($source, 'erp_approvals_decide'), 'erp_approvals_decide', 'FROM erp_approvals');
+
+// Мост убран полностью — не должно остаться ни единого упоминания.
+expect_auth(!str_contains($source, 'erp_approvals_bridge'), 'Approvals.php must not reference the retired Apps Script bridge');
+expect_auth(!str_contains($source, 'curl_init'), 'Approvals.php must not open outbound HTTP connections');
 
 expect_auth(in_array('approvals', erp_permission_codes(), true), 'Permission registry must include approvals');
 

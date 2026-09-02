@@ -184,6 +184,60 @@ function erp_push_active_subscriptions(PDO $pdo, int $userId): array
     return $stmt->fetchAll() ?: [];
 }
 
+/**
+ * Отправка произвольного уведомления списку пользователей.
+ *
+ * Изначально жила в Supply.php под именем erp_supply_push — домен в имени
+ * был случайным, механизм всегда был общий (свободные заголовок/текст,
+ * рассылка по активным подпискам). Approvals.php нужен тот же механизм —
+ * переехала сюда, к остальной push-инфраструктуре.
+ */
+function erp_push_send_to_users(PDO $pdo, array $config, array $userIds, string $title, string $body, string $url): void
+{
+    erp_push_autoload();
+    $keys = erp_push_config($config);
+
+    $webPush = new Minishlink\WebPush\WebPush([
+        'VAPID' => [
+            'subject' => $keys['subject'],
+            'publicKey' => $keys['publicKey'],
+            'privateKey' => $keys['privateKey'],
+        ],
+    ]);
+
+    $payload = json_encode([
+        'title' => $title,
+        'body' => $body,
+        'url' => $url,
+        'tag' => 'erp-notify-' . gmdate('Ymd-His'),
+        'badgeCount' => 1,
+    ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+
+    $queued = 0;
+    foreach ($userIds as $userId) {
+        foreach (erp_push_active_subscriptions($pdo, (int) $userId) as $subscription) {
+            $webPush->queueNotification(
+                Minishlink\WebPush\Subscription::create([
+                    'endpoint' => (string) $subscription['endpoint'],
+                    'keys' => [
+                        'p256dh' => (string) $subscription['p256dh'],
+                        'auth' => (string) $subscription['auth'],
+                    ],
+                ]),
+                $payload,
+                ['TTL' => 86400, 'urgency' => 'normal'],
+            );
+            $queued++;
+        }
+    }
+
+    if ($queued > 0) {
+        foreach ($webPush->flush() as $ignored) {
+            // Отчёты не разбираем: отвалившиеся подписки чистит push-слой.
+        }
+    }
+}
+
 function erp_push_mark_sent(PDO $pdo, int $userId, int $rowNumber, string $invoice): bool
 {
     $stmt = $pdo->prepare(
@@ -199,25 +253,22 @@ function erp_push_mark_sent(PDO $pdo, int $userId, int $rowNumber, string $invoi
 
 function erp_push_baseline_user_queue(PDO $pdo, array $config, array $user): void
 {
-    try {
-        $payload = erp_approvals_bridge($config, 'queue', [
-            'actor' => erp_approvals_actor([
-                'fio' => (string) $user['fio'],
-                'position' => (string) $user['position'],
-            ]),
-        ]);
-    } catch (RuntimeException) {
-        return;
+    // Тот же запрос, что и в erp_approvals_current: директор напоминанием
+    // видит очередь ГД, остальные — свою очередь РО по совпадению ФИО.
+    if (erp_approvals_is_director((string) $user['position'])) {
+        $statement = $pdo->prepare('SELECT id, invoice FROM erp_approvals WHERE status = :status');
+        $statement->execute(['status' => ERP_INVOICE_STATUS_PENDING_GD]);
+    } else {
+        $statement = $pdo->prepare(
+            'SELECT id, invoice FROM erp_approvals WHERE status = :status AND approver_fio = :fio'
+        );
+        $statement->execute(['status' => ERP_INVOICE_STATUS_NEW, 'fio' => (string) $user['fio']]);
     }
 
-    $rows = is_array($payload['rows'] ?? null) ? $payload['rows'] : [];
-    foreach ($rows as $row) {
-        if (!is_array($row)) {
-            continue;
-        }
-        $rowNumber = (int) ($row['rowNumber'] ?? 0);
-        $invoice = trim((string) ($row['invoice'] ?? ''));
-        if ($rowNumber <= 1 || $invoice === '') {
+    foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $rowNumber = (int) $row['id'];
+        $invoice = trim((string) $row['invoice']);
+        if ($rowNumber <= 0 || $invoice === '') {
             continue;
         }
         $stmt = $pdo->prepare(
@@ -354,27 +405,27 @@ function erp_push_notify_pending_approvals(PDO $pdo, array $config): array
         $userId = (int) $user['user_id'];
         $summary['users'] += 1;
 
-        try {
-            $payload = erp_approvals_bridge($config, 'queue', [
-                'actor' => erp_approvals_actor([
-                    'fio' => (string) $user['fio'],
-                    'position' => (string) $user['position'],
-                ]),
-            ]);
-        } catch (RuntimeException) {
-            continue;
+        // Тот же запрос, что и в erp_approvals_current: директор напоминанием
+        // видит очередь ГД, остальные — свою очередь РО по совпадению ФИО.
+        if (erp_approvals_is_director((string) $user['position'])) {
+            $rowsStatement = $pdo->prepare(
+                'SELECT id, invoice FROM erp_approvals WHERE status = :status'
+            );
+            $rowsStatement->execute(['status' => ERP_INVOICE_STATUS_PENDING_GD]);
+        } else {
+            $rowsStatement = $pdo->prepare(
+                'SELECT id, invoice FROM erp_approvals WHERE status = :status AND approver_fio = :fio'
+            );
+            $rowsStatement->execute(['status' => ERP_INVOICE_STATUS_NEW, 'fio' => (string) $user['fio']]);
         }
+        $rows = $rowsStatement->fetchAll(PDO::FETCH_ASSOC);
 
-        $rows = is_array($payload['rows'] ?? null) ? $payload['rows'] : [];
         $subscriptions = erp_push_active_subscriptions($pdo, $userId);
 
         foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            $rowNumber = (int) ($row['rowNumber'] ?? 0);
-            $invoice = trim((string) ($row['invoice'] ?? ''));
-            if ($rowNumber <= 1 || $invoice === '') {
+            $rowNumber = (int) $row['id'];
+            $invoice = trim((string) $row['invoice']);
+            if ($rowNumber <= 0 || $invoice === '') {
                 continue;
             }
             $summary['rowsChecked'] += 1;

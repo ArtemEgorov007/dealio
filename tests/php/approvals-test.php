@@ -30,23 +30,35 @@ function assert_throws(callable $callback, string $expectedMessage): void
 }
 
 assert_same('Генеральный директор', erp_approvals_position('  генеральный ДИРЕКТОР '), 'Position must use canonical director spelling');
-assert_same('approved', erp_approvals_decision_status(['status' => 'approved']), 'Approved bridge status must be accepted');
-assert_same('already_processed', erp_approvals_decision_status(['status' => 'already_processed']), 'Idempotent bridge status must be accepted');
-assert_throws(fn () => erp_approvals_action(['action' => 'delete']), 'invalid_action');
-assert_throws(fn () => erp_approvals_payload(['ok' => false, 'error' => 'forbidden']), 'bridge_forbidden');
-assert_throws(fn () => erp_approvals_decision_status(['status' => 'unknown']), 'bridge_invalid_payload');
-assert_throws(fn () => erp_approvals_row_number(['rowNumber' => 1]), 'invalid_row');
+assert_same('Инженер снабжения', erp_approvals_position('Инженер снабжения'), 'Non-director position is returned normalized, unchanged');
+assert_same(true, erp_approvals_is_director('генеральный директор'), 'Director predicate must match case-insensitively');
+assert_same(false, erp_approvals_is_director('Руководитель отдела'), 'Non-director position must not match');
 
-assert_same(true, function_exists('erp_approvals_queue_response'), 'Authorized queue response helper must exist');
-$authorizedQueue = erp_approvals_queue_response([
-    'ok' => true,
-    'rows' => [
-        ['rowNumber' => 2, 'invoice' => 'INV-1'],
-        ['rowNumber' => 7, 'invoice' => 'INV-2'],
-    ],
-]);
-assert_same(2, $authorizedQueue['pendingCount'], 'Authorized queue response must include the number of visible rows');
-assert_same(2, count($authorizedQueue['rows']), 'Pending count must match the authorized rows only');
-assert_throws(fn () => erp_approvals_queue_response(['ok' => true, 'rows' => 'invalid']), 'bridge_invalid_payload');
+assert_throws(fn () => erp_approvals_action(['action' => 'delete']), 'invalid_action');
+assert_same('approve', erp_approvals_action(['action' => 'approve']), 'Valid action must pass through');
+assert_same('reject', erp_approvals_action(['action' => 'reject']), 'Valid action must pass through');
+
+assert_throws(fn () => erp_approvals_id(['id' => 0]), 'invalid_id');
+assert_throws(fn () => erp_approvals_id(['id' => -1]), 'invalid_id');
+assert_throws(fn () => erp_approvals_id([]), 'invalid_id');
+assert_same(42, erp_approvals_id(['id' => 42]), 'Integer id must parse');
+assert_same(42, erp_approvals_id(['id' => '42']), 'Numeric string id must parse');
+
+$row = erp_approvals_row([
+    'id' => 5, 'platform' => 'Колпино', 'department' => 'Снабжение', 'category' => 'ЛКМ',
+    'invoice' => 'СЧ-5', 'amount' => '1234.50',
+], 'manager');
+assert_same(5, $row['id'], 'Row id must be an int');
+assert_same('manager', $row['stage'], 'Stage is passed through, not derived from the row');
+assert_same('Снабжение ЛКМ', $row['departmentType'], 'departmentType joins department and category');
+assert_same(1234.50, $row['amount'], 'Amount must be a float');
+assert_same(false, array_key_exists('invoiceUrl', $row), 'DTO must not carry a URL the client already builds itself (invoiceFileUrl)');
+
+// Пустая категория не оставляет висящего пробела на конце.
+$rowNoCategory = erp_approvals_row([
+    'id' => 6, 'platform' => 'Колпино', 'department' => 'Снабжение', 'category' => '',
+    'invoice' => 'СЧ-6', 'amount' => '1',
+], 'director');
+assert_same('Снабжение', $rowNoCategory['departmentType'], 'Empty category must not leave a trailing space');
 
 echo "Approvals PHP tests passed\n";

@@ -500,7 +500,7 @@ export async function fetchApprovals(): Promise<ErpApprovalsResponse> {
 }
 
 export async function decideApproval(input: {
-    rowNumber: number
+    id: number
     action: 'approve' | 'reject'
 }): Promise<{status: ErpApprovalDecisionStatus}> {
     if (getErpBackendMode() === 'sql') {

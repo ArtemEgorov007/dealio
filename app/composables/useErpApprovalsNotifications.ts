@@ -167,7 +167,7 @@ const pollQueue = async () => {
   try {
     await pollServerNotifications()
     await approvalsStore.refresh()
-    const rows = approvalsStore.rows.map(row => ({rowNumber: row.rowNumber, invoice: row.invoice}))
+    const rows = approvalsStore.rows.map(row => ({rowNumber: row.id, invoice: row.invoice}))
     void syncAppBadge(approvalsStore.pendingCount)
 
     if (!initialQueueLoaded) {

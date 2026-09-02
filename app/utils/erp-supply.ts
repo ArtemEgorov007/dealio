@@ -1,5 +1,14 @@
 import {erpApiRequest} from '~/utils/erp-api'
 
+/**
+ * Ссылка на PDF счёта. Была локальной функцией на экране «Все счета» —
+ * согласующему на экране «Согласования» нужна та же ссылка на тот же
+ * маршрут, и второй копии эта строка не заслуживала.
+ */
+export function invoiceFileUrl(id: number): string {
+    return `${useRuntimeConfig().public.erpApiBase || '/api'}/supply-work/invoices/${id}/file`
+}
+
 /** Позиция справочника номенклатуры. */
 export interface ErpSupplyCatalogItem {
     id: number
@@ -93,11 +102,17 @@ export interface ErpInvoice {
     amount: number
     category: string
     approverFio: string
+    /** ФИО сотрудника снабжения, завёдшего счёт. */
+    authorFio: string
     /** Заказчик по договору. Пусто, если договор не указан или не из справочника. */
     customer: string
     approvedRoAt: string
     approvedGdAt: string
+    /** Кто согласовал на этапе ГД — не привязано к одному человеку, любой директор. */
+    approvedGdFio: string
     cancelledAt: string
+    /** Кто отклонил — РО или ГД, оба могут. */
+    rejectedByFio: string
     hasFile: boolean
 }
 
