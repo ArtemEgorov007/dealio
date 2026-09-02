@@ -79,6 +79,23 @@ It reports how many subscriptions and employees it reached. Note that a
 notification only arrives for employees who granted permission in the app;
 the count of subscriptions is normally far below the headcount.
 
+**"Accepted by the push service" is not "shown to a person."** Apple and FCM
+return success for a device whose notifications were later switched off, so the
+send count alone proves nothing. Every send therefore opens a row in
+`erp_push_deliveries` with a one-time token that travels inside the
+notification; the service worker returns it after `showNotification` succeeds,
+and the row gets its delivery time. The report prints both numbers plus a
+per-device breakdown, and waits (25 s by default, fourth argument) for
+confirmations before printing — a phone that is awake confirms within seconds,
+a sleeping one confirms later. Rows outlive the run, so a late count can be
+read back by broadcast id.
+
+A row that never gets `delivered_at` means the notification was not shown. The
+usual causes are on the device: notifications disabled for the web app, or the
+app not installed to the Home Screen (iOS delivers web push only to an
+installed PWA). The confirmation deliberately fires only after the notification
+is actually shown, so this distinction survives into the report.
+
 The script lives in the repository, not on the server: deployment uploads the
 built site, not `scripts/`. Run it from the **Разослать уведомление** workflow
 (Actions → Run workflow → title, body, target path). It copies the script into a

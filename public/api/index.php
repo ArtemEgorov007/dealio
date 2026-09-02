@@ -117,6 +117,9 @@ try {
     if ($name === 'push_unsubscribe') {
         erp_push_unsubscribe($pdo, $config, $requestId);
     }
+    if ($name === 'push_delivered') {
+        erp_push_confirm_delivery($pdo, $config, $requestId);
+    }
     if ($name === 'push_notify_cron') {
         erp_push_notify_cron($pdo, $config, $requestId);
     }

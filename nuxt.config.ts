@@ -32,7 +32,9 @@ export default defineNuxtConfig({
                 {rel: 'manifest', href: `${baseURL}manifest.json`},
             ],
             meta: [
-                {name: 'description', content: 'Производственная ERP: бирки, промеры, упаковка, сдача, склад, снабжение, договоры и согласования'},
+                // Позиционирование одно во всём продукте — «цифровой контур
+                // предприятия», а не «ERP-платформа».
+                {name: 'description', content: 'Цифровой контур предприятия: бирки, промеры, упаковка, сдача, склад, снабжение, договоры и согласования'},
                 {name: 'theme-color', content: '#016ED7'},
                 {name: 'color-scheme', content: 'light'},
                 {name: 'mobile-web-app-capable', content: 'yes'},

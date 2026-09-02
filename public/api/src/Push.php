@@ -499,3 +499,129 @@ function erp_approvals_notify_all_cron(PDO $pdo, array $config, string $requestI
     erp_json(200, ['ok' => true, 'data' => $summary]);
 }
 
+
+/**
+ * Короткое имя устройства из User-Agent — чтобы в отчёте отличить телефон от
+ * рабочего компьютера. На iOS веб-пуш приходит только приложению, добавленному
+ * на домашний экран, и видеть это в разбивке важнее, чем точную версию ОС.
+ */
+function erp_push_device_label(string $userAgent): string
+{
+    if ($userAgent === '') {
+        return 'неизвестно';
+    }
+
+    $platform = match (true) {
+        str_contains($userAgent, 'iPhone') => 'iPhone',
+        str_contains($userAgent, 'iPad') => 'iPad',
+        str_contains($userAgent, 'Android') => 'Android',
+        str_contains($userAgent, 'Windows') => 'Windows',
+        str_contains($userAgent, 'Macintosh') => 'Mac',
+        default => 'прочее',
+    };
+
+    $browser = match (true) {
+        str_contains($userAgent, 'YaBrowser') => 'Яндекс',
+        str_contains($userAgent, 'Edg/') => 'Edge',
+        str_contains($userAgent, 'Chrome') => 'Chrome',
+        str_contains($userAgent, 'Firefox') => 'Firefox',
+        str_contains($userAgent, 'Safari') => 'Safari',
+        default => '?',
+    };
+
+    return $platform . ' · ' . $browser;
+}
+
+/**
+ * Заводит строку доставки и возвращает её токен.
+ *
+ * Токен уезжает внутри уведомления и возвращается из service worker: только
+ * так становится видно, что уведомление не просто принято push-сервисом, а
+ * действительно показано.
+ */
+function erp_push_open_delivery(
+    PDO $pdo,
+    string $broadcastId,
+    ?int $userId,
+    string $endpoint,
+    string $userAgent,
+    string $title
+): string {
+    $token = bin2hex(random_bytes(16));
+
+    $pdo->prepare(
+        'INSERT INTO erp_push_deliveries
+            (delivery_token, broadcast_id, user_id, push_service, device, title)
+         VALUES (:token, :broadcast_id, :user_id, :push_service, :device, :title)'
+    )->execute([
+        'token' => $token,
+        'broadcast_id' => mb_substr($broadcastId, 0, 64),
+        'user_id' => $userId,
+        'push_service' => mb_substr((string) (parse_url($endpoint, PHP_URL_HOST) ?: ''), 0, 128),
+        'device' => erp_push_device_label($userAgent),
+        'title' => mb_substr($title, 0, 255),
+    ]);
+
+    return $token;
+}
+
+/**
+ * Подтверждение показа уведомления из service worker.
+ *
+ * Ручка открытая: подтверждение приходит из воркера, где сессии может уже не
+ * быть — уведомление переживает истёкший вход. Правом здесь служит сам токен:
+ * он одноразовый, случайный и известен только тому, кому уведомление ушло.
+ * Ничего, кроме отметки времени у своей же строки, им сделать нельзя.
+ *
+ * Повторное подтверждение времени не сдвигает: интересен первый показ, а
+ * воркер может отстучать дважды после переустановки соединения.
+ */
+function erp_push_confirm_delivery(PDO $pdo, array $config, string $requestId): void
+{
+    $input = erp_warehouse_input($requestId);
+    $token = trim((string) ($input['deliveryToken'] ?? ''));
+
+    if (!preg_match('/^[0-9a-f]{32}$/', $token)) {
+        erp_json(400, erp_error_payload('bad_request', 'Некорректный токен доставки', $requestId));
+    }
+
+    $statement = $pdo->prepare(
+        'UPDATE erp_push_deliveries
+         SET delivered_at = CURRENT_TIMESTAMP(6)
+         WHERE delivery_token = :token AND delivered_at IS NULL'
+    );
+    $statement->execute(['token' => $token]);
+
+    // Неизвестный токен и повторное подтверждение отвечают одинаково: воркеру
+    // нечего делать с этой разницей, а перебирать токены по ответу нельзя.
+    erp_json(200, ['ok' => true, 'data' => ['confirmed' => true]]);
+}
+
+/** Сводка по рассылке: сколько отправлено и сколько подтверждено показом. */
+function erp_push_delivery_report(PDO $pdo, string $broadcastId): array
+{
+    $statement = $pdo->prepare(
+        'SELECT d.push_service, d.device, d.delivered_at, u.fio
+         FROM erp_push_deliveries d
+         LEFT JOIN erp_users u ON u.id = d.user_id
+         WHERE d.broadcast_id = :broadcast_id
+         ORDER BY u.fio, d.id'
+    );
+    $statement->execute(['broadcast_id' => $broadcastId]);
+    $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+    $delivered = 0;
+    $details = [];
+    foreach ($rows as $row) {
+        $isDelivered = $row['delivered_at'] !== null;
+        $delivered += $isDelivered ? 1 : 0;
+        $details[] = [
+            'fio' => (string) ($row['fio'] ?? '—'),
+            'сервис' => (string) $row['push_service'],
+            'устройство' => (string) $row['device'],
+            'показано' => $isDelivered ? 'да' : 'подтверждения нет',
+        ];
+    }
+
+    return ['всего' => count($rows), 'показано' => $delivered, 'подробно' => $details];
+}
