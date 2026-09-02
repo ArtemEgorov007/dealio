@@ -179,23 +179,21 @@ function erp_auth_login(PDO $pdo, array $config, string $requestId): void
 
 function erp_auth_logout(PDO $pdo, array $config, string $requestId): void
 {
+    // Выход отзывал ВСЕ push-подписки сотрудника — не только устройства, с
+    // которого вышли, а сразу все. Один выход на рабочем компьютере глушил
+    // телефон, планшет, всё разом; человек не мог понять, почему уведомления
+    // вдруг перестали приходить именно там, где он их и хотел получать.
+    //
+    // Своё устройство отписывает клиент — см. logout() в
+    // store/erp-employee.store.ts, которая перед выходом дёргает
+    // unregisterErpPushSubscription() для СВОЕГО endpoint'а. Сервер сессии на
+    // подписки больше не смотрит: связи «эта сессия — этот push-endpoint» у
+    // него нет и придумывать её ради этого не стоит.
     $cookieName = erp_session_cookie_name($config);
     $token = isset($_COOKIE[$cookieName]) ? (string) $_COOKIE[$cookieName] : '';
-    $userId = null;
     if ($token !== '') {
-        $stmt = $pdo->prepare(
-            'SELECT user_id FROM erp_sessions WHERE token_hash = :token_hash AND revoked_at IS NULL LIMIT 1'
-        );
-        $stmt->execute(['token_hash' => hash('sha256', $token)]);
-        $session = $stmt->fetch();
-        if ($session) {
-            $userId = (int) $session['user_id'];
-        }
         $stmt = $pdo->prepare('UPDATE erp_sessions SET revoked_at = NOW(6) WHERE token_hash = :token_hash AND revoked_at IS NULL');
         $stmt->execute(['token_hash' => hash('sha256', $token)]);
-    }
-    if ($userId !== null) {
-        erp_push_revoke_user_subscriptions($pdo, $userId);
     }
     erp_clear_session_cookie($config);
     erp_json(200, ['ok' => true, 'data' => null]);

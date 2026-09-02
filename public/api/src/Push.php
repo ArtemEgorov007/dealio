@@ -133,8 +133,10 @@ function erp_push_subscribe(PDO $pdo, array $config, string $requestId): void
 
 function erp_push_unsubscribe(PDO $pdo, array $config, string $requestId): void
 {
+    // Симметрично erp_push_subscribe: право «Согласования» здесь тоже было
+    // лишним. Отписаться от собственных уведомлений — действие вошедшего
+    // сотрудника, а не привилегия согласующего.
     $user = erp_require_user($pdo, $config, $requestId);
-    erp_require_permission($pdo, $user, 'approvals', $requestId);
 
     $raw = file_get_contents('php://input') ?: '';
     $input = json_decode($raw, true);

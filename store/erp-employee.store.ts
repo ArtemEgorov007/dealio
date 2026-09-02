@@ -8,6 +8,7 @@ import {
     DEFAULT_ACCESS_FLAGS,
 } from '../types/erp.types'
 import {getErpBackendMode, logoutErpEmployee, restoreErpEmployee} from '~/utils/erp-api'
+import {unregisterErpPushSubscription} from '~/utils/erp-push'
 
 const STORAGE_KEY = 'erp-employee-profile'
 const VERSION_KEY = 'erp-profile-version'
@@ -184,6 +185,12 @@ export const useErpEmployeeStore = defineStore('erp-employee', {
 
         logout() {
             if (getErpBackendMode() === 'sql') {
+                // Сервер выход одного устройства больше не считает поводом
+                // отписать все остальные — эту связь с сессией он не хранит
+                // и хранить не должен. Своё устройство отписывает клиент,
+                // и только своё: unregisterErpPushSubscription() снимает
+                // подписку у браузера, в котором действительно вышли.
+                void unregisterErpPushSubscription().catch(() => undefined)
                 void logoutErpEmployee().catch(() => undefined)
             }
             this.fio = ''
