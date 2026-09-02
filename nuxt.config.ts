@@ -22,14 +22,17 @@ export default defineNuxtConfig({
         buildAssetsDir: process.env.NUXT_APP_BUILD_ASSETS_DIR || '/_nuxt/',
         head: {
             htmlAttrs: {lang: 'ru'},
-            title: 'ERP — выдача бирок',
+            // Имя продукта, а не описание одного экрана: этой строкой браузер
+            // подписывает push-уведомления, и «выдача бирок» устарела ещё до
+            // склада, снабжения, договоров и согласований.
+            title: 'Морфлот Технология',
             link: [
                 {rel: 'icon', type: 'image/svg+xml', href: `${baseURL}favicon-mt.svg`},
                 {rel: 'apple-touch-icon', href: `${baseURL}icon-192.png`},
                 {rel: 'manifest', href: `${baseURL}manifest.json`},
             ],
             meta: [
-                {name: 'description', content: 'ERP — регистрация, выбор цеха и выдача бирок'},
+                {name: 'description', content: 'Производственная ERP: бирки, промеры, упаковка, сдача, склад, снабжение, договоры и согласования'},
                 {name: 'theme-color', content: '#016ED7'},
                 {name: 'color-scheme', content: 'light'},
                 {name: 'mobile-web-app-capable', content: 'yes'},

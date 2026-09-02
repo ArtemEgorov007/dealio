@@ -5,6 +5,8 @@ import test from 'node:test'
 const sw = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8')
 const appBadge = await readFile(new URL('../app/utils/erp-app-badge.ts', import.meta.url), 'utf8')
 const broadcast = await readFile(new URL('../scripts/push-broadcast.php', import.meta.url), 'utf8')
+const manifest = JSON.parse(await readFile(new URL('../public/manifest.json', import.meta.url), 'utf8'))
+const nuxtConfig = await readFile(new URL('../nuxt.config.ts', import.meta.url), 'utf8')
 
 test('значок непрочитанного ставится через navigator', () => {
     // Badging API живёт на navigator, а не на ServiceWorkerRegistration.
@@ -33,6 +35,24 @@ test('значок не мешает показу уведомления', () =>
     // Само уведомление показывается всегда, вне зависимости от значка.
     const show = sw.slice(sw.indexOf('function showPushNotification'))
     assert.match(show.slice(0, show.indexOf('setAppBadge')), /self\.registration\.showNotification\(/)
+})
+
+test('уведомление подписано именем продукта, а не одним экраном', () => {
+    // Эту строку браузер показывает как источник уведомления. Она успела
+    // устареть: приложение называлось «выдача бирок», когда в нём уже были
+    // склад, снабжение, договоры и согласования.
+    assert.equal(manifest.name, 'Морфлот Технология')
+    assert.equal(manifest.short_name, 'Морфлот')
+    assert.match(nuxtConfig, /title: 'Морфлот Технология'/)
+
+    // Название раздела в имени продукта — как раз тот способ устареть.
+    for (const value of [manifest.name, manifest.short_name]) {
+        assert.doesNotMatch(value, /бирк|выдача/i, `«${value}» называет один экран, а не продукт`)
+    }
+
+    // Всё, что видит сотрудник, — по-русски.
+    assert.doesNotMatch(manifest.name, /[A-Za-z]/, 'имя приложения должно быть на русском')
+    assert.equal(manifest.lang, 'ru')
 })
 
 test('отчёт рассылки показывает, на какие устройства ушло', () => {
