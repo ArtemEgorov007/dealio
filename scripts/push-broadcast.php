@@ -41,6 +41,25 @@ try {
     // что придёт уже после завершения скрипта.
     $broadcastId = 'erp-broadcast-' . gmdate('Ymd-His');
 
+    // Кто выпал из рассылки и почему.
+    //
+    // Человек исчезает из получателей молча: подписку отозвали, сотрудника
+    // перевели в неработающие — счётчик просто становится меньше, и заметить
+    // это можно, только помня прошлый прогон наизусть. Показываем выбывших
+    // рядом с получателями, чтобы «Максима больше нет в списке» было видно
+    // сразу, а не через две рассылки.
+    $excluded = $pdo->query(
+        "SELECT u.fio,
+                CASE WHEN u.status <> 'Работает' THEN CONCAT('сотрудник: ', u.status)
+                     ELSE 'подписка отозвана' END AS reason,
+                COUNT(*) AS count
+         FROM erp_push_subscriptions s
+         JOIN erp_users u ON u.id = s.user_id
+         WHERE s.revoked_at IS NOT NULL OR u.status <> 'Работает'
+         GROUP BY u.fio, reason
+         ORDER BY u.fio"
+    )->fetchAll(PDO::FETCH_ASSOC);
+
     // Берём только живые подписки: у сотрудника их может быть несколько
     // (телефон и рабочий компьютер), отозванные пропускаем.
     $rows = $pdo->query(
@@ -134,6 +153,14 @@ try {
         // устройств успело подтвердить показ.
         'показано за ' . $waitSeconds . ' с' => $delivery['показано'] . ' из ' . $delivery['всего'],
         'получатели' => array_values($recipients),
+        // Выбывшие — рядом с получателями: иначе исчезновение человека из
+        // рассылки видно только по уменьшившемуся счётчику.
+        'не в рассылке' => array_map(static fn (array $r): string => sprintf(
+            '%s — %s (%d)',
+            $r['fio'],
+            $r['reason'],
+            (int) $r['count'],
+        ), $excluded),
         'устройства' => $devices,
         'доставка' => $delivery['подробно'],
         'отказы' => $failures,
