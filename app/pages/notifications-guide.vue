@@ -23,11 +23,52 @@ const ANDROID_STEPS: Step[] = [
 const IOS_STEPS: Step[] = [
   {caption: 'Откройте ERP в Safari и нажмите значок <b>«Поделиться»</b> снизу'},
   {caption: 'В открывшемся меню прокрутите вниз и выберите <b>«На экран «Домой»»</b>'},
-  {caption: 'Готово — иконка ERP на главном экране. Затем включите уведомления в разделе «Согласования»'},
+  {caption: 'Откройте приложение с экрана «Домой» и нажмите здесь <b>«Включить уведомления»</b>'},
 ]
 
 const platform = ref<Platform>('android')
 const index = ref(0)
+
+// Кнопка включения живёт здесь, а не только в «Согласованиях».
+//
+// Раньше инструкция заканчивалась словами «откройте «Согласования» и нажмите
+// «Включить уведомления»» — раздел, которого у большинства сотрудников нет.
+// Выдать разрешение им было негде: браузер сам не спросит, а спросить может
+// только страница, по нажатию человека.
+const isEnabling = ref(false)
+const permission = ref<NotificationPermission | 'unsupported'>('unsupported')
+
+const syncPermission = () => {
+    permission.value = typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
+}
+
+const canEnable = computed(() => permission.value === 'default')
+
+const statusNote = computed(() => {
+    switch (permission.value) {
+        case 'granted':
+            return 'Уведомления включены — придут даже при закрытом приложении.'
+        case 'denied':
+            return 'Уведомления запрещены в настройках браузера. Разрешите их для этого сайта и вернитесь сюда.'
+        case 'unsupported':
+            return 'Этот браузер не умеет уведомления. На iPhone добавьте приложение на экран «Домой» и откройте его оттуда.'
+        default:
+            return 'Нажмите кнопку и подтвердите запрос браузера.'
+    }
+})
+
+const enable = async () => {
+    isEnabling.value = true
+    try {
+        const {enableApprovalsNotifications} = await import('~/composables/useErpApprovalsNotifications')
+        await enableApprovalsNotifications()
+    } finally {
+        syncPermission()
+        isEnabling.value = false
+    }
+}
+
+onMounted(syncPermission)
 
 const steps = computed(() => platform.value === 'android' ? ANDROID_STEPS : IOS_STEPS)
 
@@ -241,10 +282,12 @@ const go = (direction: number) => {
       />
     </div>
 
-    <p class="note">
-      После добавления на главный экран откройте «Согласования» и нажмите
-      «Включить уведомления». Push приходит даже при закрытом ERP.
-    </p>
+    <div class="enable">
+      <UiButton v-if="canEnable" block :loading="isEnabling" @click="enable">
+        Включить уведомления
+      </UiButton>
+      <p class="note">{{ statusNote }}</p>
+    </div>
   </ErpScreen>
 </template>
 
@@ -611,6 +654,12 @@ const go = (direction: number) => {
   &--active
     background: var(--color-primary)
     transform: scale(1.3)
+
+.enable
+  display: flex
+  flex-direction: column
+  gap: 8px
+  margin-top: 4px
 
 .note
   margin-top: 4px

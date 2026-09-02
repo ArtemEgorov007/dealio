@@ -76,8 +76,14 @@ function erp_push_subscription_input(array $input): array
 
 function erp_push_subscribe(PDO $pdo, array $config, string $requestId): void
 {
+    // Подписка на уведомления — не привилегия согласующего.
+    //
+    // Здесь стояло право «Согласования», и подписаться мог только тот, кто
+    // утверждает счета. Из-за этого рассылка «всем» доходила до троих, а
+    // уведомление о смене статуса заявки не получал её автор — человек, ради
+    // которого оно и заводилось. Достаточно быть вошедшим сотрудником: что
+    // именно слать, решает отправитель, а не эта ручка.
     $user = erp_require_user($pdo, $config, $requestId);
-    erp_require_permission($pdo, $user, 'approvals', $requestId);
 
     $raw = file_get_contents('php://input') ?: '';
     $input = json_decode($raw, true);
@@ -114,7 +120,13 @@ function erp_push_subscribe(PDO $pdo, array $config, string $requestId): void
         'user_agent' => $userAgent,
     ]);
 
-    erp_push_baseline_user_queue($pdo, $config, $user);
+    // Отсечка очереди согласований нужна только согласующему: она помечает
+    // уже висящие счета как показанные, чтобы подписка не обрушила на
+    // человека десяток старых уведомлений. Тому, кто счета не утверждает,
+    // очереди нет — и ходить за ней в мост незачем.
+    if (!empty(erp_user_access($pdo, (int) $user['id'])['approvals'])) {
+        erp_push_baseline_user_queue($pdo, $config, $user);
+    }
 
     erp_json(200, ['ok' => true, 'data' => ['subscribed' => true]]);
 }

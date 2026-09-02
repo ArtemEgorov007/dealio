@@ -9,6 +9,8 @@ const manifest = JSON.parse(await readFile(new URL('../public/manifest.json', im
 const nuxtConfig = await readFile(new URL('../nuxt.config.ts', import.meta.url), 'utf8')
 const push = await readFile(new URL('../public/api/src/Push.php', import.meta.url), 'utf8')
 const router = await readFile(new URL('../public/api/src/Router.php', import.meta.url), 'utf8')
+const init = await readFile(new URL('../app/plugins/erp-init.client.ts', import.meta.url), 'utf8')
+const guide = await readFile(new URL('../app/pages/notifications-guide.vue', import.meta.url), 'utf8')
 const migration = await readFile(
     new URL('../public/api/migrations/018_erp_push_deliveries.sql', import.meta.url),
     'utf8',
@@ -144,4 +146,40 @@ test('выбывшие из рассылки видны, а не исчезаю�
     assert.match(broadcast, /'не в рассылке'/)
     assert.match(broadcast, /s\.revoked_at IS NOT NULL OR u\.status <> 'Работает'/)
     assert.match(broadcast, /'подписка отозвана'/)
+})
+
+test('подписаться на уведомления может любой сотрудник', () => {
+    // Здесь стояло право «Согласования»: подписаться мог только тот, кто
+    // утверждает счета. Из-за этого рассылка «всем» доходила до троих, а
+    // уведомление о смене статуса заявки не получал её автор.
+    const subscribe = push.slice(
+        push.indexOf('function erp_push_subscribe'),
+        push.indexOf('function erp_push_unsubscribe'),
+    )
+    assert.match(subscribe, /erp_require_user\(/, 'вход всё же обязателен')
+    assert.doesNotMatch(
+        subscribe,
+        /erp_require_permission\([^)]*'approvals'/,
+        'подписка не должна требовать права «Согласования»',
+    )
+
+    // Отсечка очереди согласований осмысленна только для согласующего.
+    assert.match(subscribe, /\['approvals'\]\)\)\s*\{\s*\n\s*erp_push_baseline_user_queue/)
+})
+
+test('подписка восстанавливается при входе, а не только в «Согласованиях»', () => {
+    // Подписка живёт не вечно: браузер меняет адрес доставки, push-сервис
+    // отзывает протухший. Потеряв её, сотрудник замолкал навсегда — вернуть
+    // было нечем, потому что подписка заводилась только на экране согласований.
+    assert.match(init, /registerErpPushSubscription/)
+    assert.match(init, /if \(store\.hasFio\)/)
+})
+
+test('разрешение на уведомления можно выдать без раздела «Согласования»', () => {
+    // Инструкция заканчивалась словами «откройте «Согласования»» — раздела,
+    // которого у большинства сотрудников нет. Выдать разрешение было негде:
+    // браузер сам не спросит, спрашивает страница по нажатию человека.
+    assert.match(guide, /Включить уведомления/)
+    assert.match(guide, /enableApprovalsNotifications\(\)/)
+    assert.doesNotMatch(guide, /включите уведомления в разделе «Согласования»/)
 })
