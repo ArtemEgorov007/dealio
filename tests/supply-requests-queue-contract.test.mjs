@@ -64,15 +64,31 @@ test('легаси-заявка без связки со счётом бакет
     assert.match(php, /erp_supply_work_queue_bucket\(\$approvalStatus \?\? \$requestStatus\)/)
 })
 
-test('ровно 4 бакета из ТЗ, отклонённый и незаведённый счёт — оба «новые»', () => {
+test('5 бакетов: отклонённый счёт → «Отменен», незаведённый остаётся «новые»', () => {
     assert.match(php, /function erp_supply_work_queue_bucket\(\?string \$approvalStatus\): string/)
     assert.match(php, /ERP_INVOICE_STATUS_NEW => 'awaiting_ro'/)
     assert.match(php, /ERP_INVOICE_STATUS_PENDING_GD => 'awaiting_gd'/)
     assert.match(php, /ERP_INVOICE_STATUS_APPROVED => 'approved'/)
+    assert.match(php, /ERP_INVOICE_STATUS_REJECTED => 'cancelled'/)
     assert.match(php, /default => 'new'/)
-    // ERP_INVOICE_STATUS_REJECTED не упомянут отдельной веткой — обязан
-    // попадать в default вместе с «счёт ещё не заведён» (approvalStatus === null).
-    assert.doesNotMatch(php, /ERP_INVOICE_STATUS_REJECTED =>/)
+})
+
+test('легаси-словом «Отменен» (миграция 008, дословный статус старого листа) тоже бакетится в cancelled', () => {
+    // ERP_INVOICE_STATUS_REJECTED = 'Отклонен' — слово текущего кода. Импорт
+    // истории (scripts/sql-import-warehouse.php) пишет статус заявки прямо из
+    // CSV без нормализации, а в исходном листе это состояние называлось
+    // «Отменен» (см. комментарий миграции 008) — другое слово, тот же смысл.
+    // Без буквальной ветки такие легаси-заявки провалились бы в default→'new'.
+    assert.match(php, /'Отменен' => 'cancelled'/)
+})
+
+test('очередь отдаёт состав заявки и не отдаёт сумму/номер счёта', () => {
+    const start = php.indexOf('function erp_supply_work_requests_queue')
+    const body = php.slice(start, php.indexOf('\n}\n', start) + 3)
+    assert.match(body, /'items'\s*=>/)
+    assert.match(body, /item_name|quantity|unit/)
+    assert.doesNotMatch(body, /'amount'\s*=>/)
+    assert.doesNotMatch(body, /'invoice'\s*=>/)
 })
 
 test('уведомление инженеру ведёт в подраздел «Заявки», а не на форму заказа', () => {
@@ -82,7 +98,9 @@ test('уведомление инженеру ведёт в подраздел �
 })
 
 test('клиентский тип очереди и фетчер объявлены', () => {
-    assert.match(api, /export type ErpSupplyQueueStatus = 'new' \| 'awaiting_ro' \| 'awaiting_gd' \| 'approved'/)
+    assert.match(api, /export type ErpSupplyQueueStatus = 'new' \| 'awaiting_ro' \| 'awaiting_gd' \| 'approved' \| 'cancelled'/)
+    assert.match(api, /items: ErpSupplyRequestItem\[\]/)
+    assert.doesNotMatch(api, /amount: number \| null/)
     assert.match(api, /export async function fetchSupplyRequestsQueue\(\): Promise<ErpSupplyQueueRequest\[\]>/)
     assert.match(api, /erpApiRequest<\{requests: ErpSupplyQueueRequest\[\]\}>\('supply-work\/requests-queue'\)/)
 })
@@ -119,14 +137,24 @@ test('на плитке «Заявки» в хабе виден тот же бе
     assert.match(hubPage, /:count="action\.count"/)
 })
 
-test('подраздел «Заявки» показывает ровно 4 таба из ТЗ в порядке цикла согласования', () => {
+test('подраздел «Заявки» показывает 5 табов, включая «Отменен»', () => {
     assert.match(queuePage, /\{key: 'new', label: 'Новые'\}/)
     assert.match(queuePage, /\{key: 'awaiting_ro', label: 'Ожидают РО'\}/)
     assert.match(queuePage, /\{key: 'awaiting_gd', label: 'Ожидают ГД'\}/)
     assert.match(queuePage, /\{key: 'approved', label: 'Согласованные'\}/)
+    assert.match(queuePage, /\{key: 'cancelled', label: 'Отменен'\}/)
+    assert.match(queuePage, /cancelled: 'Отменённых заявок нет'/)
     // Экран не даёт взаимодействовать с заявкой — только читает и переключает
     // таб; никакого POST/PATCH к серверу с этой страницы не уходит.
     assert.doesNotMatch(queuePage, /method: 'POST'|method: 'DELETE'|erpApiRequest\(/)
+})
+
+test('карточка заявки: дата у номера, состав, без суммы/счёта/площадки', () => {
+    assert.match(queuePage, /formatDate\(item\.requestedAt\)/)
+    assert.match(queuePage, /item\.items/)
+    assert.doesNotMatch(queuePage, /money\.format|queue-card__amount/)
+    assert.doesNotMatch(queuePage, /Счёт \{\{ item\.invoice \}\}|item\.invoice/)
+    assert.doesNotMatch(queuePage, />Площадка</)
 })
 
 test('заявки в списке фильтруются активным табом, а не показываются все разом', () => {
