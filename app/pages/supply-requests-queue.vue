@@ -52,6 +52,13 @@ const formatDate = (value: string): string => {
     const parts = value.split('-')
     return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : value
 }
+
+const {el: tabsEl, maskStyle: tabsMaskStyle, updateScrollState: updateTabsScroll} = useScrollEdgeFade()
+
+watch(
+    () => queueStore.rows.length,
+    () => nextTick(updateTabsScroll),
+)
 </script>
 
 <template>
@@ -61,7 +68,12 @@ const formatDate = (value: string): string => {
       icon="heroicons:clipboard-document-list"
       :shift-link="{to: '/supply-work', label: 'Назад', icon: 'heroicons:chevron-left', iconSize: 13}"
   >
-    <div class="queue-tabs" role="tablist">
+    <div
+        ref="tabsEl"
+        class="queue-tabs"
+        role="tablist"
+        :style="tabsMaskStyle"
+    >
       <button
           v-for="tab in TABS"
           :key="tab.key"
