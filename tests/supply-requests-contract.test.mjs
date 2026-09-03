@@ -67,10 +67,13 @@ test('позиции пишутся одной транзакцией', () => {
     assert.match(supplyPhp, /commit/)
 })
 
-test('новая заявка уведомляет инженеров снабжения', () => {
-    assert.match(supplyPhp, /ERP_SUPPLY_ENGINEER_POSITION = 'Инженер снабжения'/)
+test('новая заявка уведомляет держателей права supply, а не должность', () => {
+    // Уведомление ведёт на экран, закрытый правом (см. ACCESS_GUARDED в
+    // erp-flow.global.ts) — рассинхрон должности «Инженер снабжения» и
+    // реально выданного права иначе снова превращал бы тап в редирект.
     assert.match(supplyPhp, /function erp_supply_notify_engineers/)
-    assert.match(supplyPhp, /WHERE position = :position AND status = :status/i)
+    assert.match(supplyPhp, /WHERE p\.permission_code = 'supply' AND p\.allowed = 1 AND u\.status = :status/)
+    assert.doesNotMatch(supplyPhp, /ERP_SUPPLY_ENGINEER_POSITION/)
     assert.match(supplyPhp, /erp_supply_notify_engineers\(\$pdo, \$config/)
 })
 

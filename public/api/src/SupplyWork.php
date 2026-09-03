@@ -102,6 +102,91 @@ function erp_supply_work_form(PDO $pdo, array $config, string $requestId): void
     ]]);
 }
 
+/**
+ * Бакет подраздела «Заявки»: ровно 4 группы из ТЗ.
+ *
+ * erp_supply_requests.status обновляется один раз — при заведении счёта
+ * (см. UPDATE в erp_supply_work_create_invoice) — и дальше не меняется,
+ * даже когда согласование продвигается по erp_approvals.status. Текущий
+ * статус поэтому в первую очередь читаем из последнего счёта этой заявки, а
+ * не из самой заявки; сам статус заявки — запасной источник для случая, когда
+ * связки со счётом нет вовсе (см. вызывающую функцию). Отклонённый счёт и
+ * вовсе не заведённый — оба возвращают заявку в «Новые»: снабженцу в обоих
+ * случаях нужно завести (или перезавести) счёт.
+ */
+function erp_supply_work_queue_bucket(?string $approvalStatus): string
+{
+    return match ($approvalStatus) {
+        ERP_INVOICE_STATUS_NEW => 'awaiting_ro',
+        ERP_INVOICE_STATUS_PENDING_GD => 'awaiting_gd',
+        ERP_INVOICE_STATUS_APPROVED => 'approved',
+        default => 'new',
+    };
+}
+
+/**
+ * Очередь заявок для подраздела «Заявки»: снабженец отслеживает статус,
+ * не взаимодействуя с заявками — граница ТЗ («не входит: изменения в
+ * процедуре заявок») здесь держится тем, что ручка ничего не пишет.
+ *
+ * LIMIT 200 по самым свежим заявкам: без него список рос бы бессрочно (в
+ * т.ч. «Согласованные», откуда заявки никуда не деваются), а страница
+ * опрашивает эту ручку раз в 15 секунд, пока открыта.
+ */
+function erp_supply_work_requests_queue(PDO $pdo, array $config, string $requestId): void
+{
+    $actor = erp_require_user($pdo, $config, $requestId);
+    erp_require_permission($pdo, $actor, 'supply', $requestId);
+
+    $rows = $pdo->query(
+        "SELECT
+            r.request_code,
+            MIN(r.platform) AS platform,
+            MIN(r.department) AS department,
+            MIN(r.category) AS category,
+            MIN(r.employee_fio) AS employee_fio,
+            MAX(r.requested_at) AS requested_at,
+            MIN(r.status) AS request_status,
+            MIN(a.invoice) AS invoice,
+            MIN(a.status) AS approval_status,
+            MIN(a.amount) AS amount
+         FROM erp_supply_requests r
+         LEFT JOIN erp_approvals a ON a.id = (
+             SELECT a2.id FROM erp_approvals a2
+             WHERE a2.request_code = r.request_code
+             ORDER BY a2.id DESC
+             LIMIT 1
+         )
+         WHERE r.request_code <> ''
+         GROUP BY r.request_code
+         ORDER BY MAX(r.id) DESC
+         LIMIT 200"
+    )->fetchAll(PDO::FETCH_ASSOC);
+
+    erp_json(200, ['ok' => true, 'data' => [
+        'requests' => array_map(static function (array $row): array {
+            // Импорт исторических заявок (scripts/sql-import-warehouse.php) пишет
+            // реальный статус сразу в erp_supply_requests.status, но не проставляет
+            // erp_approvals.request_code — та же строка не находится через JOIN.
+            // Без запасного чтения из r.status такая заявка навсегда осела бы в
+            // «Новых», хотя по факту уже согласована.
+            $approvalStatus = $row['approval_status'] !== null ? (string) $row['approval_status'] : null;
+            $requestStatus = $row['request_status'] !== null ? (string) $row['request_status'] : null;
+            return [
+                'requestCode' => (string) $row['request_code'],
+                'platform' => (string) $row['platform'],
+                'department' => (string) $row['department'],
+                'category' => (string) $row['category'],
+                'employeeFio' => (string) $row['employee_fio'],
+                'requestedAt' => (string) $row['requested_at'],
+                'queueStatus' => erp_supply_work_queue_bucket($approvalStatus ?? $requestStatus),
+                'invoice' => $row['invoice'] !== null ? (string) $row['invoice'] : '',
+                'amount' => $row['amount'] !== null ? (float) $row['amount'] : null,
+            ];
+        }, $rows),
+    ]]);
+}
+
 /** Сумма из поля формы: принимаем и «12 345,67», и «12345.67». */
 function erp_invoice_amount(string $raw): float
 {

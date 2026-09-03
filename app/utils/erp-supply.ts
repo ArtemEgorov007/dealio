@@ -120,6 +120,30 @@ export async function fetchInvoiceFormData(): Promise<ErpInvoiceFormData> {
     return erpApiRequest<ErpInvoiceFormData>('supply-work/form')
 }
 
+/** Группа статуса в подразделе «Заявки» — ровно 4 из ТЗ. */
+export type ErpSupplyQueueStatus = 'new' | 'awaiting_ro' | 'awaiting_gd' | 'approved'
+
+/**
+ * Заявка в подразделе «Заявки»: снабженец отслеживает статус, не
+ * взаимодействуя с заявкой — здесь нет действий, только чтение.
+ */
+export interface ErpSupplyQueueRequest {
+    requestCode: string
+    platform: string
+    department: string
+    category: string
+    employeeFio: string
+    requestedAt: string
+    queueStatus: ErpSupplyQueueStatus
+    invoice: string
+    amount: number | null
+}
+
+export async function fetchSupplyRequestsQueue(): Promise<ErpSupplyQueueRequest[]> {
+    const data = await erpApiRequest<{requests: ErpSupplyQueueRequest[]}>('supply-work/requests-queue')
+    return data.requests ?? []
+}
+
 export async function fetchInvoices(): Promise<ErpInvoice[]> {
     const data = await erpApiRequest<{invoices: ErpInvoice[]}>('supply-work/invoices')
     return data.invoices ?? []

@@ -105,11 +105,11 @@ export const ERP_SECTIONS: ErpSection[] = [
     {
         key: 'supply',
         to: '/supply-work',
-        routes: ['/supply-work', '/invoice-new', '/invoices', '/supply-catalog'],
+        routes: ['/supply-work', '/invoice-new', '/invoices', '/supply-catalog', '/supply-requests-queue'],
         icon: 'heroicons:briefcase',
-        label: 'Работа со снабжением',
+        label: 'Заявки и счета',
         tabLabel: 'Снабжение',
-        caption: 'Счета и справочник',
+        caption: 'Заявки, счета и справочник',
         tone: '#0F766E',
     },
     {

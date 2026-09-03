@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useErpApprovalsStore} from '~~/store/erp-approvals.store'
+import {useErpSupplyQueueStore} from '~~/store/erp-supply-queue.store'
 import {loginErpEmployee} from '~/utils/erp-sheets'
 import {useAppToast} from '~/composables/useAppToast'
 
@@ -8,6 +9,7 @@ definePageMeta({layout: 'erp'})
 
 const employeeStore = useErpEmployeeStore()
 const approvalsStore = useErpApprovalsStore()
+const supplyQueueStore = useErpSupplyQueueStore()
 
 const pageTitle = ref(employeeStore.hasFio ? 'Профиль | ERP' : 'Вход | ERP')
 watch(() => employeeStore.hasFio, (hasFio) => {
@@ -45,11 +47,14 @@ const shiftOverline = computed(() => {
 const modules = computed(() =>
     erpSectionsFor(employeeStore.access).map(section => ({
         ...section,
-        // Счётчик пока только у согласований: единственный раздел, где число
-        // ждущих решения нужно видеть, не заходя внутрь.
+        // Счётчик — у согласований (число ждущих решения) и у снабжения
+        // (число новых заявок без счёта): оба раздела, где это число нужно
+        // видеть, не заходя внутрь.
         count: section.key === 'approvals' && approvalsStore.pendingCount > 0
             ? approvalsStore.pendingCount
-            : null,
+            : section.key === 'supply' && supplyQueueStore.newCount > 0
+                ? supplyQueueStore.newCount
+                : null,
     })),
 )
 

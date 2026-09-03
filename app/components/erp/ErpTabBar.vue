@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import {useErpEmployeeStore} from '~~/store/erp-employee.store'
 import {useErpApprovalsStore} from '~~/store/erp-approvals.store'
+import {useErpSupplyQueueStore} from '~~/store/erp-supply-queue.store'
 
 const route = useRoute()
 const router = useRouter()
 const employeeStore = useErpEmployeeStore()
 const approvalsStore = useErpApprovalsStore()
+const supplyQueueStore = useErpSupplyQueueStore()
 
 // Разделы и их пути — из общего реестра: список жил в двух местах и разошёлся,
 // «Договоры» появились на плитках, но не в таб-баре.
@@ -18,12 +20,18 @@ const activeSectionKey = computed(() => erpSectionForRoute(route.path)?.key ?? n
 
 const isProfileSection = computed(() => route.path === '/register')
 
-// Счётчик пока только у согласований: это единственный раздел, где число
-// ждущих решения нужно видеть, не заходя внутрь.
-const sectionCount = (key: string): number | null =>
-    key === 'approvals' && employeeStore.access.approvals && approvalsStore.pendingCount > 0
-        ? approvalsStore.pendingCount
-        : null
+// Счётчик — у согласований (число ждущих решения) и у снабжения (число
+// новых заявок без счёта): оба раздела, где это число нужно видеть, не
+// заходя внутрь.
+const sectionCount = (key: string): number | null => {
+    if (key === 'approvals' && employeeStore.access.approvals && approvalsStore.pendingCount > 0) {
+        return approvalsStore.pendingCount
+    }
+    if (key === 'supply' && employeeStore.access.supply && supplyQueueStore.newCount > 0) {
+        return supplyQueueStore.newCount
+    }
+    return null
+}
 
 const access = computed(() => employeeStore.access)
 
