@@ -12,6 +12,23 @@ const ERP_SUPPLY_STATUS_NEW = 'Ожидает счёт';
 const ERP_SUPPLY_ENGINEER_POSITION = 'Инженер снабжения';
 
 /**
+ * Право двойное: заявку заводит и смотрит любой сотрудник с `orders`
+ * («Заказ снабжения»), а снабженец с `supply` дополнительно — по своей
+ * обычной работе с этими же заявками. Раньше три ручки этого файла
+ * (создание заявки, список «Ваших заявок», каталог для автоподсказки)
+ * требовали только `supply`, хотя экран, который их вызывает, уже открыт
+ * всем 36 держателям `orders` (erp-sections.ts) — 30 из них доходили до
+ * действия и получали 403.
+ */
+function erp_supply_require_orders_or_supply(PDO $pdo, array $actor, string $requestId): void
+{
+    $access = erp_user_access($pdo, (int) $actor['id']);
+    if (empty($access['orders']) && empty($access['supply'])) {
+        erp_json(403, erp_error_payload('forbidden', 'Недостаточно прав', $requestId));
+    }
+}
+
+/**
  * Следующий номер заявки для площадки.
  *
  * Один атомарный инкремент вместо MAX(...)+1: иначе два сотрудника одной
@@ -156,11 +173,20 @@ function erp_supply_notify_status_cron(PDO $pdo, array $config, string $requestI
 }
 
 
-/** Создание заявки. Все позиции пишутся одной транзакцией. */
+/**
+ * Создание заявки. Все позиции пишутся одной транзакцией.
+ *
+ * Право двойное: `orders` — заявку создаёт любой сотрудник, которому нужны
+ * материалы, не только снабженец; `supply` оставлен, чтобы не отнять доступ
+ * у тех, кто уже мог создавать заявки этим правом. Раньше здесь стоял только
+ * `supply` — тайл экрана уже показывался всем 36 держателям `orders`
+ * (erp-sections.ts), а сама отправка формы всё ещё требовала `supply`
+ * (6 человек): 30 из 36 доходили до кнопки «Отправить» и получали 403.
+ */
 function erp_supply_create(PDO $pdo, array $config, string $requestId): void
 {
     $actor = erp_require_user($pdo, $config, $requestId);
-    erp_require_permission($pdo, $actor, 'supply', $requestId);
+    erp_supply_require_orders_or_supply($pdo, $actor, $requestId);
 
     $items = erp_supply_parse_items(erp_warehouse_input($requestId), $requestId);
 
@@ -234,7 +260,7 @@ function erp_supply_create(PDO $pdo, array $config, string $requestId): void
 function erp_supply_my_requests(PDO $pdo, array $config, string $requestId): void
 {
     $actor = erp_require_user($pdo, $config, $requestId);
-    erp_require_permission($pdo, $actor, 'supply', $requestId);
+    erp_supply_require_orders_or_supply($pdo, $actor, $requestId);
 
     // Порядок задаёт id, а не request_code: код — строка, и сортировка по нему
     // ставит «Колпино-9» выше «Колпино-18». Читаем по возрастанию (позиции
@@ -275,7 +301,7 @@ function erp_supply_my_requests(PDO $pdo, array $config, string $requestId): voi
 function erp_supply_catalog(PDO $pdo, array $config, string $requestId): void
 {
     $actor = erp_require_user($pdo, $config, $requestId);
-    erp_require_permission($pdo, $actor, 'supply', $requestId);
+    erp_supply_require_orders_or_supply($pdo, $actor, $requestId);
 
     $rows = $pdo->query('SELECT id, name, category, unit FROM erp_warehouse_items ORDER BY category, name')
         ->fetchAll(PDO::FETCH_ASSOC);
