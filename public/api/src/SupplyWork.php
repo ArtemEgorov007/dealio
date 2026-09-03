@@ -103,16 +103,15 @@ function erp_supply_work_form(PDO $pdo, array $config, string $requestId): void
 }
 
 /**
- * Бакет подраздела «Заявки»: ровно 4 группы из ТЗ.
+ * Бакет подраздела «Заявки»: 5 групп (цикл согласования + «Отменен»).
  *
  * erp_supply_requests.status обновляется один раз — при заведении счёта
  * (см. UPDATE в erp_supply_work_create_invoice) — и дальше не меняется,
  * даже когда согласование продвигается по erp_approvals.status. Текущий
  * статус поэтому в первую очередь читаем из последнего счёта этой заявки, а
  * не из самой заявки; сам статус заявки — запасной источник для случая, когда
- * связки со счётом нет вовсе (см. вызывающую функцию). Отклонённый счёт и
- * вовсе не заведённый — оба возвращают заявку в «Новые»: снабженцу в обоих
- * случаях нужно завести (или перезавести) счёт.
+ * связки со счётом нет вовсе (см. вызывающую функцию). Отклонённый счёт
+ * попадает в «Отменен»; счёт ещё не заведён — в «Новые».
  */
 function erp_supply_work_queue_bucket(?string $approvalStatus): string
 {
@@ -120,6 +119,8 @@ function erp_supply_work_queue_bucket(?string $approvalStatus): string
         ERP_INVOICE_STATUS_NEW => 'awaiting_ro',
         ERP_INVOICE_STATUS_PENDING_GD => 'awaiting_gd',
         ERP_INVOICE_STATUS_APPROVED => 'approved',
+        ERP_INVOICE_STATUS_REJECTED => 'cancelled',
+        'Отменен' => 'cancelled',
         default => 'new',
     };
 }
@@ -147,9 +148,7 @@ function erp_supply_work_requests_queue(PDO $pdo, array $config, string $request
             MIN(r.employee_fio) AS employee_fio,
             MAX(r.requested_at) AS requested_at,
             MIN(r.status) AS request_status,
-            MIN(a.invoice) AS invoice,
-            MIN(a.status) AS approval_status,
-            MIN(a.amount) AS amount
+            MIN(a.status) AS approval_status
          FROM erp_supply_requests r
          LEFT JOIN erp_approvals a ON a.id = (
              SELECT a2.id FROM erp_approvals a2
@@ -163,8 +162,33 @@ function erp_supply_work_requests_queue(PDO $pdo, array $config, string $request
          LIMIT 200"
     )->fetchAll(PDO::FETCH_ASSOC);
 
+    $itemsByCode = [];
+    if ($rows !== []) {
+        $codes = array_values(array_unique(array_map(
+            static fn (array $row): string => (string) $row['request_code'],
+            $rows,
+        )));
+        $placeholders = implode(',', array_fill(0, count($codes), '?'));
+        $itemsStmt = $pdo->prepare(
+            "SELECT request_code, item_name, quantity, unit, category
+             FROM erp_supply_requests
+             WHERE request_code IN ($placeholders)
+             ORDER BY id"
+        );
+        $itemsStmt->execute($codes);
+        foreach ($itemsStmt->fetchAll(PDO::FETCH_ASSOC) as $itemRow) {
+            $code = (string) $itemRow['request_code'];
+            $itemsByCode[$code][] = [
+                'name' => (string) $itemRow['item_name'],
+                'quantity' => (float) $itemRow['quantity'],
+                'unit' => (string) $itemRow['unit'],
+                'category' => (string) $itemRow['category'],
+            ];
+        }
+    }
+
     erp_json(200, ['ok' => true, 'data' => [
-        'requests' => array_map(static function (array $row): array {
+        'requests' => array_map(static function (array $row) use ($itemsByCode): array {
             // Импорт исторических заявок (scripts/sql-import-warehouse.php) пишет
             // реальный статус сразу в erp_supply_requests.status, но не проставляет
             // erp_approvals.request_code — та же строка не находится через JOIN.
@@ -172,16 +196,16 @@ function erp_supply_work_requests_queue(PDO $pdo, array $config, string $request
             // «Новых», хотя по факту уже согласована.
             $approvalStatus = $row['approval_status'] !== null ? (string) $row['approval_status'] : null;
             $requestStatus = $row['request_status'] !== null ? (string) $row['request_status'] : null;
+            $code = (string) $row['request_code'];
             return [
-                'requestCode' => (string) $row['request_code'],
+                'requestCode' => $code,
                 'platform' => (string) $row['platform'],
                 'department' => (string) $row['department'],
                 'category' => (string) $row['category'],
                 'employeeFio' => (string) $row['employee_fio'],
                 'requestedAt' => (string) $row['requested_at'],
                 'queueStatus' => erp_supply_work_queue_bucket($approvalStatus ?? $requestStatus),
-                'invoice' => $row['invoice'] !== null ? (string) $row['invoice'] : '',
-                'amount' => $row['amount'] !== null ? (float) $row['amount'] : null,
+                'items' => $itemsByCode[$code] ?? [],
             ];
         }, $rows),
     ]]);

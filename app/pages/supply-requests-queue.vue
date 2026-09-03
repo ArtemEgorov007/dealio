@@ -23,12 +23,12 @@ const load = async () => {
 
 onMounted(load)
 
-// Ровно 4 группы из ТЗ, в порядке движения заявки по циклу согласования.
 const TABS: Array<{key: ErpSupplyQueueStatus; label: string}> = [
     {key: 'new', label: 'Новые'},
     {key: 'awaiting_ro', label: 'Ожидают РО'},
     {key: 'awaiting_gd', label: 'Ожидают ГД'},
     {key: 'approved', label: 'Согласованные'},
+    {key: 'cancelled', label: 'Отменен'},
 ]
 
 const activeTab = ref<ErpSupplyQueueStatus>('new')
@@ -45,9 +45,8 @@ const emptyMessage = (key: ErpSupplyQueueStatus): string => ({
     awaiting_ro: 'Заявок, ждущих РО, нет',
     awaiting_gd: 'Заявок, ждущих ГД, нет',
     approved: 'Согласованных заявок нет',
+    cancelled: 'Отменённых заявок нет',
 }[key])
-
-const money = new Intl.NumberFormat('ru-RU', {style: 'currency', currency: 'RUB', maximumFractionDigits: 2})
 
 const formatDate = (value: string): string => {
     const parts = value.split('-')
@@ -94,24 +93,27 @@ const formatDate = (value: string): string => {
     <div v-else class="queue-list">
       <article v-for="item in visibleRequests" :key="item.requestCode" class="queue-card">
         <header class="queue-card__head">
-          <strong>{{ item.requestCode }}</strong>
-          <span v-if="item.invoice" class="queue-card__invoice">Счёт {{ item.invoice }}</span>
+          <div class="queue-card__title">
+            <strong>{{ item.requestCode }}</strong>
+            <span v-if="item.requestedAt" class="queue-card__date">{{ formatDate(item.requestedAt) }}</span>
+          </div>
         </header>
 
-        <p v-if="item.amount !== null" class="queue-card__amount">{{ money.format(item.amount) }}</p>
+        <ul v-if="item.items.length > 0" class="queue-card__items">
+          <li v-for="(line, index) in item.items" :key="`${line.name}-${index}`" class="queue-item">
+            <span class="queue-item__name">{{ line.name }}</span>
+            <span class="queue-item__qty">{{ line.quantity }} {{ line.unit }}</span>
+          </li>
+        </ul>
 
         <dl class="queue-card__rows">
-          <div v-if="item.platform || item.department" class="queue-row">
-            <dt>Площадка</dt>
-            <dd>{{ [item.platform, item.department].filter(Boolean).join(' · ') }}</dd>
+          <div v-if="item.department" class="queue-row">
+            <dt>Отдел</dt>
+            <dd>{{ item.department }}</dd>
           </div>
           <div v-if="item.employeeFio" class="queue-row">
             <dt>Заказал</dt>
             <dd>{{ item.employeeFio }}</dd>
-          </div>
-          <div v-if="item.requestedAt" class="queue-row">
-            <dt>Дата</dt>
-            <dd>{{ formatDate(item.requestedAt) }}</dd>
           </div>
         </dl>
       </article>
@@ -178,31 +180,55 @@ const formatDate = (value: string): string => {
 
 .queue-card__head
   display: flex
-  align-items: baseline
+  align-items: flex-start
   justify-content: space-between
   gap: 10px
+
+.queue-card__title
+  display: flex
+  flex-wrap: wrap
+  align-items: baseline
+  gap: 8px
+  min-width: 0
 
   strong
     font-size: 15px
     color: var(--color-text)
 
-.queue-card__invoice
-  flex-shrink: 0
-  font-size: 11.5px
+.queue-card__date
+  font-size: 12px
   color: var(--color-text-secondary)
+  font-variant-numeric: tabular-nums
 
-.queue-card__amount
-  margin: 6px 0
-  font-size: 18px
-  font-weight: 700
+.queue-card__items
+  display: flex
+  flex-direction: column
+  gap: 4px
+  margin: 10px 0 0
+  padding: 0
+  list-style: none
+
+.queue-item
+  display: flex
+  align-items: baseline
+  justify-content: space-between
+  gap: 10px
+  font-size: 13.5px
+
+.queue-item__name
+  min-width: 0
   color: var(--color-text)
+
+.queue-item__qty
+  flex-shrink: 0
+  color: var(--color-text-secondary)
   font-variant-numeric: tabular-nums
 
 .queue-card__rows
   display: flex
   flex-direction: column
   gap: 3px
-  margin: 6px 0 0
+  margin: 10px 0 0
 
 .queue-row
   display: flex
