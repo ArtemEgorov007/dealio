@@ -11,17 +11,29 @@ interface Props {
   align?: 'center' | 'start'
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   align: 'center',
 })
 
 defineEmits<{
   'update:modelValue': [value: string]
 }>()
+
+const {el, maskStyle, updateScrollState} = useScrollEdgeFade()
+
+watch(
+  () => props.options.map(option => option.value + (option.label ?? '')).join('|'),
+  () => nextTick(updateScrollState),
+)
 </script>
 
 <template>
-  <div class="ui-segmented" :class="{ 'ui-segmented--align-start': align === 'start' }">
+  <div
+      ref="el"
+      class="ui-segmented"
+      :class="{ 'ui-segmented--align-start': align === 'start' }"
+      :style="maskStyle"
+  >
     <button
         v-for="opt in options"
         :key="opt.value"
@@ -41,9 +53,15 @@ defineEmits<{
   display: flex
   flex-wrap: nowrap
   gap: 2px
+  overflow-x: auto
+  scrollbar-width: none
+  -webkit-overflow-scrolling: touch
   background: var(--color-bg)
   border-radius: 9px
   padding: 2px
+
+  &::-webkit-scrollbar
+    display: none
 
 .ui-segmented__opt
   flex: 1 1 0
