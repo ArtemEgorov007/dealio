@@ -11,6 +11,7 @@ declare(strict_types=1);
 const ERP_WORK_TAG_MEASUREMENT = 'Промер';
 const ERP_WORK_TAG_PACKING = 'Упаковка';
 const ERP_WORK_TAG_EXECUTIVE_DOCS = 'ИД';
+const ERP_WORK_TAG_BADGE = 'Бирка';
 
 /** Теги сдачи: сотрудник выбирает один из них на экране. */
 function erp_work_handover_tags(): array
@@ -35,10 +36,25 @@ function erp_work_packing_tags(): array
 function erp_work_tags(): array
 {
     return array_merge(
-        [ERP_WORK_TAG_MEASUREMENT],
+        [ERP_WORK_TAG_MEASUREMENT, ERP_WORK_TAG_BADGE],
         erp_work_handover_tags(),
         erp_work_packing_tags(),
     );
+}
+
+/**
+ * Титул и объект работы из текста бирки — первая и вторая строка.
+ *
+ * Бирка — обычный текст каталога, а не гарантированно многострочный формат:
+ * у части бирок второй строки нет вовсе. Тогда объект работы просто пуст —
+ * это не ошибка разбора, а честное отражение того, что бирка была короче.
+ *
+ * @return array{0: string, 1: string}
+ */
+function erp_badge_title_lines(string $badgeContent): array
+{
+    $lines = preg_split('/\r\n|\r|\n/', trim($badgeContent)) ?: [];
+    return [trim($lines[0] ?? ''), trim($lines[1] ?? '')];
 }
 
 /**
@@ -50,7 +66,7 @@ function erp_work_tags(): array
  * Повтор с тем же ключом идемпотентности молча ничего не делает — так потеря
  * ответа на клиенте не задваивает работу.
  *
- * @param array{tag: string, badge?: string, thickness?: float|null, idempotencyKey?: string|null} $work
+ * @param array{tag: string, badge?: string, thickness?: float|null, idempotencyKey?: string|null, title?: string|null, workObject?: string|null} $work
  */
 function erp_work_log_record(PDO $pdo, array $actor, array $work): int
 {
@@ -58,12 +74,15 @@ function erp_work_log_record(PDO $pdo, array $actor, array $work): int
 
     $statement = $pdo->prepare(
         'INSERT INTO erp_work_log
-            (contract_internal_number, material, platform, performed_at, employee_fio,
+            (contract_internal_number, material, title, work_object, platform, performed_at, employee_fio,
              badge, tag, thickness, user_id, idempotency_key)
          VALUES
-            (NULL, NULL, :platform, CURRENT_TIMESTAMP(6), :employee_fio,
+            (NULL, NULL, :title, :work_object, :platform, CURRENT_TIMESTAMP(6), :employee_fio,
              :badge, :tag, :thickness, :user_id, :idempotency_key)'
     );
+
+    $title = $work['title'] ?? null;
+    $workObject = $work['workObject'] ?? null;
 
     try {
         $statement->execute([
@@ -74,6 +93,8 @@ function erp_work_log_record(PDO $pdo, array $actor, array $work): int
             'thickness' => $work['thickness'] ?? null,
             'user_id' => $actor['id'] ?? null,
             'idempotency_key' => $work['idempotencyKey'] ?? null,
+            'title' => $title === null || $title === '' ? null : mb_substr($title, 0, 512),
+            'work_object' => $workObject === null || $workObject === '' ? null : mb_substr($workObject, 0, 512),
         ]);
     } catch (PDOException $error) {
         // 23000 — нарушение уникальности ключа идемпотентности: работа уже
@@ -140,7 +161,7 @@ function erp_work_log_today(PDO $pdo, array $config, string $requestId): void
 
     $rows = $pdo->query(
         'SELECT id, contract_internal_number, platform, performed_at, employee_fio,
-                badge, tag, material, thickness
+                badge, tag, material, thickness, title, work_object
          FROM erp_work_log
          WHERE DATE(performed_at) = CURDATE()
          ORDER BY id DESC
@@ -157,5 +178,7 @@ function erp_work_log_today(PDO $pdo, array $config, string $requestId): void
         'tag' => (string) $r['tag'],
         'material' => (string) ($r['material'] ?? ''),
         'thickness' => $r['thickness'] === null ? null : (float) $r['thickness'],
+        'title' => (string) ($r['title'] ?? ''),
+        'workObject' => (string) ($r['work_object'] ?? ''),
     ], $rows)]]);
 }
