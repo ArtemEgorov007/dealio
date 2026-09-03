@@ -1,7 +1,19 @@
 <script setup lang="ts">
 import type {ErpReportRow} from '~/utils/erp-api'
+import {groupReportRows} from '~/utils/erp-report-grouping'
 
-defineProps<{rows: ErpReportRow[]}>()
+const props = defineProps<{rows: ErpReportRow[]}>()
+
+type DetailMode = 'flat' | 'contract' | 'site' | 'customer'
+
+const mode = ref<DetailMode>('flat')
+
+const MODE_OPTIONS = [
+  {value: 'flat', label: 'Раздельно'},
+  {value: 'contract', label: 'Договор'},
+  {value: 'site', label: 'Площадка'},
+  {value: 'customer', label: 'Заказчик'},
+]
 
 const formatTons = (value: number): string => `${new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
@@ -18,16 +30,32 @@ const rowMetrics = (row: ErpReportRow) => [
   {label: 'Отгружено', value: formatTons(row.shippedTons)},
   {label: 'В цехе', value: formatTons(row.inWorkshopTons)},
 ]
+
+const groups = computed(() => {
+  if (mode.value === 'flat') return []
+  return groupReportRows(props.rows, mode.value)
+})
+
+const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площадка' : 'Договор')
 </script>
 
 <template>
   <section class="erp-reports-table" aria-label="Детализация отчёта">
     <div class="erp-reports-table__heading">
-      <ErpSectionLabel>Детализация</ErpSectionLabel>
-      <span class="erp-reports-table__count">{{ rows.length }}</span>
+      <div class="erp-reports-table__heading-start">
+        <ErpSectionLabel>Детализация</ErpSectionLabel>
+        <span class="erp-reports-table__count">{{ rows.length }}</span>
+      </div>
+      <UiSegmentedControl
+          class="erp-reports-table__modes"
+          :model-value="mode"
+          :options="MODE_OPTIONS"
+          align="start"
+          @update:model-value="mode = $event as DetailMode"
+      />
     </div>
 
-    <div class="erp-reports-table__rows">
+    <div v-if="mode === 'flat'" class="erp-reports-table__rows">
       <article
           v-for="row in rows"
           :key="`${row.customer}-${row.contract}-${row.site}`"
@@ -50,6 +78,42 @@ const rowMetrics = (row: ErpReportRow) => [
         </dl>
       </article>
     </div>
+
+    <div v-else class="erp-reports-table__groups">
+      <article
+          v-for="group in groups"
+          :key="group.key"
+          class="erp-reports-table__group"
+      >
+        <header class="erp-reports-table__group-head">
+          <strong>{{ group.title }}</strong>
+          <p v-if="group.subtitle">{{ group.subtitle }}</p>
+        </header>
+
+        <div class="erp-reports-table__grid" role="table" :aria-label="`Группа ${group.title}`">
+          <div class="erp-reports-table__grid-head" role="row">
+            <span role="columnheader">{{ groupColumnLabel }}</span>
+            <span role="columnheader">ТП, ₽</span>
+            <span role="columnheader">Отгр., т</span>
+          </div>
+          <div
+              v-for="line in group.rows"
+              :key="line.label"
+              class="erp-reports-table__grid-row"
+              role="row"
+          >
+            <span role="cell">{{ line.label }}</span>
+            <span role="cell">{{ formatRub(line.productionRub) }}</span>
+            <span role="cell">{{ formatTons(line.shippedTons) }}</span>
+          </div>
+          <div class="erp-reports-table__grid-row erp-reports-table__grid-row--total" role="row">
+            <span role="cell">Итого</span>
+            <span role="cell">{{ formatRub(group.totals.productionRub) }}</span>
+            <span role="cell">{{ formatTons(group.totals.shippedTons) }}</span>
+          </div>
+        </div>
+      </article>
+    </div>
   </section>
 </template>
 
@@ -60,10 +124,19 @@ const rowMetrics = (row: ErpReportRow) => [
 
 .erp-reports-table__heading
   display: flex
+  flex-wrap: wrap
   align-items: center
-  justify-content: space-between
   gap: 10px
   padding-right: 4px
+
+.erp-reports-table__heading-start
+  display: flex
+  align-items: center
+  gap: 8px
+  min-width: 0
+
+.erp-reports-table__modes
+  margin-left: auto
 
 .erp-reports-table__count
   min-width: 28px
@@ -79,11 +152,13 @@ const rowMetrics = (row: ErpReportRow) => [
   font-weight: 700
   font-variant-numeric: tabular-nums
 
-.erp-reports-table__rows
+.erp-reports-table__rows,
+.erp-reports-table__groups
   display: grid
   gap: 10px
 
-.erp-reports-table__row
+.erp-reports-table__row,
+.erp-reports-table__group
   display: grid
   gap: 14px
   padding: 16px
@@ -92,18 +167,21 @@ const rowMetrics = (row: ErpReportRow) => [
   background: #fff
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06)
 
-.erp-reports-table__head
+.erp-reports-table__head,
+.erp-reports-table__group-head
   display: grid
   gap: 6px
 
-.erp-reports-table__customer
+.erp-reports-table__customer,
+.erp-reports-table__group-head strong
   margin: 0
   font-size: 16px
   font-weight: 700
   line-height: 1.25
   color: var(--color-text)
 
-.erp-reports-table__meta
+.erp-reports-table__meta,
+.erp-reports-table__group-head p
   margin: 0
   display: flex
   flex-wrap: wrap
@@ -146,7 +224,55 @@ const rowMetrics = (row: ErpReportRow) => [
     color: var(--color-text)
     font-variant-numeric: tabular-nums
 
+.erp-reports-table__grid
+  display: grid
+  gap: 0
+
+.erp-reports-table__grid-head,
+.erp-reports-table__grid-row
+  display: grid
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.9fr)
+  gap: 8px
+  align-items: baseline
+
+.erp-reports-table__grid-head
+  padding-bottom: 8px
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.1)
+  font-size: 11px
+  font-weight: 600
+  color: var(--color-text-secondary)
+
+  span:not(:first-child)
+    text-align: right
+
+.erp-reports-table__grid-row
+  padding: 10px 0
+  font-size: 13px
+  color: var(--color-text)
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.08)
+
+  span:first-child
+    overflow-wrap: anywhere
+    min-width: 0
+
+  span:not(:first-child)
+    text-align: right
+    font-variant-numeric: tabular-nums
+    font-weight: 600
+
+  &--total
+    border-bottom: 0
+    border-top: 0.5px solid rgba(60, 60, 67, 0.16)
+    font-weight: 700
+
+    span
+      font-weight: 700
+
 @media (max-width: 480px)
+  .erp-reports-table__modes
+    margin-left: 0
+    width: 100%
+
   .erp-reports-table__metrics
     grid-template-columns: 1fr
     gap: 0
@@ -163,4 +289,8 @@ const rowMetrics = (row: ErpReportRow) => [
 
   .erp-reports-table__metric dd
     text-align: right
+
+  .erp-reports-table__grid-head,
+  .erp-reports-table__grid-row
+    grid-template-columns: minmax(0, 1fr) auto auto
 </style>
