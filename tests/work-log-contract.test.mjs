@@ -3,8 +3,13 @@ import {readFile} from 'node:fs/promises'
 import test from 'node:test'
 
 const migration = await readFile(new URL('../public/api/migrations/014_erp_work_log.sql', import.meta.url), 'utf8')
+const titleMigration = await readFile(
+    new URL('../public/api/migrations/020_erp_work_log_badge_title.sql', import.meta.url),
+    'utf8',
+)
 const php = await readFile(new URL('../public/api/src/WorkLog.php', import.meta.url), 'utf8')
 const handover = await readFile(new URL('../public/api/src/Handover.php', import.meta.url), 'utf8')
+const badges = await readFile(new URL('../public/api/src/Badges.php', import.meta.url), 'utf8')
 const router = await readFile(new URL('../public/api/src/Router.php', import.meta.url), 'utf8')
 const sheets = await readFile(new URL('../app/utils/erp-sheets.ts', import.meta.url), 'utf8')
 const scanHandover = await readFile(new URL('../app/pages/scan-handover.vue', import.meta.url), 'utf8')
@@ -97,4 +102,56 @@ test('сбой записи журнала не отменяет выполне�
 test('маршруты журнала объявлены', () => {
     assert.match(router, /'POST' && \$path === '\/work-log'/)
     assert.match(router, /'GET' && \$path === '\/work-log\/today'/)
+})
+
+test('титул и объект работы — отдельные колонки под строки бирки', () => {
+    // Бирка — обычный текст каталога, а не гарантированно многострочный
+    // формат: колонки NULL-able, а не NOT NULL DEFAULT ''.
+    assert.match(titleMigration, /ADD COLUMN title VARCHAR\(512\) NULL/)
+    assert.match(titleMigration, /ADD COLUMN work_object VARCHAR\(512\) NULL/)
+})
+
+test('титул и объект работы разбираются из первой и второй строки бирки', () => {
+    assert.match(php, /function erp_badge_title_lines\(string \$badgeContent\): array/)
+    // Перевод строки любого вида: \r\n, \r, \n — источник бирки не гарантирует конкретный.
+    assert.match(php, /preg_split\('\/\\r\\n\|\\r\|\\n\/', trim\(\$badgeContent\)\)/)
+    // Второй строки может не быть вовсе — это не ошибка разбора.
+    assert.match(php, /trim\(\$lines\[1\] \?\? ''\)/)
+
+    assert.match(php, /const ERP_WORK_TAG_BADGE = 'Бирка';/)
+    assert.match(php, /\[ERP_WORK_TAG_MEASUREMENT, ERP_WORK_TAG_BADGE\]/)
+})
+
+// function erp_badges_issue(…) — единственная функция выдачи в файле, до
+// следующего function-обработчика (erp_badges_issues_today).
+const issueStart = badges.indexOf('function erp_badges_issue(PDO')
+const issueEnd = badges.indexOf('function erp_badges_issues_today')
+const issueBody = badges.slice(issueStart, issueEnd)
+
+test('выдача бирки пишет журнал работ в своей транзакции', () => {
+    // Тот же приём, что уже в Handover.php: выдача уже на SQL, запись
+    // отдельным запросом с клиента терялась бы при обрыве связи.
+    assert.ok(issueStart > -1, 'обработчик выдачи не найден')
+    const record = issueBody.indexOf('erp_work_log_record($pdo, $actor')
+    const commit = issueBody.indexOf('$pdo->commit()')
+    assert.ok(record > -1, 'выдача бирки не пишет журнал')
+    assert.ok(record < commit, 'запись журнала должна быть внутри транзакции')
+
+    assert.match(issueBody, /erp_badge_title_lines\(\$badgeContent\)/)
+    assert.match(issueBody, /'tag' => ERP_WORK_TAG_BADGE/)
+    assert.match(issueBody, /'badge' => \$badgeContent/)
+    // Пространство ключей идемпотентности своё — не совпадает с ключом самой
+    // выдачи, иначе одна и та же строка успела бы столкнуться в другой таблице.
+    assert.match(issueBody, /'badge:' \. \$idempotencyKey/)
+})
+
+test('незаполняемые по ТЗ столбцы строки «Бирка» остаются пустыми', () => {
+    // П.3 ТЗ: «Все остальные столбцы оставляем пустыми» — договор, материал,
+    // толщина не передаются вовсе, они и так NULL по умолчанию у INSERT.
+    const record = issueBody.slice(
+        issueBody.indexOf('erp_work_log_record($pdo, $actor'),
+        issueBody.indexOf('$pdo->commit()'),
+    )
+    assert.doesNotMatch(record, /'thickness'/)
+    assert.doesNotMatch(record, /'contractInternalNumber'|'material'/)
 })

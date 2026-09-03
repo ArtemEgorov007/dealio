@@ -136,6 +136,18 @@ function erp_badges_issue(PDO $pdo, array $config, string $requestId): void
             'business_key' => 'badge_issue:' . $issueId,
         ]);
 
+        // Журнал работ пишем здесь же: выдача уже на SQL, и запись отдельным
+        // запросом с клиента терялась бы при обрыве связи после выдачи. Тот
+        // же приём, что уже в Handover.php.
+        [$title, $workObject] = erp_badge_title_lines($badgeContent);
+        erp_work_log_record($pdo, $actor, [
+            'tag' => ERP_WORK_TAG_BADGE,
+            'badge' => $badgeContent,
+            'title' => $title,
+            'workObject' => $workObject,
+            'idempotencyKey' => $idempotencyKey === null ? null : 'badge:' . $idempotencyKey,
+        ]);
+
         $pdo->commit();
     } catch (PDOException $error) {
         $pdo->rollBack();
