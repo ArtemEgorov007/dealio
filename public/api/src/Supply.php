@@ -9,7 +9,6 @@ declare(strict_types=1);
  */
 
 const ERP_SUPPLY_STATUS_NEW = 'Ожидает счёт';
-const ERP_SUPPLY_ENGINEER_POSITION = 'Инженер снабжения';
 
 /**
  * Право двойное: заявку заводит и смотрит любой сотрудник с `orders`
@@ -88,14 +87,27 @@ function erp_supply_parse_items(array $input, string $requestId): array
 function erp_supply_notify_engineers(PDO $pdo, array $config, string $requestCode, string $authorFio): void
 {
     try {
-        $statement = $pdo->prepare('SELECT id FROM erp_users WHERE position = :position AND status = :status');
-        $statement->execute(['position' => ERP_SUPPLY_ENGINEER_POSITION, 'status' => 'Работает']);
+        // По праву supply, не по должности: уведомление ведёт на экран,
+        // закрытый правом (см. ACCESS_GUARDED в erp-flow.global.ts) — если бы
+        // список получателей строился по должности «Инженер снабжения», то
+        // рассинхрон должности и выданного права снова превращал бы тап по
+        // уведомлению в редирект на /register, ровно как раньше вела ссылка
+        // /supply. Тот же приём, что у согласующих в erp_supply_work_form.
+        $statement = $pdo->prepare(
+            "SELECT u.id FROM erp_users u
+             JOIN erp_user_permissions p ON p.user_id = u.id
+             WHERE p.permission_code = 'supply' AND p.allowed = 1 AND u.status = :status"
+        );
+        $statement->execute(['status' => 'Работает']);
         $engineers = $statement->fetchAll(PDO::FETCH_COLUMN);
         if ($engineers === []) {
             return;
         }
 
-        erp_push_send_to_users($pdo, $config, $engineers, 'Новая заявка на снабжение', "{$requestCode} — {$authorFio}", '/supply');
+        // Раньше вело на /supply — экран формы заказа, закрытый правом orders:
+        // у снабженца этого права обычно нет, и тап по уведомлению приводил в
+        // middleware-редирект на /register. Ведём в подраздел «Заявки».
+        erp_push_send_to_users($pdo, $config, $engineers, 'Новая заявка на снабжение', "{$requestCode} — {$authorFio}", '/supply-requests-queue');
     } catch (Throwable) {
         // Молча: заявка важнее уведомления.
     }

@@ -45,6 +45,9 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'GET' && $path === '/supply-work/form') {
         return ['supply_work_form'];
     }
+    if ($method === 'GET' && $path === '/supply-work/requests-queue') {
+        return ['supply_work_requests_queue'];
+    }
     if ($method === 'POST' && $path === '/supply-work/invoices') {
         return ['supply_work_create_invoice'];
     }

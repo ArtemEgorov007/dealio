@@ -60,6 +60,9 @@ try {
     if ($name === 'supply_work_form') {
         erp_supply_work_form($pdo, $config, $requestId);
     }
+    if ($name === 'supply_work_requests_queue') {
+        erp_supply_work_requests_queue($pdo, $config, $requestId);
+    }
     if ($name === 'supply_work_create_invoice') {
         erp_supply_work_create_invoice($pdo, $config, $requestId);
     }
