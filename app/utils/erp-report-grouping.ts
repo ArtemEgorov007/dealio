@@ -6,6 +6,9 @@ export interface ErpReportGroupLine {
   label: string
   productionRub: number
   shippedTons: number
+  // «Полный отчёт» переиспользует эту же группировку под тройку
+  // ТП/Поступило/Отгружено — «Отчёт месяца» это поле просто не показывает.
+  receivedTons: number
 }
 
 export interface ErpReportGroup {
@@ -16,6 +19,7 @@ export interface ErpReportGroup {
   totals: {
     productionRub: number
     shippedTons: number
+    receivedTons: number
   }
 }
 
@@ -51,7 +55,7 @@ export function groupReportRows(rows: ErpReportRow[], mode: ErpReportGroupMode):
         title: key,
         subtitle: mode === 'contract' && row.customer.trim() !== '' ? row.customer.trim() : undefined,
         rows: [],
-        totals: {productionRub: 0, shippedTons: 0},
+        totals: {productionRub: 0, shippedTons: 0, receivedTons: 0},
       })
     }
 
@@ -69,16 +73,19 @@ export function groupReportRows(rows: ErpReportRow[], mode: ErpReportGroupMode):
     if (existing) {
       existing.productionRub += row.productionRub
       existing.shippedTons += row.shippedTons
+      existing.receivedTons += row.receivedTons
     } else {
       group.rows.push({
         label,
         productionRub: row.productionRub,
         shippedTons: row.shippedTons,
+        receivedTons: row.receivedTons,
       })
     }
 
     group.totals.productionRub += row.productionRub
     group.totals.shippedTons += row.shippedTons
+    group.totals.receivedTons += row.receivedTons
   }
 
   return groups

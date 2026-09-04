@@ -120,6 +120,12 @@ try {
     if ($name === 'reports_current') {
         erp_reports_current($pdo, $config, $requestId);
     }
+    if ($name === 'reports_ks_current') {
+        erp_reports_ks_current($pdo, $config, $requestId);
+    }
+    if ($name === 'reports_id_current') {
+        erp_reports_id_current($pdo, $config, $requestId);
+    }
     if ($name === 'approvals_current') {
         erp_approvals_current($pdo, $config, $requestId);
     }

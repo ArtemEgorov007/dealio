@@ -108,6 +108,12 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'GET' && $path === '/reports/current') {
         return ['reports_current'];
     }
+    if ($method === 'GET' && $path === '/reports/ks') {
+        return ['reports_ks_current'];
+    }
+    if ($method === 'GET' && $path === '/reports/id') {
+        return ['reports_id_current'];
+    }
     if ($method === 'GET' && $path === '/approvals') {
         return ['approvals_current'];
     }

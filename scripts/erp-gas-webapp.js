@@ -12,6 +12,8 @@
  * GET  ?action=issuedToday&fio=...&workshop=kolpino|volkhonka  (fio/workshop опциональны)
  * GET  ?action=handedOverToday&fio=...                            (fio опционален)
  * GET  ?action=packingToday&fio=...&machine=1..10
+ * GET  ?action=reportsKs&token=...       (лист «КС»: Договор/№/Сумма с НДС/Статус)
+ * GET  ?action=reportsId&token=...       (лист «ИД»: Договор/Статус/Объём/Сумма с НДС)
  * POST { action: 'issueBadge',       workshop, fio, badgeContent }
  * POST { action: 'deleteIssuedBadge', row, fio, badgeContent }
  * POST { action: 'recordPacking',    platform, fio, machine, qrText }
@@ -32,6 +34,12 @@ const MEASUREMENT_SHEET = 'Промеры'
 const REPORTS_SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('REPORTS_SPREADSHEET_ID')
 const REPORTS_SHEET_NAME = PropertiesService.getScriptProperties().getProperty('REPORTS_SHEET_NAME') || 'Лист15'
 const REPORTS_BRIDGE_TOKEN = PropertiesService.getScriptProperties().getProperty('REPORTS_BRIDGE_TOKEN') || ''
+// «КС» и «ИД» — те же Script Properties, что и у остального отчёта: своя
+// таблица (обычно та же REPORTS_SPREADSHEET_ID), свой лист. Имена листов
+// переопределяются свойством на случай, если реальные вкладки называются
+// иначе — не гадать при каждом деплое, а поменять один Script Property.
+const REPORTS_KS_SHEET_NAME = PropertiesService.getScriptProperties().getProperty('REPORTS_KS_SHEET_NAME') || 'КС'
+const REPORTS_ID_SHEET_NAME = PropertiesService.getScriptProperties().getProperty('REPORTS_ID_SHEET_NAME') || 'ИД'
 
 // Имя цеха = имя колонки на листе «Выдача» = имя исходного листа с бирками.
 const WORKSHOP_SHEETS = {
@@ -75,6 +83,14 @@ function doGet(e) {
 
         if (action === 'reportsCurrent') {
             return jsonResponse_({ok: true, data: reportsCurrent_(e.parameter.token || '')})
+        }
+
+        if (action === 'reportsKs') {
+            return jsonResponse_({ok: true, data: reportsKs_(e.parameter.token || '')})
+        }
+
+        if (action === 'reportsId') {
+            return jsonResponse_({ok: true, data: reportsId_(e.parameter.token || '')})
         }
 
         return jsonResponse_({ok: false, error: 'Unknown action'})
@@ -205,10 +221,10 @@ function reportsCurrent_(token) {
     if (!sheet) {
         throw new Error('Не найден лист отчётов: ' + REPORTS_SHEET_NAME)
     }
-    return {
-        sourceReadAt: new Date().toISOString(),
-        rows: normalizeReportsRows_(sheet.getDataRange().getDisplayValues()),
-    }
+    return Object.assign(
+        {sourceReadAt: new Date().toISOString()},
+        normalizeReportsRows_(sheet.getDataRange().getDisplayValues()),
+    )
 }
 
 function reportsNumber_(value) {
@@ -219,7 +235,7 @@ function reportsNumber_(value) {
 }
 
 function normalizeReportsRows_(values) {
-    if (!values.length) return []
+    if (!values.length) return {rows: [], receivedAvailable: false}
 
     const header = values[0].map(normalizeCell_)
     const customerIndex = requireColumn_(header, 'Заказчик', 'Отчёты')
@@ -228,6 +244,14 @@ function normalizeReportsRows_(values) {
     const productionIndex = requireColumn_(header, 'ТП за месяц, тн', 'Отчёты')
     const shippedIndex = requireColumn_(header, 'Отгружено за месяц, тн', 'Отчёты')
     const workshopIndex = requireColumn_(header, 'В цехе, тн', 'Отчёты')
+    // «Полный отчёт» — тот же лист, дополнительная метрика поступления.
+    // Название колонки следует тому же формату, что и остальные три
+    // («… за месяц, тн»), но не проверено вживую (нет доступа к реальной
+    // таблице) — в отличие от остальных четырёх колонок этого листа, эта
+    // необязательна: если заголовка нет, уже работающий Месячный отчёт не
+    // должен из-за этого падать. «Полный отчёт» узнаёт об отсутствии через
+    // receivedAvailable и показывает явное «нет данных» вместо тихого нуля.
+    const receivedIndex = header.indexOf('Поступило за месяц, тн')
 
     const rows = []
     for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
@@ -243,6 +267,102 @@ function normalizeReportsRows_(values) {
             productionRub: reportsNumber_(row[productionIndex]),
             shippedTons: reportsNumber_(row[shippedIndex]),
             inWorkshopTons: reportsNumber_(row[workshopIndex]),
+            receivedTons: receivedIndex >= 0 ? reportsNumber_(row[receivedIndex]) : 0,
+        })
+    }
+    return {rows: rows, receivedAvailable: receivedIndex >= 0}
+}
+
+/**
+ * Лист «КС»: Договор / № / Сумма с НДС / Статус — построчно, без итоговой
+ * строки (Итого считается на клиенте так же, как группировка по договору).
+ */
+function reportsKs_(token) {
+    if (!REPORTS_BRIDGE_TOKEN || token !== REPORTS_BRIDGE_TOKEN) {
+        throw new Error('Нет доступа к отчётам')
+    }
+    if (!REPORTS_SPREADSHEET_ID) {
+        throw new Error('Не настроен источник отчётов')
+    }
+
+    const sheet = SpreadsheetApp.openById(REPORTS_SPREADSHEET_ID).getSheetByName(REPORTS_KS_SHEET_NAME)
+    if (!sheet) {
+        throw new Error('Не найден лист отчётов: ' + REPORTS_KS_SHEET_NAME)
+    }
+    return {
+        sourceReadAt: new Date().toISOString(),
+        rows: normalizeKsRows_(sheet.getDataRange().getDisplayValues()),
+    }
+}
+
+function normalizeKsRows_(values) {
+    if (!values.length) return []
+
+    const header = values[0].map(normalizeCell_)
+    const contractIndex = requireColumn_(header, 'Договор', 'КС')
+    const numberIndex = requireColumn_(header, '№', 'КС')
+    const amountIndex = requireColumn_(header, 'Сумма с НДС', 'КС')
+    const statusIndex = requireColumn_(header, 'Статус', 'КС')
+
+    const rows = []
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        const contract = normalizeCell_(row[contractIndex])
+        const number = normalizeCell_(row[numberIndex])
+        if (!contract || !number) continue
+        rows.push({
+            contract: contract,
+            number: number,
+            amountWithVat: reportsNumber_(row[amountIndex]),
+            status: normalizeCell_(row[statusIndex]),
+        })
+    }
+    return rows
+}
+
+/**
+ * Лист «ИД»: Договор / Статус / Объём / Сумма с НДС — строка уже сама по
+ * себе группа статуса внутри договора (в отличие от «КС», где строка —
+ * отдельный номер КС), клиент только раскладывает по договору.
+ */
+function reportsId_(token) {
+    if (!REPORTS_BRIDGE_TOKEN || token !== REPORTS_BRIDGE_TOKEN) {
+        throw new Error('Нет доступа к отчётам')
+    }
+    if (!REPORTS_SPREADSHEET_ID) {
+        throw new Error('Не настроен источник отчётов')
+    }
+
+    const sheet = SpreadsheetApp.openById(REPORTS_SPREADSHEET_ID).getSheetByName(REPORTS_ID_SHEET_NAME)
+    if (!sheet) {
+        throw new Error('Не найден лист отчётов: ' + REPORTS_ID_SHEET_NAME)
+    }
+    return {
+        sourceReadAt: new Date().toISOString(),
+        rows: normalizeIdRows_(sheet.getDataRange().getDisplayValues()),
+    }
+}
+
+function normalizeIdRows_(values) {
+    if (!values.length) return []
+
+    const header = values[0].map(normalizeCell_)
+    const contractIndex = requireColumn_(header, 'Договор', 'ИД')
+    const statusIndex = requireColumn_(header, 'Статус', 'ИД')
+    const volumeIndex = requireColumn_(header, 'Объем', 'ИД')
+    const amountIndex = requireColumn_(header, 'Сумма с НДС', 'ИД')
+
+    const rows = []
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+        const row = values[rowIndex]
+        const contract = normalizeCell_(row[contractIndex])
+        const status = normalizeCell_(row[statusIndex])
+        if (!contract || !status) continue
+        rows.push({
+            contract: contract,
+            status: status,
+            volume: reportsNumber_(row[volumeIndex]),
+            amountWithVat: reportsNumber_(row[amountIndex]),
         })
     }
     return rows

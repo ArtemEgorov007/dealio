@@ -38,6 +38,25 @@ $decoded = erp_reports_decode_bridge(json_encode([
 expect_reports($decoded['rows'][0]['productionRub'] === 12250994.0, 'TP must be normalized to rubles');
 expect_reports($decoded['rows'][0]['shippedTons'] === 368.0, 'Shipment must be normalized to tons');
 expect_reports($decoded['rows'][0]['inWorkshopTons'] === 172.0, 'Workshop balance must be normalized to tons');
+expect_reports($decoded['receivedAvailable'] === false, 'Missing receivedAvailable source flag must default to false, not fail the whole report');
+
+$decodedWithReceived = erp_reports_decode_bridge(json_encode([
+    'ok' => true,
+    'data' => [
+        'rows' => [[
+            'customer' => 'Велесстрой',
+            'contract' => 'Линия 3',
+            'site' => 'Волхонка',
+            'productionRub' => '12 250 994',
+            'shippedTons' => '368',
+            'inWorkshopTons' => '172',
+            'receivedTons' => '300',
+        ]],
+        'receivedAvailable' => true,
+    ],
+], JSON_THROW_ON_ERROR));
+expect_reports($decodedWithReceived['receivedAvailable'] === true, 'receivedAvailable flag from source must propagate');
+expect_reports($decodedWithReceived['rows'][0]['receivedTons'] === 300.0, 'Received tons must be normalized when the column is present');
 
 $invalid = false;
 try {

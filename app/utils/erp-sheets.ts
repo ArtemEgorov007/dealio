@@ -23,6 +23,8 @@ import {
     fetchPersonnelEmployeeViaApi,
     fetchPersonnelEmployeesViaApi,
     fetchReportsCurrentViaApi,
+    fetchReportsIdViaApi,
+    fetchReportsKsViaApi,
     fetchWorkshopBadgesViaApi,
     getErpBackendMode,
     issueBadgeViaApi,
@@ -32,7 +34,7 @@ import {
     savePersonnelEmployeeViaApi,
     undoHandoverViaApi,
 } from '~/utils/erp-api'
-import type {ErpApprovalDecisionStatus, ErpApprovalsResponse, ErpCurrentReport} from '~/utils/erp-api'
+import type {ErpApprovalDecisionStatus, ErpApprovalsResponse, ErpCurrentReport, ErpIdRow, ErpKsRow} from '~/utils/erp-api'
 import {
     DEFAULT_SPREADSHEET_ID,
     GAS_URL_STORAGE_KEY,
@@ -258,6 +260,20 @@ export async function fetchCurrentReports(): Promise<ErpCurrentReport> {
         throw new Error('Отчёты доступны в проверочном SQL-контуре')
     }
     return await fetchReportsCurrentViaApi()
+}
+
+export async function fetchReportsKs(): Promise<ErpKsRow[]> {
+    if (getErpBackendMode() !== 'sql') {
+        throw new Error('Отчёты доступны в проверочном SQL-контуре')
+    }
+    return await fetchReportsKsViaApi()
+}
+
+export async function fetchReportsId(): Promise<ErpIdRow[]> {
+    if (getErpBackendMode() !== 'sql') {
+        throw new Error('Отчёты доступны в проверочном SQL-контуре')
+    }
+    return await fetchReportsIdViaApi()
 }
 
 export async function recordHandoverEntry(fio: string, badgeContent: string, tag: string): Promise<void> {
