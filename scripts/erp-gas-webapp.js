@@ -840,6 +840,7 @@ function personnelEmployees_(context, departmentValue) {
     for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
         const row = values[rowIndex]
         if (normalizeCell_(row[context.schema.departmentIndex]) !== department) continue
+        if (normalizeCell_(row[context.schema.statusIndex]) !== ACTIVE_STATUS) continue
         employees.push({
             row: rowIndex + 1,
             fio: normalizeCell_(row[context.schema.fioIndex]),
