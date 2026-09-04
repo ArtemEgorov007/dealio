@@ -75,7 +75,7 @@ export const ERP_SECTIONS: ErpSection[] = [
     {
         key: 'reports',
         to: '/reports',
-        routes: ['/reports'],
+        routes: ['/reports', '/reports-month', '/reports-full', '/reports-ks', '/reports-id'],
         icon: 'heroicons:chart-bar',
         label: 'Отчёты',
         tabLabel: 'Отчёты',

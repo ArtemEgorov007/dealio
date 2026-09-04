@@ -13,6 +13,10 @@ const ERP_ROUTES = new Set([
     '/scan-measurement',
     '/measurement',
     '/reports',
+    '/reports-month',
+    '/reports-full',
+    '/reports-ks',
+    '/reports-id',
     '/approvals',
     '/supply',
     '/supply-requests',
@@ -68,6 +72,10 @@ export default defineNuxtRouteMiddleware((to) => {
         '/scan-handover': 'handover',
         '/handover-shift': 'handover',
         '/reports': 'reports',
+        '/reports-month': 'reports',
+        '/reports-full': 'reports',
+        '/reports-ks': 'reports',
+        '/reports-id': 'reports',
         '/approvals': 'approvals',
         // Заявку на материалы создаёт цех — это право «Заказ снабжения»
         // (orders), оно есть у 36 сотрудников из 43. Право «Работа со

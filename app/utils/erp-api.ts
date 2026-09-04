@@ -28,6 +28,9 @@ export interface ErpReportRow {
     productionRub: number
     shippedTons: number
     inWorkshopTons: number
+    // «Полный отчёт» показывает эту же строку под другой тройкой метрик
+    // (ТП/Поступило/Отгружено) — тот же лист, читается тем же запросом.
+    receivedTons: number
 }
 
 export interface ErpCurrentReport {
@@ -37,8 +40,29 @@ export interface ErpCurrentReport {
         productionRub: number
         shippedTons: number
         inWorkshopTons: number
+        receivedTons: number
     }
     rows: ErpReportRow[]
+    // Колонка «Поступило» на источнике необязательна (см. GAS
+    // normalizeReportsRows_) — «Полный отчёт» показывает явное «нет данных»
+    // по этому флагу вместо тихого нуля, если реальный заголовок не совпал.
+    receivedAvailable: boolean
+}
+
+/** Строка листа «КС»: номер КС внутри договора, сумма с НДС, статус. */
+export interface ErpKsRow {
+    contract: string
+    number: string
+    amountWithVat: number
+    status: string
+}
+
+/** Строка листа «ИД»: статус исполнительной документации внутри договора. */
+export interface ErpIdRow {
+    contract: string
+    status: string
+    volume: number
+    amountWithVat: number
 }
 
 export function getErpBackendMode(): 'gas' | 'sql' {
@@ -124,6 +148,16 @@ export async function logoutErpEmployee(): Promise<void> {
 
 export async function fetchReportsCurrentViaApi(): Promise<ErpCurrentReport> {
     return erpApiRequest<ErpCurrentReport>('reports/current')
+}
+
+export async function fetchReportsKsViaApi(): Promise<ErpKsRow[]> {
+    const data = await erpApiRequest<{rows: ErpKsRow[]}>('reports/ks')
+    return data.rows ?? []
+}
+
+export async function fetchReportsIdViaApi(): Promise<ErpIdRow[]> {
+    const data = await erpApiRequest<{rows: ErpIdRow[]}>('reports/id')
+    return data.rows ?? []
 }
 
 export async function fetchPersonnelDepartmentsViaApi(): Promise<{

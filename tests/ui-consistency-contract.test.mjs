@@ -3,7 +3,12 @@ import {readFile} from 'node:fs/promises'
 import test from 'node:test'
 
 const button = await readFile(new URL('../app/components/ui/button/Button.vue', import.meta.url), 'utf8')
-const reports = await readFile(new URL('../app/pages/reports.vue', import.meta.url), 'utf8')
+// reports.vue — хаб из плиток без своих данных и без кнопки «Обновить»;
+// реальный экран с обновлением переехал на reports-month.vue.
+const reports = await readFile(new URL('../app/pages/reports-month.vue', import.meta.url), 'utf8')
+const reportsFull = await readFile(new URL('../app/pages/reports-full.vue', import.meta.url), 'utf8')
+const reportsKs = await readFile(new URL('../app/pages/reports-ks.vue', import.meta.url), 'utf8')
+const reportsId = await readFile(new URL('../app/pages/reports-id.vue', import.meta.url), 'utf8')
 const approvals = await readFile(new URL('../app/pages/approvals.vue', import.meta.url), 'utf8')
 const personnelForm = await readFile(new URL('../app/components/erp/ErpPersonnelForm.vue', import.meta.url), 'utf8')
 const sectionLabel = await readFile(new URL('../app/components/erp/ErpSectionLabel.vue', import.meta.url), 'utf8')
@@ -18,6 +23,9 @@ test('ERP supports a dedicated inverse system action for blue screen headers', (
 
 test('reports and approvals use the shared inverse header action instead of page-specific styling', () => {
   assert.match(reports, /variant="inverse"/)
+  assert.match(reportsFull, /variant="inverse"/)
+  assert.match(reportsKs, /variant="inverse"/)
+  assert.match(reportsId, /variant="inverse"/)
   assert.match(approvals, /variant="inverse"/)
 })
 
