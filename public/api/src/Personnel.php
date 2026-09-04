@@ -108,6 +108,7 @@ function erp_personnel_right_labels(): array
         'handover' => 'Доступ к сдаче',
         'personnel' => 'Управление кадрами',
         'contracts' => 'Работа с договорами',
+        'intake' => 'Доступ к приходу',
     ];
 }
 

@@ -133,6 +133,16 @@ export const ERP_SECTIONS: ErpSection[] = [
         tone: '#7C3AED',
     },
     {
+        key: 'intake',
+        to: '/intake',
+        routes: ['/intake', '/intake-objects', '/intake-unmatched'],
+        icon: 'heroicons:truck',
+        label: 'Приход',
+        tabLabel: 'Приход',
+        caption: 'Приёмка объектов',
+        tone: '#0EA5E9',
+    },
+    {
         key: 'personnel',
         to: '/personnel',
         routes: ['/personnel'],

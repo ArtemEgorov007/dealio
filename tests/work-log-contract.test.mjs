@@ -23,12 +23,15 @@ test('журнал — одна таблица со всеми колонкам�
     }
 })
 
-test('незаполняемые колонки остаются пустыми', () => {
-    // Сценариев их получения ещё нет; колонки заведены сразу, чтобы записи не
-    // пришлось переносить, когда источники появятся.
+test('материал остаётся пустым, внутренний номер договора теперь заполняется Приходом', () => {
+    // «Материал» — сценариев его получения по-прежнему нет, колонка заведена
+    // впрок. «Внутренний номер договора» ждал первого источника с 014 — им
+    // стал Приход (erp_intake_complete_matched передаёт его по строке
+    // erp_work_objects, которую приняли).
     assert.match(migration, /contract_internal_number VARCHAR\(64\) NULL/i)
     assert.match(migration, /material VARCHAR\(255\) NULL/i)
-    assert.match(php, /VALUES\s*\n\s*\(NULL, NULL,/)
+    assert.match(php, /VALUES\s*\n\s*\(:contract_internal_number, NULL,/)
+    assert.match(php, /'contract_internal_number' => \$contract === null \|\| \$contract === '' \? null : mb_substr\(\$contract, 0, 64\)/)
 })
 
 test('фактическая толщина хранится отдельной колонкой', () => {
@@ -119,7 +122,7 @@ test('титул и объект работы разбираются из пер
     assert.match(php, /trim\(\$lines\[1\] \?\? ''\)/)
 
     assert.match(php, /const ERP_WORK_TAG_BADGE = 'Бирка';/)
-    assert.match(php, /\[ERP_WORK_TAG_MEASUREMENT, ERP_WORK_TAG_BADGE\]/)
+    assert.match(php, /\[ERP_WORK_TAG_MEASUREMENT, ERP_WORK_TAG_BADGE, ERP_WORK_TAG_INTAKE\]/)
 })
 
 // function erp_badges_issue(…) — единственная функция выдачи в файле, до

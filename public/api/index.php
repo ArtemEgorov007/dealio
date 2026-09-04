@@ -84,6 +84,21 @@ try {
     if ($name === 'supply_work_item_stock') {
         erp_supply_work_item_stock($pdo, $config, $requestId, (int) ($route[1] ?? 0));
     }
+    if ($name === 'intake_form') {
+        erp_intake_form($pdo, $config, $requestId);
+    }
+    if ($name === 'intake_create_delivery') {
+        erp_intake_create_delivery($pdo, $config, $requestId);
+    }
+    if ($name === 'intake_objects_options') {
+        erp_intake_objects_options($pdo, $config, $requestId);
+    }
+    if ($name === 'intake_complete_matched') {
+        erp_intake_complete_matched($pdo, $config, $requestId, (int) ($route[1] ?? 0));
+    }
+    if ($name === 'intake_complete_unmatched') {
+        erp_intake_complete_unmatched($pdo, $config, $requestId, (int) ($route[1] ?? 0));
+    }
     if ($name === 'work_log_create') {
         erp_work_log_create($pdo, $config, $requestId);
     }
