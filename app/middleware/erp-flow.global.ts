@@ -31,6 +31,9 @@ const ERP_ROUTES = new Set([
     '/warehouse-balance',
     '/notifications-guide',
     '/personnel',
+    '/intake',
+    '/intake-objects',
+    '/intake-unmatched',
 ])
 
 export default defineNuxtRouteMiddleware((to) => {
@@ -85,6 +88,9 @@ export default defineNuxtRouteMiddleware((to) => {
         '/warehouse-issue': 'warehouse',
         '/warehouse-balance': 'warehouse',
         '/personnel': 'personnel',
+        '/intake': 'intake',
+        '/intake-objects': 'intake',
+        '/intake-unmatched': 'intake',
     }
 
     const guardedFlag = ACCESS_GUARDED[path]

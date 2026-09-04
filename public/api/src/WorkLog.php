@@ -12,6 +12,7 @@ const ERP_WORK_TAG_MEASUREMENT = 'Промер';
 const ERP_WORK_TAG_PACKING = 'Упаковка';
 const ERP_WORK_TAG_EXECUTIVE_DOCS = 'ИД';
 const ERP_WORK_TAG_BADGE = 'Бирка';
+const ERP_WORK_TAG_INTAKE = 'Приход';
 
 /** Теги сдачи: сотрудник выбирает один из них на экране. */
 function erp_work_handover_tags(): array
@@ -36,7 +37,7 @@ function erp_work_packing_tags(): array
 function erp_work_tags(): array
 {
     return array_merge(
-        [ERP_WORK_TAG_MEASUREMENT, ERP_WORK_TAG_BADGE],
+        [ERP_WORK_TAG_MEASUREMENT, ERP_WORK_TAG_BADGE, ERP_WORK_TAG_INTAKE],
         erp_work_handover_tags(),
         erp_work_packing_tags(),
     );
@@ -66,7 +67,7 @@ function erp_badge_title_lines(string $badgeContent): array
  * Повтор с тем же ключом идемпотентности молча ничего не делает — так потеря
  * ответа на клиенте не задваивает работу.
  *
- * @param array{tag: string, badge?: string, thickness?: float|null, idempotencyKey?: string|null, title?: string|null, workObject?: string|null} $work
+ * @param array{tag: string, badge?: string, thickness?: float|null, idempotencyKey?: string|null, title?: string|null, workObject?: string|null, contractInternalNumber?: string|null} $work
  */
 function erp_work_log_record(PDO $pdo, array $actor, array $work): int
 {
@@ -77,12 +78,13 @@ function erp_work_log_record(PDO $pdo, array $actor, array $work): int
             (contract_internal_number, material, title, work_object, platform, performed_at, employee_fio,
              badge, tag, thickness, user_id, idempotency_key)
          VALUES
-            (NULL, NULL, :title, :work_object, :platform, CURRENT_TIMESTAMP(6), :employee_fio,
+            (:contract_internal_number, NULL, :title, :work_object, :platform, CURRENT_TIMESTAMP(6), :employee_fio,
              :badge, :tag, :thickness, :user_id, :idempotency_key)'
     );
 
     $title = $work['title'] ?? null;
     $workObject = $work['workObject'] ?? null;
+    $contract = $work['contractInternalNumber'] ?? null;
 
     try {
         $statement->execute([
@@ -95,6 +97,7 @@ function erp_work_log_record(PDO $pdo, array $actor, array $work): int
             'idempotency_key' => $work['idempotencyKey'] ?? null,
             'title' => $title === null || $title === '' ? null : mb_substr($title, 0, 512),
             'work_object' => $workObject === null || $workObject === '' ? null : mb_substr($workObject, 0, 512),
+            'contract_internal_number' => $contract === null || $contract === '' ? null : mb_substr($contract, 0, 64),
         ]);
     } catch (PDOException $error) {
         // 23000 — нарушение уникальности ключа идемпотентности: работа уже

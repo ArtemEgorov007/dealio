@@ -69,6 +69,21 @@ function erp_route(string $method, string $path): ?array
     if ($method === 'GET' && preg_match('#^/supply-work/items/(\d+)/stock$#', $path, $m) === 1) {
         return ['supply_work_item_stock', $m[1]];
     }
+    if ($method === 'GET' && $path === '/intake/form') {
+        return ['intake_form'];
+    }
+    if ($method === 'POST' && $path === '/intake/deliveries') {
+        return ['intake_create_delivery'];
+    }
+    if ($method === 'GET' && $path === '/intake/objects') {
+        return ['intake_objects_options'];
+    }
+    if ($method === 'POST' && preg_match('#^/intake/deliveries/(\d+)/objects$#', $path, $m) === 1) {
+        return ['intake_complete_matched', $m[1]];
+    }
+    if ($method === 'POST' && preg_match('#^/intake/deliveries/(\d+)/unmatched$#', $path, $m) === 1) {
+        return ['intake_complete_unmatched', $m[1]];
+    }
     if ($method === 'POST' && $path === '/work-log') {
         return ['work_log_create'];
     }

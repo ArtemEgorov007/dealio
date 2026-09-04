@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 function erp_permission_codes(): array
 {
-    return ['badges', 'measurements', 'packing', 'reports', 'approvals', 'orders', 'supply', 'warehouse', 'handover', 'personnel', 'contracts'];
+    return ['badges', 'measurements', 'packing', 'reports', 'approvals', 'orders', 'supply', 'warehouse', 'handover', 'personnel', 'contracts', 'intake'];
 }
 
 function erp_user_access(PDO $pdo, int $userId): array

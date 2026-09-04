@@ -17,7 +17,7 @@ const ratesPage = await readFile(new URL('../app/pages/contract-rates.vue', impo
 test('право «Работа с договорами» заведено во всех местах', () => {
     // Список кодов, метка для «Кадров» и флаги доступа на клиенте: пропуск
     // любого из трёх означает право, которое нельзя ни выдать, ни увидеть.
-    assert.match(auth, /'personnel', 'contracts'\]/)
+    assert.match(auth, /'personnel', 'contracts', 'intake'\]/)
     assert.match(personnel, /'contracts' => 'Работа с договорами'/)
     assert.match(types, /contracts: boolean/)
     assert.match(types, /contracts: false,/)
