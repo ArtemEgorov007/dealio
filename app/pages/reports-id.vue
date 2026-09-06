@@ -23,13 +23,12 @@ const load = async () => {
 }
 onMounted(load)
 
-const formatRub = (value: number): string => new Intl.NumberFormat('ru-RU', {
-  style: 'currency',
-  currency: 'RUB',
+// Значения без единиц: в таблице ТЗ и площадь, и стоимость — голые числа.
+const formatAmount = (value: number): string => new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0,
 }).format(value)
 
-const formatVolume = (value: number): string => new Intl.NumberFormat('ru-RU', {
+const formatArea = (value: number): string => new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
 }).format(value)
 
@@ -72,13 +71,13 @@ const groups = computed(() => groupIdByContract(rows.value))
         <div class="id-group__grid" role="table" :aria-label="`ИД по договору ${group.contract}`">
           <div class="id-group__grid-head" role="row">
             <span role="columnheader">Статус</span>
-            <span role="columnheader">Объём</span>
-            <span role="columnheader">Сумма с НДС</span>
+            <span role="columnheader">Площадь</span>
+            <span role="columnheader">Стоимость с НДС</span>
           </div>
           <div v-for="(line, index) in group.rows" :key="`${line.status}-${index}`" class="id-group__grid-row" role="row">
             <span role="cell">{{ line.status }}</span>
-            <span role="cell">{{ formatVolume(line.volume) }}</span>
-            <span role="cell">{{ formatRub(line.amountWithVat) }}</span>
+            <span role="cell">{{ formatArea(line.area) }}</span>
+            <span role="cell">{{ formatAmount(line.amountWithVat) }}</span>
           </div>
         </div>
       </article>

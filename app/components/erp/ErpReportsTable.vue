@@ -15,20 +15,23 @@ const MODE_OPTIONS = [
   {value: 'customer', label: 'Заказчик'},
 ]
 
-const formatTons = (value: number): string => `${new Intl.NumberFormat('ru-RU', {
-  maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
-}).format(value)} т`
-
-const formatRub = (value: number): string => new Intl.NumberFormat('ru-RU', {
-  style: 'currency',
-  currency: 'RUB',
+// Единицы измерения живут в шапке блока, а не в значениях: колонка чисел
+// без хвостов «т»/«₽» читается взглядом сверху вниз, а не по слогам.
+const formatAmount = (value: number): string => new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0,
 }).format(value)
 
+// Тонны и квадратные метры бывают дробными — знак после запятой показываем
+// только когда он есть, иначе колонка пестрит нулями.
+const formatDecimal = (value: number): string => new Intl.NumberFormat('ru-RU', {
+  maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
+}).format(value)
+
 const rowMetrics = (row: ErpReportRow) => [
-  {label: 'ТП за месяц', value: formatRub(row.productionRub)},
-  {label: 'Отгружено', value: formatTons(row.shippedTons)},
-  {label: 'В цехе', value: formatTons(row.inWorkshopTons)},
+  {label: 'ТП за месяц, ₽', value: formatAmount(row.productionRub)},
+  {label: 'Отгружено, т', value: formatDecimal(row.shippedTons)},
+  {label: 'Отгружено, м²', value: formatDecimal(row.shippedSquareMeters)},
+  {label: 'В цехе, т', value: formatDecimal(row.inWorkshopTons)},
 ]
 
 const groups = computed(() => {
@@ -95,6 +98,7 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
             <span role="columnheader">{{ groupColumnLabel }}</span>
             <span role="columnheader">ТП, ₽</span>
             <span role="columnheader">Отгр., т</span>
+            <span role="columnheader">Отгр., м²</span>
           </div>
           <div
               v-for="line in group.rows"
@@ -103,13 +107,15 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
               role="row"
           >
             <span role="cell">{{ line.label }}</span>
-            <span role="cell">{{ formatRub(line.productionRub) }}</span>
-            <span role="cell">{{ formatTons(line.shippedTons) }}</span>
+            <span role="cell">{{ formatAmount(line.productionRub) }}</span>
+            <span role="cell">{{ formatDecimal(line.shippedTons) }}</span>
+            <span role="cell">{{ formatDecimal(line.shippedSquareMeters) }}</span>
           </div>
           <div class="erp-reports-table__grid-row erp-reports-table__grid-row--total" role="row">
             <span role="cell">Итого</span>
-            <span role="cell">{{ formatRub(group.totals.productionRub) }}</span>
-            <span role="cell">{{ formatTons(group.totals.shippedTons) }}</span>
+            <span role="cell">{{ formatAmount(group.totals.productionRub) }}</span>
+            <span role="cell">{{ formatDecimal(group.totals.shippedTons) }}</span>
+            <span role="cell">{{ formatDecimal(group.totals.shippedSquareMeters) }}</span>
           </div>
         </div>
       </article>
@@ -196,7 +202,7 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 
 .erp-reports-table__metrics
   display: grid
-  grid-template-columns: repeat(3, minmax(0, 1fr))
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr))
   gap: 8px
   margin: 0
   padding-top: 2px
@@ -218,6 +224,9 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
   dd
     margin: 0
     overflow-wrap: anywhere
+    // Значения выровнены по правому краю колонки на любой ширине: так
+    // разряды стоят друг под другом и суммы сравниваются взглядом.
+    text-align: right
     font-size: 14px
     font-weight: 700
     line-height: 1.2
@@ -231,8 +240,8 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 .erp-reports-table__grid-head,
 .erp-reports-table__grid-row
   display: grid
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.9fr)
-  gap: 8px
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.75fr) minmax(0, 0.85fr)
+  gap: 6px
   align-items: baseline
 
 .erp-reports-table__grid-head
@@ -287,10 +296,10 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
       padding-bottom: 10px
       border-bottom: 0.5px solid rgba(60, 60, 67, 0.08)
 
-  .erp-reports-table__metric dd
-    text-align: right
-
   .erp-reports-table__grid-head,
   .erp-reports-table__grid-row
-    grid-template-columns: minmax(0, 1fr) auto auto
+    // Числовые колонки на телефоне разводим зазором: вплотную «1 000 000
+    // 500 12 500» читается одной строкой, и правый край столбца пропадает.
+    grid-template-columns: minmax(0, 1fr) auto auto auto
+    gap: 12px
 </style>

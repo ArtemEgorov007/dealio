@@ -23,9 +23,9 @@ const load = async () => {
 }
 onMounted(load)
 
-const formatRub = (value: number): string => new Intl.NumberFormat('ru-RU', {
-  style: 'currency',
-  currency: 'RUB',
+// Значения без единиц: в таблице ТЗ суммы стоят голыми числами, единица
+// подразумевается заголовком колонки.
+const formatAmount = (value: number): string => new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0,
 }).format(value)
 
@@ -67,18 +67,18 @@ const groups = computed(() => groupKsByContract(rows.value))
 
         <div class="ks-group__grid" role="table" :aria-label="`КС по договору ${group.contract}`">
           <div class="ks-group__grid-head" role="row">
-            <span role="columnheader">№</span>
+            <span role="columnheader">КС</span>
             <span role="columnheader">Сумма с НДС</span>
             <span role="columnheader">Статус</span>
           </div>
           <div v-for="(line, index) in group.rows" :key="`${line.number}-${index}`" class="ks-group__grid-row" role="row">
             <span role="cell">{{ line.number }}</span>
-            <span role="cell">{{ formatRub(line.amountWithVat) }}</span>
+            <span role="cell">{{ formatAmount(line.amountWithVat) }}</span>
             <span role="cell">{{ line.status }}</span>
           </div>
           <div class="ks-group__grid-row ks-group__grid-row--total" role="row">
             <span role="cell">Итого</span>
-            <span role="cell">{{ formatRub(group.totalAmountWithVat) }}</span>
+            <span role="cell">{{ formatAmount(group.totalAmountWithVat) }}</span>
             <span role="cell"/>
           </div>
         </div>

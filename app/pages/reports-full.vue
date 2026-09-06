@@ -6,9 +6,9 @@ import {groupReportRows} from '~/utils/erp-report-grouping'
 definePageMeta({layout: 'erp'})
 useSeoMeta({title: 'Полный отчёт | ERP'})
 
-// Тот же лист, что «Отчёт месяца» (fetchCurrentReports), другая проекция
-// метрик: ТП/Поступило/Отгружено вместо ТП/Отгружено/В цехе. Дублировать
-// запрос к мосту под этот экран не нужно.
+// Тот же лист, что «Отчёт месяца» (fetchCurrentReports), но метрики за весь
+// период работы, а не за месяц: колонки D и E листа. Дублировать запрос к
+// мосту под этот экран не нужно — лист один и тот же.
 const report = ref<ErpCurrentReport | null>(null)
 const loading = ref(true)
 const error = ref('')
@@ -26,32 +26,14 @@ const load = async () => {
 }
 onMounted(load)
 
-const formatTons = (value: number): string => `${new Intl.NumberFormat('ru-RU', {
-  maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
-}).format(value)} т`
-
-const formatRub = (value: number): string => new Intl.NumberFormat('ru-RU', {
-  style: 'currency',
-  currency: 'RUB',
+// Единицы измерения — только в шапке блока, в значениях они не нужны.
+const formatAmount = (value: number): string => new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0,
 }).format(value)
 
-// Колонка «Поступило» на источнике необязательна (см. GAS
-// normalizeReportsRows_) — пока реальный заголовок не подтверждён, лучше
-// явное «нет данных», чем тихий нуль, который читается как «поступлений не
-// было».
-const receivedAvailable = computed(() => report.value?.receivedAvailable ?? false)
-const formatReceived = (value: number): string => receivedAvailable.value ? formatTons(value) : 'нет данных'
-
-const summaryMetrics = computed(() => {
-  if (!report.value) return []
-  const summary = report.value.summary
-  return [
-    {key: 'production', label: 'ТП за месяц', value: formatRub(summary.productionRub), tone: '#016ED7'},
-    {key: 'received', label: 'Поступило', value: formatReceived(summary.receivedTons), tone: '#B45309'},
-    {key: 'shipped', label: 'Отгружено', value: formatTons(summary.shippedTons), tone: '#2FB463'},
-  ]
-})
+const formatTons = (value: number): string => new Intl.NumberFormat('ru-RU', {
+  maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
+}).format(value)
 
 type DetailMode = 'flat' | 'contract' | 'site' | 'customer'
 const mode = ref<DetailMode>('flat')
@@ -65,9 +47,8 @@ const MODE_OPTIONS = [
 const rows = computed<ErpReportRow[]>(() => report.value?.rows ?? [])
 
 const rowMetrics = (row: ErpReportRow) => [
-  {label: 'ТП за месяц', value: formatRub(row.productionRub)},
-  {label: 'Поступило', value: formatReceived(row.receivedTons)},
-  {label: 'Отгружено', value: formatTons(row.shippedTons)},
+  {label: 'ТП, ₽', value: formatAmount(row.productionTotalRub)},
+  {label: 'Отгружено, т', value: formatTons(row.shippedTotalTons)},
 ]
 
 const groups = computed(() => {
@@ -81,7 +62,7 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 <template>
   <ErpScreen
       title="Полный отчёт"
-      subtitle="ТП, поступление, отгрузка"
+      subtitle="ТП и отгрузка за весь период"
       icon="heroicons:document-chart-bar"
       :shift-link="{to: '/reports', label: 'Назад', icon: 'heroicons:chevron-left', iconSize: 13}"
   >
@@ -107,18 +88,6 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
     </ErpEmptyState>
 
     <template v-else-if="report">
-      <div class="full-report-summary">
-        <article
-            v-for="metric in summaryMetrics"
-            :key="metric.key"
-            class="full-report-summary__metric"
-            :style="{'--metric-tone': metric.tone}"
-        >
-          <span class="full-report-summary__label">{{ metric.label }}</span>
-          <strong class="full-report-summary__value">{{ metric.value }}</strong>
-        </article>
-      </div>
-
       <ErpEmptyState v-if="rows.length === 0">
         <p>В отчёте пока нет заполненных строк</p>
         <UiButton variant="outline" @click="load">Обновить</UiButton>
@@ -174,20 +143,17 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
               <div class="full-report-table__grid-head" role="row">
                 <span role="columnheader">{{ groupColumnLabel }}</span>
                 <span role="columnheader">ТП, ₽</span>
-                <span role="columnheader">Пост., т</span>
                 <span role="columnheader">Отгр., т</span>
               </div>
               <div v-for="line in group.rows" :key="line.label" class="full-report-table__grid-row" role="row">
                 <span role="cell">{{ line.label }}</span>
-                <span role="cell">{{ formatRub(line.productionRub) }}</span>
-                <span role="cell">{{ formatReceived(line.receivedTons) }}</span>
-                <span role="cell">{{ formatTons(line.shippedTons) }}</span>
+                <span role="cell">{{ formatAmount(line.productionTotalRub) }}</span>
+                <span role="cell">{{ formatTons(line.shippedTotalTons) }}</span>
               </div>
               <div class="full-report-table__grid-row full-report-table__grid-row--total" role="row">
                 <span role="cell">Итого</span>
-                <span role="cell">{{ formatRub(group.totals.productionRub) }}</span>
-                <span role="cell">{{ formatReceived(group.totals.receivedTons) }}</span>
-                <span role="cell">{{ formatTons(group.totals.shippedTons) }}</span>
+                <span role="cell">{{ formatAmount(group.totals.productionTotalRub) }}</span>
+                <span role="cell">{{ formatTons(group.totals.shippedTotalTons) }}</span>
               </div>
             </div>
           </article>
@@ -198,51 +164,6 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 </template>
 
 <style scoped lang="sass">
-.full-report-summary
-  display: grid
-  grid-template-columns: repeat(3, minmax(0, 1fr))
-  gap: 10px
-  margin-bottom: 22px
-
-.full-report-summary__metric
-  min-width: 0
-  display: grid
-  gap: 10px
-  padding: 14px 12px 14px 14px
-  border-radius: 16px
-  border: 0.5px solid rgba(60, 60, 67, 0.12)
-  background: #fff
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06)
-  position: relative
-  overflow: hidden
-
-  &::before
-    content: ''
-    position: absolute
-    left: 0
-    top: 10px
-    bottom: 10px
-    width: 3px
-    border-radius: 999px
-    background: var(--metric-tone, #016ED7)
-
-.full-report-summary__label
-  padding-left: 6px
-  font-size: 11px
-  font-weight: 600
-  letter-spacing: 0.02em
-  text-transform: uppercase
-  color: var(--color-text-secondary)
-
-.full-report-summary__value
-  padding-left: 6px
-  overflow-wrap: anywhere
-  font-size: clamp(15px, 4.2vw, 20px)
-  font-weight: 800
-  line-height: 1.1
-  color: var(--color-text)
-  font-variant-numeric: tabular-nums
-
 .full-report-table
   display: grid
   gap: 10px
@@ -315,7 +236,7 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 
 .full-report-table__metrics
   display: grid
-  grid-template-columns: repeat(3, minmax(0, 1fr))
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr))
   gap: 8px
   margin: 0
   padding-top: 2px
@@ -336,6 +257,8 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
   dd
     margin: 0
     overflow-wrap: anywhere
+    // Значения — по правому краю колонки на любой ширине, как в таблице.
+    text-align: right
     font-size: 14px
     font-weight: 700
     color: var(--color-text)
@@ -348,7 +271,7 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 .full-report-table__grid-head,
 .full-report-table__grid-row
   display: grid
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 0.8fr) minmax(0, 0.8fr)
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.9fr)
   gap: 6px
   align-items: baseline
 
@@ -386,18 +309,6 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
       font-weight: 700
 
 @media (max-width: 480px)
-  .full-report-summary
-    grid-template-columns: 1fr
-
-  .full-report-summary__metric
-    grid-template-columns: 1fr auto
-    align-items: center
-    gap: 8px 12px
-
-  .full-report-summary__value
-    text-align: right
-    font-size: 17px
-
   .full-report-table__modes
     margin-left: 0
     width: 100%
@@ -416,10 +327,8 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
       padding-bottom: 10px
       border-bottom: 0.5px solid rgba(60, 60, 67, 0.08)
 
-  .full-report-table__metric dd
-    text-align: right
-
   .full-report-table__grid-head,
   .full-report-table__grid-row
-    grid-template-columns: minmax(0, 1fr) auto auto auto
+    grid-template-columns: minmax(0, 1fr) auto auto
+    gap: 12px
 </style>

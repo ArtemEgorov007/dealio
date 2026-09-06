@@ -2,13 +2,23 @@ import type {ErpReportRow} from '~/utils/erp-api'
 
 export type ErpReportGroupMode = 'contract' | 'site' | 'customer'
 
-export interface ErpReportGroupLine {
-  label: string
+/**
+ * Метрики строки группы.
+ *
+ * Первые три — за месяц («Отчёт месяца»), последние две — за весь период
+ * работы («Полный отчёт»). Экраны берут свою половину: группировка у них
+ * общая, а вот метрики по ТЗ разные, и складывать месяц с периодом нельзя.
+ */
+export interface ErpReportGroupTotals {
   productionRub: number
   shippedTons: number
-  // «Полный отчёт» переиспользует эту же группировку под тройку
-  // ТП/Поступило/Отгружено — «Отчёт месяца» это поле просто не показывает.
-  receivedTons: number
+  shippedSquareMeters: number
+  productionTotalRub: number
+  shippedTotalTons: number
+}
+
+export interface ErpReportGroupLine extends ErpReportGroupTotals {
+  label: string
 }
 
 export interface ErpReportGroup {
@@ -16,10 +26,24 @@ export interface ErpReportGroup {
   title: string
   subtitle?: string
   rows: ErpReportGroupLine[]
-  totals: {
-    productionRub: number
-    shippedTons: number
-    receivedTons: number
+  totals: ErpReportGroupTotals
+}
+
+const METRIC_KEYS = [
+  'productionRub',
+  'shippedTons',
+  'shippedSquareMeters',
+  'productionTotalRub',
+  'shippedTotalTons',
+] as const
+
+function emptyTotals(): ErpReportGroupTotals {
+  return {
+    productionRub: 0,
+    shippedTons: 0,
+    shippedSquareMeters: 0,
+    productionTotalRub: 0,
+    shippedTotalTons: 0,
   }
 }
 
@@ -55,7 +79,7 @@ export function groupReportRows(rows: ErpReportRow[], mode: ErpReportGroupMode):
         title: key,
         subtitle: mode === 'contract' && row.customer.trim() !== '' ? row.customer.trim() : undefined,
         rows: [],
-        totals: {productionRub: 0, shippedTons: 0, receivedTons: 0},
+        totals: emptyTotals(),
       })
     }
 
@@ -69,23 +93,16 @@ export function groupReportRows(rows: ErpReportRow[], mode: ErpReportGroupMode):
       }
     }
 
-    const existing = group.rows.find(line => line.label === label)
-    if (existing) {
-      existing.productionRub += row.productionRub
-      existing.shippedTons += row.shippedTons
-      existing.receivedTons += row.receivedTons
-    } else {
-      group.rows.push({
-        label,
-        productionRub: row.productionRub,
-        shippedTons: row.shippedTons,
-        receivedTons: row.receivedTons,
-      })
+    let line = group.rows.find(existing => existing.label === label)
+    if (!line) {
+      line = {label, ...emptyTotals()}
+      group.rows.push(line)
     }
 
-    group.totals.productionRub += row.productionRub
-    group.totals.shippedTons += row.shippedTons
-    group.totals.receivedTons += row.receivedTons
+    for (const metric of METRIC_KEYS) {
+      line[metric] += row[metric]
+      group.totals[metric] += row[metric]
+    }
   }
 
   return groups

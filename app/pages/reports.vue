@@ -17,7 +17,7 @@ const tiles = [
     to: '/reports-full',
     icon: 'heroicons:document-chart-bar',
     label: 'Полный отчёт',
-    caption: 'ТП, поступление, отгрузка',
+    caption: 'ТП и отгрузка за весь период',
     tone: '#0F766E',
   },
   {

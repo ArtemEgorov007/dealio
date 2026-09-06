@@ -5,14 +5,14 @@ const props = defineProps<{
   report: ErpCurrentReport
 }>()
 
-const formatTons = (value: number): string => `${new Intl.NumberFormat('ru-RU', {
-  maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
-}).format(value)} т`
-
-const formatRub = (value: number): string => new Intl.NumberFormat('ru-RU', {
-  style: 'currency',
-  currency: 'RUB',
+// Единица измерения стоит в шапке карточки, а не рядом с числом: в самих
+// значениях она только мешает сравнивать их взглядом по колонке.
+const formatAmount = (value: number): string => new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0,
+}).format(value)
+
+const formatTons = (value: number): string => new Intl.NumberFormat('ru-RU', {
+  maximumFractionDigits: Number.isInteger(value) ? 0 : 1,
 }).format(value)
 
 const formattedPeriod = computed(() => {
@@ -35,23 +35,20 @@ const formattedUpdatedAt = computed(() => new Intl.DateTimeFormat('ru-RU', {
 const metrics = computed(() => [
   {
     key: 'production',
-    label: 'ТП за месяц',
-    value: formatRub(props.report.summary.productionRub),
-    unit: '₽',
+    label: 'ТП за месяц, ₽',
+    value: formatAmount(props.report.summary.productionRub),
     tone: '#016ED7',
   },
   {
     key: 'shipped',
-    label: 'Отгружено',
+    label: 'Отгружено, т',
     value: formatTons(props.report.summary.shippedTons),
-    unit: 'т',
     tone: '#2FB463',
   },
   {
     key: 'workshop',
-    label: 'В цехе',
+    label: 'В цехе, т',
     value: formatTons(props.report.summary.inWorkshopTons),
-    unit: 'т',
     tone: '#5B6B7F',
   },
 ])
