@@ -53,20 +53,17 @@ function erp_reports_decode_bridge(string $body): array
             'productionRub' => erp_reports_number($row['productionRub'] ?? 0),
             'shippedTons' => erp_reports_number($row['shippedTons'] ?? 0),
             'inWorkshopTons' => erp_reports_number($row['inWorkshopTons'] ?? 0),
-            // «Полный отчёт» — тот же лист и те же строки, что «Отчёт месяца»,
-            // только показывает другую тройку метрик (ТП/Поступило/Отгружено
-            // вместо ТП/Отгружено/В цехе). Читаем поступление тут же, а не
-            // отдельным мостом: дублировать чтение одного и того же листа
-            // под два разных экрана незачем.
-            'receivedTons' => erp_reports_number($row['receivedTons'] ?? 0),
+            // «Отчёт месяца» — метрики за месяц (выше и площадь отгрузки),
+            // «Полный отчёт» — те же строки за весь период работы. Лист один,
+            // читается одним запросом к мосту: дублировать чтение одного и
+            // того же листа под два экрана незачем.
+            'shippedSquareMeters' => erp_reports_number($row['shippedSquareMeters'] ?? 0),
+            'productionTotalRub' => erp_reports_number($row['productionTotalRub'] ?? 0),
+            'shippedTotalTons' => erp_reports_number($row['shippedTotalTons'] ?? 0),
         ];
     }
 
-    // Колонка «Поступило» необязательна на источнике (см. GAS
-    // normalizeReportsRows_) — если её нет, отчёт месяца всё равно отдаёт
-    // данные, а «Полный отчёт» узнаёт об этом по этому флагу и показывает
-    // «нет данных» вместо тихого нуля.
-    return ['rows' => $normalizedRows, 'receivedAvailable' => (bool) ($source['receivedAvailable'] ?? false)];
+    return ['rows' => $normalizedRows];
 }
 
 /**
@@ -110,7 +107,7 @@ function erp_reports_decode_id_bridge(string $body): array
         $normalizedRows[] = [
             'contract' => $contract,
             'status' => $status,
-            'volume' => erp_reports_number($row['volume'] ?? 0),
+            'area' => erp_reports_number($row['area'] ?? 0),
             'amountWithVat' => erp_reports_number($row['amountWithVat'] ?? 0),
         ];
     }
@@ -185,17 +182,17 @@ function erp_reports_fetch_bridge(array $config, string $action, callable $decod
 function erp_reports_payload(array $source): array
 {
     $rows = $source['rows'] ?? [];
+    // Сводка — только «Отчёт месяца»: в «Полном отчёте» блока сводных данных
+    // по ТЗ нет, поэтому метрики за весь период здесь не суммируются.
     $summary = [
         'productionRub' => 0.0,
         'shippedTons' => 0.0,
         'inWorkshopTons' => 0.0,
-        'receivedTons' => 0.0,
     ];
     foreach ($rows as $row) {
         $summary['productionRub'] += erp_reports_number($row['productionRub'] ?? 0);
         $summary['shippedTons'] += erp_reports_number($row['shippedTons'] ?? 0);
         $summary['inWorkshopTons'] += erp_reports_number($row['inWorkshopTons'] ?? 0);
-        $summary['receivedTons'] += erp_reports_number($row['receivedTons'] ?? 0);
     }
 
     $timezone = new DateTimeZone('Europe/Moscow');
@@ -205,7 +202,6 @@ function erp_reports_payload(array $source): array
         'period' => $now->format('Y-m'),
         'summary' => $summary,
         'rows' => $rows,
-        'receivedAvailable' => (bool) ($source['receivedAvailable'] ?? false),
     ];
 }
 

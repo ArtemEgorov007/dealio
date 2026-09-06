@@ -25,28 +25,27 @@ export interface ErpReportRow {
     customer: string
     contract: string
     site: string
+    /** «Отчёт месяца»: ТП, отгрузка в тоннах и в м², остаток в цехе. */
     productionRub: number
     shippedTons: number
     inWorkshopTons: number
-    // «Полный отчёт» показывает эту же строку под другой тройкой метрик
-    // (ТП/Поступило/Отгружено) — тот же лист, читается тем же запросом.
-    receivedTons: number
+    shippedSquareMeters: number
+    // «Полный отчёт» — та же строка листа за весь период работы, а не за
+    // месяц (колонки D и E). Лист один, запрос к мосту тоже один.
+    productionTotalRub: number
+    shippedTotalTons: number
 }
 
 export interface ErpCurrentReport {
     updatedAt: string
     period: string
+    /** Сводка только за месяц: в «Полном отчёте» блока сводных данных нет. */
     summary: {
         productionRub: number
         shippedTons: number
         inWorkshopTons: number
-        receivedTons: number
     }
     rows: ErpReportRow[]
-    // Колонка «Поступило» на источнике необязательна (см. GAS
-    // normalizeReportsRows_) — «Полный отчёт» показывает явное «нет данных»
-    // по этому флагу вместо тихого нуля, если реальный заголовок не совпал.
-    receivedAvailable: boolean
 }
 
 /** Строка листа «КС»: номер КС внутри договора, сумма с НДС, статус. */
@@ -61,7 +60,7 @@ export interface ErpKsRow {
 export interface ErpIdRow {
     contract: string
     status: string
-    volume: number
+    area: number
     amountWithVat: number
 }
 

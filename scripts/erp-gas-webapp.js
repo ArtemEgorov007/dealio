@@ -12,8 +12,8 @@
  * GET  ?action=issuedToday&fio=...&workshop=kolpino|volkhonka  (fio/workshop опциональны)
  * GET  ?action=handedOverToday&fio=...                            (fio опционален)
  * GET  ?action=packingToday&fio=...&machine=1..10
- * GET  ?action=reportsKs&token=...       (лист «КС»: Договор/№/Сумма с НДС/Статус)
- * GET  ?action=reportsId&token=...       (лист «ИД»: Договор/Статус/Объём/Сумма с НДС)
+ * GET  ?action=reportsKs&token=...       (лист «КС»: A договор, B номер, C сумма с НДС, D статус)
+ * GET  ?action=reportsId&token=...       (лист «ИД»: B договор, далее статус/площадь/стоимость)
  * POST { action: 'issueBadge',       workshop, fio, badgeContent }
  * POST { action: 'deleteIssuedBadge', row, fio, badgeContent }
  * POST { action: 'recordPacking',    platform, fio, machine, qrText }
@@ -221,10 +221,10 @@ function reportsCurrent_(token) {
     if (!sheet) {
         throw new Error('Не найден лист отчётов: ' + REPORTS_SHEET_NAME)
     }
-    return Object.assign(
-        {sourceReadAt: new Date().toISOString()},
-        normalizeReportsRows_(sheet.getDataRange().getDisplayValues()),
-    )
+    return {
+        sourceReadAt: new Date().toISOString(),
+        rows: normalizeReportsRows_(sheet.getDataRange().getDisplayValues()),
+    }
 }
 
 function reportsNumber_(value) {
@@ -234,8 +234,46 @@ function reportsNumber_(value) {
     return Number.isFinite(parsed) ? parsed : 0
 }
 
+function isNumericCell_(value) {
+    const normalized = normalizeCell_(value).replace(/[\s\u00A0]/g, '').replace(',', '.')
+    return normalized !== '' && Number.isFinite(Number(normalized))
+}
+
+// Слова, по которым шапка узнаётся наверняка, чем бы ни была заполнена
+// денежная колонка: шапка вида «2024» — тоже число.
+const REPORTS_HEADER_WORDS = ['Договор', 'КС', 'Статус', 'Площадь', 'Сумма с НДС', 'Стоимость с НДС']
+
+/**
+ * С какой строки начинаются данные на листе, который читается по буквам
+ * колонок.
+ *
+ * При чтении по заголовкам первая строка пропускается всегда — она и есть
+ * заголовок. По буквам такой гарантии нет: на листе без шапки первая строка
+ * это уже данные, и молча пропущенная строка испортила бы «Итого» — цифру,
+ * по которой сверяются с бухгалтерией. Сначала ищем в строке знакомое слово
+ * шапки, и только если его нет — смотрим на денежную колонку: число значит,
+ * что шапки нет.
+ */
+function firstDataRowIndex_(values, numericIndex) {
+    if (!values.length) return 1
+    const first = values[0].map(normalizeCell_)
+    for (let index = 0; index < REPORTS_HEADER_WORDS.length; index += 1) {
+        if (first.indexOf(REPORTS_HEADER_WORDS[index]) >= 0) return 1
+    }
+    return isNumericCell_(values[0][numericIndex]) ? 0 : 1
+}
+
+/** Колонка по одному из заголовков, а если шапки нет — по позиции из ТЗ. */
+function columnIndexOr_(header, names, fallbackIndex) {
+    for (let nameIndex = 0; nameIndex < names.length; nameIndex += 1) {
+        const found = header.indexOf(names[nameIndex])
+        if (found >= 0) return found
+    }
+    return fallbackIndex
+}
+
 function normalizeReportsRows_(values) {
-    if (!values.length) return {rows: [], receivedAvailable: false}
+    if (!values.length) return []
 
     const header = values[0].map(normalizeCell_)
     const customerIndex = requireColumn_(header, 'Заказчик', 'Отчёты')
@@ -244,14 +282,13 @@ function normalizeReportsRows_(values) {
     const productionIndex = requireColumn_(header, 'ТП за месяц, тн', 'Отчёты')
     const shippedIndex = requireColumn_(header, 'Отгружено за месяц, тн', 'Отчёты')
     const workshopIndex = requireColumn_(header, 'В цехе, тн', 'Отчёты')
-    // «Полный отчёт» — тот же лист, дополнительная метрика поступления.
-    // Название колонки следует тому же формату, что и остальные три
-    // («… за месяц, тн»), но не проверено вживую (нет доступа к реальной
-    // таблице) — в отличие от остальных четырёх колонок этого листа, эта
-    // необязательна: если заголовка нет, уже работающий Месячный отчёт не
-    // должен из-за этого падать. «Полный отчёт» узнаёт об отсутствии через
-    // receivedAvailable и показывает явное «нет данных» вместо тихого нуля.
-    const receivedIndex = header.indexOf('Поступило за месяц, тн')
+    // Колонки, заданные в ТЗ буквами, а не заголовками: по именам прошлый
+    // заход как раз и не сошёлся, а позиция в источнике подтверждена.
+    // D и E — ТП и отгрузка за весь период работы («Полный отчёт»),
+    // K — отгрузка за месяц в квадратных метрах («Отчёт месяца»).
+    const productionTotalIndex = 3
+    const shippedTotalIndex = 4
+    const shippedAreaIndex = 10
 
     const rows = []
     for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
@@ -267,15 +304,18 @@ function normalizeReportsRows_(values) {
             productionRub: reportsNumber_(row[productionIndex]),
             shippedTons: reportsNumber_(row[shippedIndex]),
             inWorkshopTons: reportsNumber_(row[workshopIndex]),
-            receivedTons: receivedIndex >= 0 ? reportsNumber_(row[receivedIndex]) : 0,
+            shippedSquareMeters: reportsNumber_(row[shippedAreaIndex]),
+            productionTotalRub: reportsNumber_(row[productionTotalIndex]),
+            shippedTotalTons: reportsNumber_(row[shippedTotalIndex]),
         })
     }
-    return {rows: rows, receivedAvailable: receivedIndex >= 0}
+    return rows
 }
 
 /**
- * Лист «КС»: Договор / № / Сумма с НДС / Статус — построчно, без итоговой
- * строки (Итого считается на клиенте так же, как группировка по договору).
+ * Лист «КС»: A — договор, B — номер КС, C — сумма с НДС, D — статус.
+ * Построчно, без итоговой строки: «Итого» считает клиент вместе с
+ * группировкой по договору.
  */
 function reportsKs_(token) {
     if (!REPORTS_BRIDGE_TOKEN || token !== REPORTS_BRIDGE_TOKEN) {
@@ -298,14 +338,15 @@ function reportsKs_(token) {
 function normalizeKsRows_(values) {
     if (!values.length) return []
 
-    const header = values[0].map(normalizeCell_)
-    const contractIndex = requireColumn_(header, 'Договор', 'КС')
-    const numberIndex = requireColumn_(header, '№', 'КС')
-    const amountIndex = requireColumn_(header, 'Сумма с НДС', 'КС')
-    const statusIndex = requireColumn_(header, 'Статус', 'КС')
+    // Колонки заданы буквами, а не заголовками: заголовок в источнике может
+    // называться как угодно (и уже не сошёлся), позиция — нет.
+    const contractIndex = 0
+    const numberIndex = 1
+    const amountIndex = 2
+    const statusIndex = 3
 
     const rows = []
-    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+    for (let rowIndex = firstDataRowIndex_(values, amountIndex); rowIndex < values.length; rowIndex += 1) {
         const row = values[rowIndex]
         const contract = normalizeCell_(row[contractIndex])
         const number = normalizeCell_(row[numberIndex])
@@ -321,9 +362,9 @@ function normalizeKsRows_(values) {
 }
 
 /**
- * Лист «ИД»: Договор / Статус / Объём / Сумма с НДС — строка уже сама по
- * себе группа статуса внутри договора (в отличие от «КС», где строка —
- * отдельный номер КС), клиент только раскладывает по договору.
+ * Лист «ИД»: договор — колонка B, дальше статус / площадь / стоимость с НДС.
+ * Строка уже сама по себе группа статуса внутри договора (в отличие от «КС»,
+ * где строка — отдельный номер КС), клиент только раскладывает по договору.
  */
 function reportsId_(token) {
     if (!REPORTS_BRIDGE_TOKEN || token !== REPORTS_BRIDGE_TOKEN) {
@@ -347,13 +388,17 @@ function normalizeIdRows_(values) {
     if (!values.length) return []
 
     const header = values[0].map(normalizeCell_)
-    const contractIndex = requireColumn_(header, 'Договор', 'ИД')
-    const statusIndex = requireColumn_(header, 'Статус', 'ИД')
-    const volumeIndex = requireColumn_(header, 'Объем', 'ИД')
-    const amountIndex = requireColumn_(header, 'Сумма с НДС', 'ИД')
+    // Договор — колонка B, так задано в ТЗ. Остальные три колонки ТЗ буквами
+    // не задаёт, поэтому сначала ищем их по заголовку из той же таблицы ТЗ, а
+    // если шапки на листе нет — берём C/D/E в том порядке, в каком колонки
+    // идут в этой таблице.
+    const contractIndex = 1
+    const statusIndex = columnIndexOr_(header, ['Статус'], 2)
+    const areaIndex = columnIndexOr_(header, ['Площадь'], 3)
+    const amountIndex = columnIndexOr_(header, ['Стоимость с НДС', 'Сумма с НДС'], 4)
 
     const rows = []
-    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+    for (let rowIndex = firstDataRowIndex_(values, amountIndex); rowIndex < values.length; rowIndex += 1) {
         const row = values[rowIndex]
         const contract = normalizeCell_(row[contractIndex])
         const status = normalizeCell_(row[statusIndex])
@@ -361,7 +406,7 @@ function normalizeIdRows_(values) {
         rows.push({
             contract: contract,
             status: status,
-            volume: reportsNumber_(row[volumeIndex]),
+            area: reportsNumber_(row[areaIndex]),
             amountWithVat: reportsNumber_(row[amountIndex]),
         })
     }

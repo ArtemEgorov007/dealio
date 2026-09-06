@@ -12,6 +12,7 @@ const ksPage = await readFile(new URL('../app/pages/reports-ks.vue', import.meta
 const idPage = await readFile(new URL('../app/pages/reports-id.vue', import.meta.url), 'utf8')
 const summary = await readFile(new URL('../app/components/erp/ErpReportsSummary.vue', import.meta.url), 'utf8').catch(() => '')
 const table = await readFile(new URL('../app/components/erp/ErpReportsTable.vue', import.meta.url), 'utf8').catch(() => '')
+const grouping = await readFile(new URL('../app/utils/erp-report-grouping.ts', import.meta.url), 'utf8')
 const router = await readFile(new URL('../public/api/src/Router.php', import.meta.url), 'utf8')
 const indexPhp = await readFile(new URL('../public/api/index.php', import.meta.url), 'utf8')
 const sections = await readFile(new URL('../app/utils/erp-sections.ts', import.meta.url), 'utf8')
@@ -40,9 +41,8 @@ test('reports server follows the standard Apps Script redirect without exposing 
   assert.match(reports, /erp_require_permission\([^\n]+['"]reports['"]/)
 })
 
-test('reports page renders all three mandatory metrics with correct units and retry state', () => {
+test('reports page renders all mandatory metrics with correct units and retry state', () => {
   assert.match(summary, /ТП за месяц/)
-  assert.match(summary, /formatRub/)
   assert.match(summary, /Отгружено/)
   assert.match(summary, /В цехе/)
   assert.match(page, /Повторить/)
@@ -50,6 +50,43 @@ test('reports page renders all three mandatory metrics with correct units and re
   assert.match(table, /customer/)
   assert.match(summary, /<\/style>/)
   assert.match(table, /<\/style>/)
+})
+
+test('единица измерения — в шапке блока, значение остаётся голым числом', () => {
+  // Отдельного форматтера с «₽»/«т» внутри значения больше нет: единица
+  // уехала в подпись метрики и в заголовок колонки.
+  for (const source of [summary, table, fullPage]) {
+    assert.doesNotMatch(source, /style: 'currency'/)
+    assert.doesNotMatch(source, /\}\).format\(value\)\} т`/)
+  }
+
+  assert.match(summary, /label: 'ТП за месяц, ₽'/)
+  assert.match(summary, /label: 'Отгружено, т'/)
+  assert.match(summary, /label: 'В цехе, т'/)
+  assert.match(table, /label: 'ТП за месяц, ₽'/)
+  assert.match(table, /label: 'В цехе, т'/)
+
+  // Значения выровнены по правому краю колонки на любой ширине, а не только
+  // в мобильной ветке медиазапроса.
+  for (const source of [table, fullPage]) {
+    const metricRule = source.match(/ {2}dd\n([\s\S]*?)\n\n/)?.[1] ?? ''
+    assert.match(metricRule, /text-align: right/)
+  }
+})
+
+test('«Отчёт месяца»: колонка «Отгр. м²» справа от «Отгр. т», данные из колонки K', () => {
+  // Колонка задана в ТЗ буквой, а не заголовком — читаем по позиции.
+  assert.match(gas, /const shippedAreaIndex = 10/)
+  assert.match(gas, /shippedSquareMeters: reportsNumber_\(row\[shippedAreaIndex\]\)/)
+  assert.match(reports, /'shippedSquareMeters' => erp_reports_number/)
+  assert.match(api, /shippedSquareMeters: number/)
+
+  // Порядок колонок в шапке: сначала тонны, следом квадратные метры.
+  const head = table.match(/erp-reports-table__grid-head[\s\S]*?<\/div>/)?.[0] ?? ''
+  assert.ok(head.indexOf('Отгр., т') > -1 && head.indexOf('Отгр., м²') > head.indexOf('Отгр., т'),
+    '«Отгр., м²» должна стоять справа от «Отгр., т»')
+  assert.match(table, /formatDecimal\(line\.shippedSquareMeters\)/)
+  assert.match(table, /formatDecimal\(group\.totals\.shippedSquareMeters\)/)
 })
 
 test('раздел «Отчёты» — хаб из 4 плиток, существующий экран переехал на «Отчёт месяца»', () => {
@@ -75,46 +112,51 @@ test('раздел «Отчёты» — хаб из 4 плиток, сущест
   assert.match(middleware, /'\/reports-id': 'reports'/)
 })
 
-test('«Полный отчёт» — тот же лист, что «Отчёт месяца», другая тройка метрик', () => {
-  // Одна и та же ручка /reports/current — дублировать запрос к мосту под
-  // другую проекцию метрик незачем.
+test('«Полный отчёт» — тот же лист, но метрики за весь период, без сводки и «Поступило»', () => {
+  // Одна и та же ручка /reports/current: лист один, дублировать запрос к
+  // мосту под вторую проекцию метрик незачем.
   assert.match(fullPage, /fetchCurrentReports/)
-  assert.match(fullPage, /'ТП за месяц'/)
-  assert.match(fullPage, /'Поступило'/)
-  assert.match(fullPage, /'Отгружено'/)
-  assert.doesNotMatch(fullPage, /'В цехе'/)
+
+  // Данные за весь период работы — колонки D и E, а не месячные метрики.
+  assert.match(fullPage, /formatAmount\(row\.productionTotalRub\)/)
+  assert.match(fullPage, /formatTons\(row\.shippedTotalTons\)/)
+  assert.match(fullPage, /label: 'ТП, ₽'/)
+  assert.doesNotMatch(fullPage, /'ТП за месяц/)
+  assert.doesNotMatch(fullPage, /'В цехе/)
+
+  // «Поступило» из раздела убрано целиком — от экрана до моста и GAS.
+  for (const source of [fullPage, gas, reports, api, grouping]) {
+    assert.doesNotMatch(source, /Поступило|received/i)
+  }
+
+  // Блока сводных данных в разделе нет — ни разметки, ни стилей.
+  assert.doesNotMatch(fullPage, /full-report-summary/)
+  assert.doesNotMatch(fullPage, /summaryMetrics/)
+
   // Та же группировка (Договор/Площадка/Заказчик), что у «Отчёта месяца».
   assert.match(fullPage, /groupReportRows/)
   assert.match(fullPage, /MODE_OPTIONS/)
 })
 
-test('GAS отдаёт «Поступило» той же ручкой reportsCurrent — не отдельным мостом', () => {
-  assert.match(gas, /'Поступило за месяц, тн'/)
-  assert.match(gas, /receivedTons: receivedIndex >= 0 \? reportsNumber_\(row\[receivedIndex\]\) : 0/)
+test('колонки за весь период читаются по буквам D и E, а не по заголовку', () => {
+  // По именам заголовков прошлый заход не сошёлся с источником, поэтому в
+  // ТЗ колонки заданы буквами — их и держим.
+  assert.match(gas, /const productionTotalIndex = 3/)
+  assert.match(gas, /const shippedTotalIndex = 4/)
+  assert.match(gas, /productionTotalRub: reportsNumber_\(row\[productionTotalIndex\]\)/)
+  assert.match(gas, /shippedTotalTons: reportsNumber_\(row\[shippedTotalIndex\]\)/)
+
+  assert.match(reports, /'productionTotalRub' => erp_reports_number/)
+  assert.match(reports, /'shippedTotalTons' => erp_reports_number/)
+  assert.match(api, /productionTotalRub: number/)
+  assert.match(api, /shippedTotalTons: number/)
 })
 
-test('«Поступило» — необязательная колонка: её отсутствие не роняет уже работающий Месячный отчёт', () => {
-  // Четыре остальные колонки листа «Отчёты» обязательны (requireColumn_ —
-  // падение с понятной ошибкой). «Поступило» — нет: заголовок не проверен
-  // вживую, и до подтверждения он не должен иметь власть сломать
-  // существующую фичу, которая этот столбец не использует.
-  assert.match(gas, /const receivedIndex = header\.indexOf\('Поступило за месяц, тн'\)/)
-  assert.doesNotMatch(gas, /requireColumn_\(header, 'Поступило за месяц, тн', 'Отчёты'\)/)
-  assert.match(gas, /receivedAvailable: receivedIndex >= 0/)
-
-  assert.match(reports, /'receivedAvailable' => \(bool\) \(\$source\['receivedAvailable'\] \?\? false\)/)
-  assert.match(api, /receivedAvailable: boolean/)
-
-  // «Полный отчёт» показывает явное «нет данных», а не тихий нуль.
-  assert.match(fullPage, /receivedAvailable/)
-  assert.match(fullPage, /formatReceived/)
-  assert.match(fullPage, /'нет данных'/)
-})
-
-test('receivedTons — сквозное поле от GAS до клиента (мост его не отбрасывает)', () => {
-  assert.match(reports, /'receivedTons' => erp_reports_number\(\$row\['receivedTons'\] \?\? 0\)/)
-  assert.match(reports, /'receivedTons' => 0\.0,/)
-  assert.match(api, /receivedTons: number/)
+test('сводка считает только месячные метрики — месяц и весь период не складываются', () => {
+  const payload = reports.slice(reports.indexOf('function erp_reports_payload'))
+  const summaryBlock = payload.slice(0, payload.indexOf('$timezone'))
+  assert.match(summaryBlock, /'productionRub' => 0\.0/)
+  assert.doesNotMatch(summaryBlock, /productionTotalRub|shippedTotalTons/)
 })
 
 test('КС и ИД — свои GAS-действия, свои PHP-маршруты, право reports', () => {
@@ -136,25 +178,54 @@ test('КС и ИД — свои GAS-действия, свои PHP-маршру�
   }
 })
 
-test('КС: договор/номер/сумма с НДС/статус, группировка по договору с «Итого»', () => {
-  assert.match(gas, /requireColumn_\(header, 'Договор', 'КС'\)/)
-  assert.match(gas, /requireColumn_\(header, '№', 'КС'\)/)
-  assert.match(gas, /requireColumn_\(header, 'Сумма с НДС', 'КС'\)/)
-  assert.match(gas, /requireColumn_\(header, 'Статус', 'КС'\)/)
+test('КС: колонки A/B/C/D, шапка «КС», группировка по договору с «Итого»', () => {
+  // Буквы, а не заголовки: на листе шапки может не быть вовсе.
+  const ks = gas.slice(gas.indexOf('function normalizeKsRows_'))
+  const body = ks.slice(0, ks.indexOf('\n}\n'))
+  assert.match(body, /const contractIndex = 0/)
+  assert.match(body, /const numberIndex = 1/)
+  assert.match(body, /const amountIndex = 2/)
+  assert.match(body, /const statusIndex = 3/)
+  assert.doesNotMatch(body, /requireColumn_/)
 
   assert.match(reports, /function erp_reports_decode_ks_bridge/)
   assert.match(api, /export interface ErpKsRow/)
   assert.match(ksPage, /groupKsByContract/)
   assert.match(ksPage, /Итого/)
+  assert.match(ksPage, /<span role="columnheader">КС<\/span>/)
 })
 
-test('ИД: договор/статус/объём/сумма с НДС, группировка по договору', () => {
-  assert.match(gas, /requireColumn_\(header, 'Договор', 'ИД'\)/)
-  assert.match(gas, /requireColumn_\(header, 'Статус', 'ИД'\)/)
-  assert.match(gas, /requireColumn_\(header, 'Объем', 'ИД'\)/)
-  assert.match(gas, /requireColumn_\(header, 'Сумма с НДС', 'ИД'\)/)
+test('ИД: договор из колонки B, площадь и стоимость с НДС, без «Итого»', () => {
+  const id = gas.slice(gas.indexOf('function normalizeIdRows_'))
+  const body = id.slice(0, id.indexOf('\n}\n'))
+  assert.match(body, /const contractIndex = 1/)
+  assert.match(body, /columnIndexOr_\(header, \['Статус'\], 2\)/)
+  assert.match(body, /columnIndexOr_\(header, \['Площадь'\], 3\)/)
+  assert.match(body, /columnIndexOr_\(header, \['Стоимость с НДС', 'Сумма с НДС'\], 4\)/)
 
   assert.match(reports, /function erp_reports_decode_id_bridge/)
   assert.match(api, /export interface ErpIdRow/)
+  assert.match(api, /area: number/)
   assert.match(idPage, /groupIdByContract/)
+  assert.match(idPage, /<span role="columnheader">Площадь<\/span>/)
+  assert.match(idPage, /<span role="columnheader">Стоимость с НДС<\/span>/)
+  // Итоговой строки в ИД по ТЗ нет — только строки статусов.
+  assert.doesNotMatch(idPage, /Итого/)
+})
+
+test('лист без шапки не теряет первую строку при чтении по буквам', () => {
+  // Читая по заголовкам, первую строку пропускаешь всегда. По буквам это
+  // уже не гарантия: пропущенная строка молча испортила бы «Итого».
+  assert.match(gas, /function firstDataRowIndex_/)
+  // Шапка вида «2024» в денежной колонке — тоже число, поэтому сначала
+  // ищем знакомое слово шапки и только потом смотрим на число.
+  assert.match(gas, /const REPORTS_HEADER_WORDS = \[/)
+  const detector = gas.slice(gas.indexOf('function firstDataRowIndex_'))
+  const body = detector.slice(0, detector.indexOf('\n}\n'))
+  assert.ok(body.indexOf('REPORTS_HEADER_WORDS') < body.indexOf('isNumericCell_'),
+    'слово шапки должно проверяться раньше числа')
+  for (const fn of ['normalizeKsRows_', 'normalizeIdRows_']) {
+    const body = gas.slice(gas.indexOf(`function ${fn}`))
+    assert.match(body.slice(0, body.indexOf('\n}\n')), /firstDataRowIndex_\(values, amountIndex\)/)
+  }
 })

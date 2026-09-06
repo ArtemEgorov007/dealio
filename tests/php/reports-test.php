@@ -38,9 +38,11 @@ $decoded = erp_reports_decode_bridge(json_encode([
 expect_reports($decoded['rows'][0]['productionRub'] === 12250994.0, 'TP must be normalized to rubles');
 expect_reports($decoded['rows'][0]['shippedTons'] === 368.0, 'Shipment must be normalized to tons');
 expect_reports($decoded['rows'][0]['inWorkshopTons'] === 172.0, 'Workshop balance must be normalized to tons');
-expect_reports($decoded['receivedAvailable'] === false, 'Missing receivedAvailable source flag must default to false, not fail the whole report');
+// Колонки за весь период (D/E) и площадь отгрузки (K) приезжают той же
+// строкой, что и месячные: лист один, запрос к мосту один.
+expect_reports($decoded['rows'][0]['productionTotalRub'] === 0.0, 'Missing period columns must normalize to zero instead of failing the report');
 
-$decodedWithReceived = erp_reports_decode_bridge(json_encode([
+$decodedFull = erp_reports_decode_bridge(json_encode([
     'ok' => true,
     'data' => [
         'rows' => [[
@@ -50,13 +52,33 @@ $decodedWithReceived = erp_reports_decode_bridge(json_encode([
             'productionRub' => '12 250 994',
             'shippedTons' => '368',
             'inWorkshopTons' => '172',
-            'receivedTons' => '300',
+            'shippedSquareMeters' => '1 480',
+            'productionTotalRub' => '98 000 000',
+            'shippedTotalTons' => '4 210',
         ]],
-        'receivedAvailable' => true,
     ],
 ], JSON_THROW_ON_ERROR));
-expect_reports($decodedWithReceived['receivedAvailable'] === true, 'receivedAvailable flag from source must propagate');
-expect_reports($decodedWithReceived['rows'][0]['receivedTons'] === 300.0, 'Received tons must be normalized when the column is present');
+expect_reports($decodedFull['rows'][0]['shippedSquareMeters'] === 1480.0, 'Shipped area must be normalized to square meters');
+expect_reports($decodedFull['rows'][0]['productionTotalRub'] === 98000000.0, 'Period TP must be normalized to rubles');
+expect_reports($decodedFull['rows'][0]['shippedTotalTons'] === 4210.0, 'Period shipment must be normalized to tons');
+
+// «Полный отчёт» — за весь период, «Отчёт месяца» — за месяц: сводка считает
+// только месячные метрики, иначе в ней сложатся разные периоды.
+$payload = erp_reports_payload($decodedFull);
+expect_reports($payload['summary']['productionRub'] === 12250994.0, 'Summary must total the monthly TP');
+expect_reports(!array_key_exists('productionTotalRub', $payload['summary']), 'Summary must not mix the all-period columns into monthly totals');
+
+$decodedId = erp_reports_decode_id_bridge(json_encode([
+    'ok' => true,
+    'data' => ['rows' => [[
+        'contract' => 'Договор 1',
+        'status' => 'Подписана',
+        'area' => '150 000',
+        'amountWithVat' => '480 000 000',
+    ]]],
+], JSON_THROW_ON_ERROR));
+expect_reports($decodedId['rows'][0]['area'] === 150000.0, 'ID rows must carry the area column');
+expect_reports($decodedId['rows'][0]['amountWithVat'] === 480000000.0, 'ID rows must carry the cost with VAT');
 
 $invalid = false;
 try {

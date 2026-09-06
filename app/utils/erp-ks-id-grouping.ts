@@ -32,7 +32,7 @@ export function groupKsByContract(rows: ErpKsRow[]): ErpKsGroup[] {
 
 export interface ErpIdGroup {
     contract: string
-    rows: Array<{status: string; volume: number; amountWithVat: number}>
+    rows: Array<{status: string; area: number; amountWithVat: number}>
 }
 
 export function groupIdByContract(rows: ErpIdRow[]): ErpIdGroup[] {
@@ -46,7 +46,7 @@ export function groupIdByContract(rows: ErpIdRow[]): ErpIdGroup[] {
             indexByContract.set(row.contract, index)
             groups.push({contract: row.contract, rows: []})
         }
-        groups[index].rows.push({status: row.status, volume: row.volume, amountWithVat: row.amountWithVat})
+        groups[index].rows.push({status: row.status, area: row.area, amountWithVat: row.amountWithVat})
     }
 
     return groups
