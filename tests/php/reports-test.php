@@ -80,6 +80,37 @@ $decodedId = erp_reports_decode_id_bridge(json_encode([
 expect_reports($decodedId['rows'][0]['area'] === 150000.0, 'ID rows must carry the area column');
 expect_reports($decodedId['rows'][0]['amountWithVat'] === 480000000.0, 'ID rows must carry the cost with VAT');
 
+// Причина отказа от источника не стирается: без неё «отчёты не видят
+// данные» невозможно диагностировать ни с экрана, ни из логов.
+$reasonSeen = '';
+try {
+    erp_reports_decode_bridge(json_encode([
+        'ok' => false,
+        'error' => 'Не найден лист отчётов «Лист15». Есть: Лист 15, КС, ИД',
+    ], JSON_THROW_ON_ERROR));
+} catch (RuntimeException $error) {
+    $reasonSeen = $error->getMessage();
+}
+expect_reports(str_contains($reasonSeen, 'Не найден лист отчётов'), 'Bridge failure reason must survive decoding');
+expect_reports(str_contains($reasonSeen, 'Есть: Лист 15'), 'Bridge failure must keep the list of real sheet names');
+
+$ksReason = '';
+try {
+    erp_reports_decode_ks_bridge(json_encode(['ok' => false, 'error' => 'Нет доступа к отчётам'], JSON_THROW_ON_ERROR));
+} catch (RuntimeException $error) {
+    $ksReason = $error->getMessage();
+}
+expect_reports($ksReason === 'Нет доступа к отчётам', 'KS bridge must surface the source reason too');
+
+expect_reports(
+    erp_reports_failure_message(new RuntimeException('Не найден столбец «ТП за месяц, тн»')) === 'Не найден столбец «ТП за месяц, тн»',
+    'Screen message must repeat the source reason'
+);
+expect_reports(
+    erp_reports_failure_message(new RuntimeException('')) === 'Источник отчётов временно недоступен. Повторите попытку.',
+    'Empty reason must fall back to the generic message'
+);
+
 $invalid = false;
 try {
     erp_reports_decode_bridge('{"ok":false}');
