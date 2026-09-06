@@ -145,17 +145,23 @@ export async function logoutErpEmployee(): Promise<void> {
     await erpApiRequest<null>('auth/logout', {method: 'POST'})
 }
 
+// Отчёт идёт за данными в Google-таблицу через мост, и на холодном старте
+// Apps Script будит проект секунд двадцать. Общего таймаута в двенадцать
+// секунд на это не хватало: запрос обрывался на середине, а на экране это
+// выглядело зависшей загрузкой.
+const ERP_REPORTS_TIMEOUT_MS = 50_000
+
 export async function fetchReportsCurrentViaApi(): Promise<ErpCurrentReport> {
-    return erpApiRequest<ErpCurrentReport>('reports/current')
+    return erpApiRequest<ErpCurrentReport>('reports/current', {timeoutMs: ERP_REPORTS_TIMEOUT_MS})
 }
 
 export async function fetchReportsKsViaApi(): Promise<ErpKsRow[]> {
-    const data = await erpApiRequest<{rows: ErpKsRow[]}>('reports/ks')
+    const data = await erpApiRequest<{rows: ErpKsRow[]}>('reports/ks', {timeoutMs: ERP_REPORTS_TIMEOUT_MS})
     return data.rows ?? []
 }
 
 export async function fetchReportsIdViaApi(): Promise<ErpIdRow[]> {
-    const data = await erpApiRequest<{rows: ErpIdRow[]}>('reports/id')
+    const data = await erpApiRequest<{rows: ErpIdRow[]}>('reports/id', {timeoutMs: ERP_REPORTS_TIMEOUT_MS})
     return data.rows ?? []
 }
 

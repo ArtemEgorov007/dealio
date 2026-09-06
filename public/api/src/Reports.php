@@ -171,8 +171,11 @@ function erp_reports_fetch_bridge(array $config, string $action, callable $decod
         // Apps Script redirects a Web App invocation to googleusercontent.com.
         // This is server-side only; the bridge URL and its token remain private.
         CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_TIMEOUT => 10,
+        // Apps Script на холодном старте отвечает секунд двадцать: он будит
+        // проект и открывает таблицу. Прежние десять секунд обрывали такой
+        // запрос на середине, и снаружи это выглядело зависшей загрузкой.
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 45,
         CURLOPT_HTTPHEADER => ['Accept: application/json'],
     ]);
     $body = curl_exec($curl);

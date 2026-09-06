@@ -272,3 +272,15 @@ test('«не вижу данные» диагностируется: лист и
   assert.match(reports, /function erp_reports_failure_message/)
   assert.match(reports, /erp_error_payload\('reports_unavailable', erp_reports_failure_message\(\$error\), \$requestId\)/)
 })
+
+test('холодный старт источника не обрывается таймаутом на середине', () => {
+  // Apps Script будит проект и открывает таблицу секунд двадцать. Общий
+  // клиентский таймаут в 12 секунд и прежние 10 секунд у моста рвали такой
+  // запрос, и снаружи это выглядело зависшей загрузкой, а не ошибкой.
+  assert.match(api, /const ERP_REPORTS_TIMEOUT_MS = 50_000/)
+  for (const route of ['reports\\/current', 'reports\\/ks', 'reports\\/id']) {
+    assert.match(api, new RegExp(`'${route}', \\{timeoutMs: ERP_REPORTS_TIMEOUT_MS\\}`))
+  }
+  assert.match(reports, /CURLOPT_CONNECTTIMEOUT => 10/)
+  assert.match(reports, /CURLOPT_TIMEOUT => 45/)
+})
