@@ -98,6 +98,10 @@ function doGet(e) {
             return jsonResponse_({ok: true, data: reportsId_(e.parameter.token || '')})
         }
 
+        if (action === 'reportsHeader') {
+            return jsonResponse_({ok: true, data: reportsHeader_(e.parameter.token || '', e.parameter.sheet || '')})
+        }
+
         return jsonResponse_({ok: false, error: 'Unknown action'})
     } catch (error) {
         return jsonResponse_({ok: false, error: String(error.message || error)})
@@ -235,6 +239,39 @@ function isNumericCell_(value) {
     return normalized !== '' && Number.isFinite(Number(normalized))
 }
 
+/**
+ * Заголовки листа с буквами колонок — диагностика связей с источником.
+ *
+ * Колонки в ТЗ задают буквами, а в таблице перед ними легко появляется
+ * лишний столбец нумерации — тогда весь раздел молча показывает соседние
+ * данные (договором становится номер строки, суммой — статус). Сверять это
+ * глазами по экрану дорого, поэтому мост умеет показать, что он видит.
+ */
+function reportsHeader_(token, sheetName) {
+    requireReportsToken_(token)
+    const sheet = requireReportsSheet_(sheetName || REPORTS_SHEET_NAME)
+    const values = sheet.getRange(1, 1, Math.min(2, sheet.getLastRow()), sheet.getLastColumn()).getDisplayValues()
+    const columns = []
+    for (let index = 0; index < values[0].length; index += 1) {
+        columns.push({
+            letter: columnLetter_(index),
+            header: normalizeCell_(values[0][index]),
+            firstRow: values.length > 1 ? normalizeCell_(values[1][index]) : '',
+        })
+    }
+    return {sheet: sheet.getName(), columns: columns}
+}
+
+function columnLetter_(index) {
+    let letter = ''
+    let rest = index
+    while (rest >= 0) {
+        letter = String.fromCharCode(65 + (rest % 26)) + letter
+        rest = Math.floor(rest / 26) - 1
+    }
+    return letter
+}
+
 function requireReportsToken_(token) {
     // Пустое свойство и неверный токен — разные поломки: первую чинит
     // настройка скрипта, вторую — конфиг сервера. Одинаковый текст ошибки
@@ -321,13 +358,15 @@ function normalizeReportsRows_(values) {
     const productionIndex = requireColumn_(header, 'ТП за месяц, тн', 'Отчёты')
     const shippedIndex = requireColumn_(header, 'Отгружено за месяц, тн', 'Отчёты')
     const workshopIndex = requireColumn_(header, 'В цехе, тн', 'Отчёты')
-    // Колонки, заданные в ТЗ буквами, а не заголовками: по именам прошлый
-    // заход как раз и не сошёлся, а позиция в источнике подтверждена.
-    // D и E — ТП и отгрузка за весь период работы («Полный отчёт»),
-    // K — отгрузка за месяц в квадратных метрах («Отчёт месяца»).
-    const productionTotalIndex = 3
-    const shippedTotalIndex = 4
-    const shippedAreaIndex = 10
+    // Метрики за весь период («Полный отчёт») и отгрузка в м² («Отчёт
+    // месяца»). В ТЗ они заданы буквами, но буквы разъехались с листом:
+    // E — это «Поступило, тн», а отгрузка за период лежит в F. Показывать
+    // поступление под видом отгрузки нельзя тем более, что по тому же ТЗ
+    // поступление в этом разделе видеть не хотят. Поэтому читаем по
+    // заголовкам, а буквы из ТЗ оставляем запасным вариантом.
+    const productionTotalIndex = columnIndexOr_(header, ['ТП, руб'], 3)
+    const shippedTotalIndex = columnIndexOr_(header, ['Отгружено, тн'], 5)
+    const shippedAreaIndex = columnIndexOr_(header, ['Отгружено за месяц, м2', 'Отгружено за месяц, м²'], 10)
 
     const rows = []
     for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
@@ -368,12 +407,14 @@ function reportsKs_(token) {
 function normalizeKsRows_(values) {
     if (!values.length) return []
 
-    // Колонки заданы буквами, а не заголовками: заголовок в источнике может
-    // называться как угодно (и уже не сошёлся), позиция — нет.
-    const contractIndex = 0
-    const numberIndex = 1
-    const amountIndex = 2
-    const statusIndex = 3
+    const header = values[0].map(normalizeCell_)
+    // Буквы из ТЗ сдвинуты на колонку: первым на листе идёт «ID», поэтому
+    // договор лежит в B, а не в A. Заголовки на листе есть и точны — читаем
+    // по ним, буквы держим запасным вариантом со сдвигом на этот «ID».
+    const contractIndex = columnIndexOr_(header, ['Договор'], 1)
+    const numberIndex = columnIndexOr_(header, ['Номер КС', '№'], 2)
+    const amountIndex = columnIndexOr_(header, ['Стоимость с НДС', 'Сумма с НДС'], 3)
+    const statusIndex = columnIndexOr_(header, ['Статус'], 4)
 
     const rows = []
     for (let rowIndex = firstDataRowIndex_(values, amountIndex); rowIndex < values.length; rowIndex += 1) {
@@ -409,14 +450,13 @@ function normalizeIdRows_(values) {
     if (!values.length) return []
 
     const header = values[0].map(normalizeCell_)
-    // Договор — колонка B, так задано в ТЗ. Остальные три колонки ТЗ буквами
-    // не задаёт, поэтому сначала ищем их по заголовку из той же таблицы ТЗ, а
-    // если шапки на листе нет — берём C/D/E в том порядке, в каком колонки
-    // идут в этой таблице.
-    const contractIndex = 1
-    const statusIndex = columnIndexOr_(header, ['Статус'], 2)
-    const areaIndex = columnIndexOr_(header, ['Площадь'], 3)
-    const amountIndex = columnIndexOr_(header, ['Стоимость с НДС', 'Сумма с НДС'], 4)
+    // В ТЗ договор указан в колонке B, но там лежит шифр АОСР: договор — в
+    // C, а площадь, стоимость и статус ещё правее (F, G, H). Читаем по
+    // заголовкам, буквы — запасной вариант по фактической раскладке листа.
+    const contractIndex = columnIndexOr_(header, ['Договор'], 2)
+    const statusIndex = columnIndexOr_(header, ['Статус'], 7)
+    const areaIndex = columnIndexOr_(header, ['Площадь'], 5)
+    const amountIndex = columnIndexOr_(header, ['Стоимость', 'Стоимость с НДС', 'Сумма с НДС'], 6)
 
     const rows = []
     for (let rowIndex = firstDataRowIndex_(values, amountIndex); rowIndex < values.length; rowIndex += 1) {
