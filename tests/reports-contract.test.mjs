@@ -13,6 +13,7 @@ const idPage = await readFile(new URL('../app/pages/reports-id.vue', import.meta
 const summary = await readFile(new URL('../app/components/erp/ErpReportsSummary.vue', import.meta.url), 'utf8').catch(() => '')
 const table = await readFile(new URL('../app/components/erp/ErpReportsTable.vue', import.meta.url), 'utf8').catch(() => '')
 const grouping = await readFile(new URL('../app/utils/erp-report-grouping.ts', import.meta.url), 'utf8')
+const ksIdGrouping = await readFile(new URL('../app/utils/erp-ks-id-grouping.ts', import.meta.url), 'utf8')
 const router = await readFile(new URL('../public/api/src/Router.php', import.meta.url), 'utf8')
 const indexPhp = await readFile(new URL('../public/api/index.php', import.meta.url), 'utf8')
 const sections = await readFile(new URL('../app/utils/erp-sections.ts', import.meta.url), 'utf8')
@@ -218,6 +219,11 @@ test('ИД: договор из «Договор», а не шифр АОСР; �
   assert.match(api, /export interface ErpIdRow/)
   assert.match(api, /area: number/)
   assert.match(idPage, /groupIdByContract/)
+  // Внутри договора — строки статусов, а не поштучные акты: на реальном
+  // листе их под две сотни на договор.
+  assert.match(ksIdGrouping, /existing\.status === row\.status/)
+  assert.match(ksIdGrouping, /line\.area \+= row\.area/)
+  assert.match(ksIdGrouping, /line\.amountWithVat \+= row\.amountWithVat/)
   assert.match(idPage, /<span role="columnheader">Площадь<\/span>/)
   assert.match(idPage, /<span role="columnheader">Стоимость с НДС<\/span>/)
   // Итоговой строки в ИД по ТЗ нет — только строки статусов.
