@@ -31,7 +31,12 @@ const JOURNAL_SHEET = 'Журнал выдачи бирок'
 const LOGIST_SHEET = 'Логисты'
 const HANDOVER_SHEET = 'Сдача'
 const MEASUREMENT_SHEET = 'Промеры'
+// Таблица «Отчеты Секретаря» — не секрет, её идентификатор с самого начала
+// лежит в спеке отчётов, а доступ к данным закрывает токен. Дефолт здесь
+// снимает одну ручную настройку и одну возможность опечататься; Script
+// Property по-прежнему перекрывает его, как у таблицы «Ведомости».
 const REPORTS_SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('REPORTS_SPREADSHEET_ID')
+    || '1Y4HcpLRakc-aPWEwfF0PYmo5nzjj_0BLpbzqbtpqHvk'
 const REPORTS_SHEET_NAME = PropertiesService.getScriptProperties().getProperty('REPORTS_SHEET_NAME') || 'Лист15'
 const REPORTS_BRIDGE_TOKEN = PropertiesService.getScriptProperties().getProperty('REPORTS_BRIDGE_TOKEN') || ''
 // «КС» и «ИД» — те же Script Properties, что и у остального отчёта: своя
