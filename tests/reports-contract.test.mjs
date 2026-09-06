@@ -75,8 +75,9 @@ test('единица измерения — в шапке блока, значе
 })
 
 test('«Отчёт месяца»: колонка «Отгр. м²» справа от «Отгр. т», данные из колонки K', () => {
-  // Колонка задана в ТЗ буквой, а не заголовком — читаем по позиции.
-  assert.match(gas, /const shippedAreaIndex = 10/)
+  // На листе колонка подписана «Отгружено за месяц, м2» и стоит в K.
+  // Читаем по заголовку, буква из ТЗ остаётся запасным вариантом.
+  assert.match(gas, /columnIndexOr_\(header, \['Отгружено за месяц, м2', 'Отгружено за месяц, м²'\], 10\)/)
   assert.match(gas, /shippedSquareMeters: reportsNumber_\(row\[shippedAreaIndex\]\)/)
   assert.match(reports, /'shippedSquareMeters' => erp_reports_number/)
   assert.match(api, /shippedSquareMeters: number/)
@@ -124,10 +125,14 @@ test('«Полный отчёт» — тот же лист, но метрики 
   assert.doesNotMatch(fullPage, /'ТП за месяц/)
   assert.doesNotMatch(fullPage, /'В цехе/)
 
-  // «Поступило» из раздела убрано целиком — от экрана до моста и GAS.
-  for (const source of [fullPage, gas, reports, api, grouping]) {
-    assert.doesNotMatch(source, /Поступило|received/i)
+  // «Поступило» из раздела убрано целиком — от экрана до моста. В самом
+  // источнике колонка поступления есть и стоит вплотную к отгрузке, так
+  // что в GAS о ней говорит только комментарий — но не поле данных.
+  assert.doesNotMatch(fullPage, /Поступило|received/i)
+  for (const source of [reports, api, grouping]) {
+    assert.doesNotMatch(source, /received/i)
   }
+  assert.doesNotMatch(gas, /receivedTons/)
 
   // Блока сводных данных в разделе нет — ни разметки, ни стилей.
   assert.doesNotMatch(fullPage, /full-report-summary/)
@@ -138,11 +143,12 @@ test('«Полный отчёт» — тот же лист, но метрики 
   assert.match(fullPage, /MODE_OPTIONS/)
 })
 
-test('колонки за весь период читаются по буквам D и E, а не по заголовку', () => {
-  // По именам заголовков прошлый заход не сошёлся с источником, поэтому в
-  // ТЗ колонки заданы буквами — их и держим.
-  assert.match(gas, /const productionTotalIndex = 3/)
-  assert.match(gas, /const shippedTotalIndex = 4/)
+test('за весь период берутся «ТП, руб» и «Отгружено, тн», а не соседняя колонка поступления', () => {
+  // Буква E из ТЗ указывает на «Поступило, тн» — отгрузка за период лежит
+  // в F. Показывать поступление под видом отгрузки нельзя тем более, что
+  // по тому же ТЗ поступление в этом разделе видеть не хотят.
+  assert.match(gas, /columnIndexOr_\(header, \['ТП, руб'\], 3\)/)
+  assert.match(gas, /columnIndexOr_\(header, \['Отгружено, тн'\], 5\)/)
   assert.match(gas, /productionTotalRub: reportsNumber_\(row\[productionTotalIndex\]\)/)
   assert.match(gas, /shippedTotalTons: reportsNumber_\(row\[shippedTotalIndex\]\)/)
 
@@ -178,14 +184,16 @@ test('КС и ИД — свои GAS-действия, свои PHP-маршру�
   }
 })
 
-test('КС: колонки A/B/C/D, шапка «КС», группировка по договору с «Итого»', () => {
-  // Буквы, а не заголовки: на листе шапки может не быть вовсе.
+test('КС: договор из «Договор», а не из колонки нумерации, шапка «КС», «Итого»', () => {
+  // Буквы из ТЗ сдвинуты на колонку: первым на листе идёт «ID», поэтому
+  // договор лежит в B. По буквам договором становился номер строки, а
+  // суммой — статус, поэтому читаем по заголовкам со сдвинутым запасным.
   const ks = gas.slice(gas.indexOf('function normalizeKsRows_'))
   const body = ks.slice(0, ks.indexOf('\n}\n'))
-  assert.match(body, /const contractIndex = 0/)
-  assert.match(body, /const numberIndex = 1/)
-  assert.match(body, /const amountIndex = 2/)
-  assert.match(body, /const statusIndex = 3/)
+  assert.match(body, /columnIndexOr_\(header, \['Договор'\], 1\)/)
+  assert.match(body, /columnIndexOr_\(header, \['Номер КС', '№'\], 2\)/)
+  assert.match(body, /columnIndexOr_\(header, \['Стоимость с НДС', 'Сумма с НДС'\], 3\)/)
+  assert.match(body, /columnIndexOr_\(header, \['Статус'\], 4\)/)
   assert.doesNotMatch(body, /requireColumn_/)
 
   assert.match(reports, /function erp_reports_decode_ks_bridge/)
@@ -195,13 +203,16 @@ test('КС: колонки A/B/C/D, шапка «КС», группировка 
   assert.match(ksPage, /<span role="columnheader">КС<\/span>/)
 })
 
-test('ИД: договор из колонки B, площадь и стоимость с НДС, без «Итого»', () => {
+test('ИД: договор из «Договор», а не шифр АОСР; площадь и стоимость, без «Итого»', () => {
+  // В ТЗ договор указан в колонке B, но там лежит шифр АОСР вида
+  // «GLE-(L1-05-010)-2600-ОЗ-1.3»: договор — в C, площадь и стоимость — в
+  // F и G, статус — в H.
   const id = gas.slice(gas.indexOf('function normalizeIdRows_'))
   const body = id.slice(0, id.indexOf('\n}\n'))
-  assert.match(body, /const contractIndex = 1/)
-  assert.match(body, /columnIndexOr_\(header, \['Статус'\], 2\)/)
-  assert.match(body, /columnIndexOr_\(header, \['Площадь'\], 3\)/)
-  assert.match(body, /columnIndexOr_\(header, \['Стоимость с НДС', 'Сумма с НДС'\], 4\)/)
+  assert.match(body, /columnIndexOr_\(header, \['Договор'\], 2\)/)
+  assert.match(body, /columnIndexOr_\(header, \['Статус'\], 7\)/)
+  assert.match(body, /columnIndexOr_\(header, \['Площадь'\], 5\)/)
+  assert.match(body, /columnIndexOr_\(header, \['Стоимость', 'Стоимость с НДС', 'Сумма с НДС'\], 6\)/)
 
   assert.match(reports, /function erp_reports_decode_id_bridge/)
   assert.match(api, /export interface ErpIdRow/)
