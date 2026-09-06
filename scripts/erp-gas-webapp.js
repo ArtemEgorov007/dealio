@@ -210,17 +210,8 @@ function getSpreadsheet_() {
 }
 
 function reportsCurrent_(token) {
-    if (!REPORTS_BRIDGE_TOKEN || token !== REPORTS_BRIDGE_TOKEN) {
-        throw new Error('Нет доступа к отчётам')
-    }
-    if (!REPORTS_SPREADSHEET_ID) {
-        throw new Error('Не настроен источник отчётов')
-    }
-
-    const sheet = SpreadsheetApp.openById(REPORTS_SPREADSHEET_ID).getSheetByName(REPORTS_SHEET_NAME)
-    if (!sheet) {
-        throw new Error('Не найден лист отчётов: ' + REPORTS_SHEET_NAME)
-    }
+    requireReportsToken_(token)
+    const sheet = requireReportsSheet_(REPORTS_SHEET_NAME)
     return {
         sourceReadAt: new Date().toISOString(),
         rows: normalizeReportsRows_(sheet.getDataRange().getDisplayValues()),
@@ -237,6 +228,49 @@ function reportsNumber_(value) {
 function isNumericCell_(value) {
     const normalized = normalizeCell_(value).replace(/[\s\u00A0]/g, '').replace(',', '.')
     return normalized !== '' && Number.isFinite(Number(normalized))
+}
+
+function requireReportsToken_(token) {
+    // Пустое свойство и неверный токен — разные поломки: первую чинит
+    // настройка скрипта, вторую — конфиг сервера. Одинаковый текст ошибки
+    // заставлял гадать, какая из них случилась.
+    if (!REPORTS_BRIDGE_TOKEN) {
+        throw new Error('Не настроен токен отчётов (Script Property REPORTS_BRIDGE_TOKEN)')
+    }
+    if (token !== REPORTS_BRIDGE_TOKEN) {
+        throw new Error('Нет доступа к отчётам')
+    }
+}
+
+/**
+ * Лист отчётов по имени, устойчиво к пробелам и регистру.
+ *
+ * В ТЗ вкладка называется «Лист 15», в настройках скрипта — «Лист15»: один
+ * пробел роняет весь раздел, и снаружи это выглядит как «отчёты не видят
+ * данные». Сначала точное имя, затем сравнение без пробелов и регистра.
+ * Если не нашли — перечисляем реальные вкладки, чтобы не искать вслепую.
+ */
+function requireReportsSheet_(sheetName) {
+    if (!REPORTS_SPREADSHEET_ID) {
+        throw new Error('Не настроен источник отчётов (Script Property REPORTS_SPREADSHEET_ID)')
+    }
+    const spreadsheet = SpreadsheetApp.openById(REPORTS_SPREADSHEET_ID)
+    const exact = spreadsheet.getSheetByName(sheetName)
+    if (exact) return exact
+
+    const wanted = sheetKey_(sheetName)
+    const sheets = spreadsheet.getSheets()
+    const names = []
+    for (let index = 0; index < sheets.length; index += 1) {
+        const name = sheets[index].getName()
+        names.push(name)
+        if (sheetKey_(name) === wanted) return sheets[index]
+    }
+    throw new Error('Не найден лист отчётов «' + sheetName + '». Есть: ' + names.join(', '))
+}
+
+function sheetKey_(name) {
+    return normalizeCell_(name).replace(/[\s\u00A0]/g, '').toLowerCase()
 }
 
 // Слова, по которым шапка узнаётся наверняка, чем бы ни была заполнена
@@ -318,17 +352,8 @@ function normalizeReportsRows_(values) {
  * группировкой по договору.
  */
 function reportsKs_(token) {
-    if (!REPORTS_BRIDGE_TOKEN || token !== REPORTS_BRIDGE_TOKEN) {
-        throw new Error('Нет доступа к отчётам')
-    }
-    if (!REPORTS_SPREADSHEET_ID) {
-        throw new Error('Не настроен источник отчётов')
-    }
-
-    const sheet = SpreadsheetApp.openById(REPORTS_SPREADSHEET_ID).getSheetByName(REPORTS_KS_SHEET_NAME)
-    if (!sheet) {
-        throw new Error('Не найден лист отчётов: ' + REPORTS_KS_SHEET_NAME)
-    }
+    requireReportsToken_(token)
+    const sheet = requireReportsSheet_(REPORTS_KS_SHEET_NAME)
     return {
         sourceReadAt: new Date().toISOString(),
         rows: normalizeKsRows_(sheet.getDataRange().getDisplayValues()),
@@ -367,17 +392,8 @@ function normalizeKsRows_(values) {
  * где строка — отдельный номер КС), клиент только раскладывает по договору.
  */
 function reportsId_(token) {
-    if (!REPORTS_BRIDGE_TOKEN || token !== REPORTS_BRIDGE_TOKEN) {
-        throw new Error('Нет доступа к отчётам')
-    }
-    if (!REPORTS_SPREADSHEET_ID) {
-        throw new Error('Не настроен источник отчётов')
-    }
-
-    const sheet = SpreadsheetApp.openById(REPORTS_SPREADSHEET_ID).getSheetByName(REPORTS_ID_SHEET_NAME)
-    if (!sheet) {
-        throw new Error('Не найден лист отчётов: ' + REPORTS_ID_SHEET_NAME)
-    }
+    requireReportsToken_(token)
+    const sheet = requireReportsSheet_(REPORTS_ID_SHEET_NAME)
     return {
         sourceReadAt: new Date().toISOString(),
         rows: normalizeIdRows_(sheet.getDataRange().getDisplayValues()),
@@ -1097,7 +1113,11 @@ function getSheetHeader_(sheet) {
 function requireColumn_(header, columnName, sheetName) {
     const index = header.indexOf(columnName)
     if (index < 0) {
-        throw new Error('Не найден столбец «' + columnName + '» на листе «' + sheetName + '»')
+        // Перечисляем то, что на листе есть на самом деле: без этого «не
+        // найден столбец» отправляет искать вслепую, а расхождение обычно в
+        // одном слове или лишнем пробеле.
+        throw new Error('Не найден столбец «' + columnName + '» на листе «' + sheetName
+            + '». Есть: ' + header.filter(function (name) { return name !== '' }).join(', '))
     }
     return index
 }

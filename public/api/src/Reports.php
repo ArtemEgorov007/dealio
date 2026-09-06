@@ -18,18 +18,34 @@ function erp_reports_number(mixed $value): float
     return (float) $normalized;
 }
 
-function erp_reports_decode_bridge(string $body): array
+/**
+ * Разбор ответа моста до полезной нагрузки.
+ *
+ * Источник объясняет отказ словами («Не найден лист «Лист15». Есть: Лист 15,
+ * КС, ИД»), и раньше объяснение стиралось здесь: наружу уходило «временно
+ * недоступен», в лог — ничего, и чинить было нечего. Причину пробрасываем
+ * дальше — её увидит тот, у кого есть доступ к отчётам.
+ */
+function erp_reports_bridge_data(string $body): array
 {
     try {
         $payload = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
     } catch (JsonException $error) {
         throw new RuntimeException('Источник отчётов вернул некорректный ответ', 0, $error);
     }
-    if (!is_array($payload) || empty($payload['ok']) || !is_array($payload['data'] ?? null)) {
-        throw new RuntimeException('Источник отчётов временно недоступен');
+    if (!is_array($payload) || empty($payload['ok'])) {
+        $reason = is_array($payload) ? trim((string) ($payload['error'] ?? '')) : '';
+        throw new RuntimeException($reason !== '' ? $reason : 'Источник отчётов временно недоступен');
     }
+    if (!is_array($payload['data'] ?? null)) {
+        throw new RuntimeException('Источник отчётов вернул неполные данные');
+    }
+    return $payload['data'];
+}
 
-    $source = $payload['data'];
+function erp_reports_decode_bridge(string $body): array
+{
+    $source = erp_reports_bridge_data($body);
     $rows = $source['rows'] ?? null;
     if (!is_array($rows)) {
         throw new RuntimeException('Источник отчётов вернул неполные данные');
@@ -118,16 +134,7 @@ function erp_reports_decode_id_bridge(string $body): array
 /** Общая часть декодирования моста — то, что не зависит от формы строки. */
 function erp_reports_decode_generic_bridge(string $body): array
 {
-    try {
-        $payload = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
-    } catch (JsonException $error) {
-        throw new RuntimeException('Источник отчётов вернул некорректный ответ', 0, $error);
-    }
-    if (!is_array($payload) || empty($payload['ok']) || !is_array($payload['data'] ?? null)) {
-        throw new RuntimeException('Источник отчётов временно недоступен');
-    }
-
-    $rows = $payload['data']['rows'] ?? null;
+    $rows = erp_reports_bridge_data($body)['rows'] ?? null;
     if (!is_array($rows)) {
         throw new RuntimeException('Источник отчётов вернул неполные данные');
     }
@@ -205,6 +212,20 @@ function erp_reports_payload(array $source): array
     ];
 }
 
+/**
+ * Текст отказа для экрана отчётов.
+ *
+ * Раздел открывают только с правом «Доступ к отчётам» — это руководство, а
+ * не цех, и им полезнее знать, что именно не сошлось с таблицей, чем читать
+ * «повторите попытку» и звать разработчика. Настройки моста (URL, токен) в
+ * тексте не участвуют.
+ */
+function erp_reports_failure_message(RuntimeException $error): string
+{
+    $reason = trim($error->getMessage());
+    return $reason === '' ? 'Источник отчётов временно недоступен. Повторите попытку.' : $reason;
+}
+
 function erp_reports_current(PDO $pdo, array $config, string $requestId): void
 {
     $actor = erp_require_user($pdo, $config, $requestId);
@@ -214,7 +235,7 @@ function erp_reports_current(PDO $pdo, array $config, string $requestId): void
         $source = erp_reports_fetch_bridge($config, 'reportsCurrent', 'erp_reports_decode_bridge');
         erp_json(200, ['ok' => true, 'data' => erp_reports_payload($source)]);
     } catch (RuntimeException $error) {
-        erp_json(503, erp_error_payload('reports_unavailable', 'Источник отчётов временно недоступен. Повторите попытку.', $requestId));
+        erp_json(503, erp_error_payload('reports_unavailable', erp_reports_failure_message($error), $requestId));
     }
 }
 
@@ -228,7 +249,7 @@ function erp_reports_ks_current(PDO $pdo, array $config, string $requestId): voi
         $source = erp_reports_fetch_bridge($config, 'reportsKs', 'erp_reports_decode_ks_bridge');
         erp_json(200, ['ok' => true, 'data' => ['rows' => $source['rows']]]);
     } catch (RuntimeException $error) {
-        erp_json(503, erp_error_payload('reports_unavailable', 'Источник отчётов временно недоступен. Повторите попытку.', $requestId));
+        erp_json(503, erp_error_payload('reports_unavailable', erp_reports_failure_message($error), $requestId));
     }
 }
 
@@ -242,6 +263,6 @@ function erp_reports_id_current(PDO $pdo, array $config, string $requestId): voi
         $source = erp_reports_fetch_bridge($config, 'reportsId', 'erp_reports_decode_id_bridge');
         erp_json(200, ['ok' => true, 'data' => ['rows' => $source['rows']]]);
     } catch (RuntimeException $error) {
-        erp_json(503, erp_error_payload('reports_unavailable', 'Источник отчётов временно недоступен. Повторите попытку.', $requestId));
+        erp_json(503, erp_error_payload('reports_unavailable', erp_reports_failure_message($error), $requestId));
     }
 }

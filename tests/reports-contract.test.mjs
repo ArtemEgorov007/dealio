@@ -229,3 +229,29 @@ test('лист без шапки не теряет первую строку п�
     assert.match(body.slice(0, body.indexOf('\n}\n')), /firstDataRowIndex_\(values, amountIndex\)/)
   }
 })
+
+test('«не вижу данные» диагностируется: лист ищется устойчиво, причина доезжает до экрана', () => {
+  // Имя вкладки в ТЗ — «Лист 15», в настройках скрипта — «Лист15»: один
+  // пробел роняет весь раздел, а снаружи это выглядит как пустые отчёты.
+  assert.match(gas, /function requireReportsSheet_/)
+  assert.match(gas, /function sheetKey_/)
+  assert.match(gas, /Не найден лист отчётов «' \+ sheetName \+ '». Есть: /)
+  for (const constant of ['REPORTS_SHEET_NAME', 'REPORTS_KS_SHEET_NAME', 'REPORTS_ID_SHEET_NAME']) {
+    assert.match(gas, new RegExp(`requireReportsSheet_\\(${constant}\\)`))
+  }
+  assert.doesNotMatch(gas, /getSheetByName\(REPORTS_(KS_|ID_)?SHEET_NAME\)/)
+
+  // Пустое свойство и неверный токен — разные поломки, чинятся в разных
+  // местах, поэтому и сообщения разные.
+  assert.match(gas, /Не настроен токен отчётов \(Script Property REPORTS_BRIDGE_TOKEN\)/)
+  assert.match(gas, /Не настроен источник отчётов \(Script Property REPORTS_SPREADSHEET_ID\)/)
+
+  // «Не найден столбец» перечисляет то, что на листе есть на самом деле.
+  assert.match(gas, /Не найден столбец[\s\S]{0,120}Есть: /)
+
+  // Мост не стирает причину, и она доходит до экрана.
+  assert.match(reports, /function erp_reports_bridge_data/)
+  assert.match(reports, /\$payload\['error'\]/)
+  assert.match(reports, /function erp_reports_failure_message/)
+  assert.match(reports, /erp_error_payload\('reports_unavailable', erp_reports_failure_message\(\$error\), \$requestId\)/)
+})
