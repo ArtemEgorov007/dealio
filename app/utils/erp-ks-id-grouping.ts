@@ -35,6 +35,15 @@ export interface ErpIdGroup {
     rows: Array<{status: string; area: number; amountWithVat: number}>
 }
 
+/**
+ * Строка листа «ИД» — отдельный акт (АОСР), а на экране договор
+ * разворачивается строками статусов: «Подписана — столько-то площади на
+ * столько-то рублей». Актов в договоре под две сотни, поэтому показывать их
+ * поштучно бессмысленно — складываем площадь и стоимость по статусу.
+ *
+ * Порядок статусов — по первому появлению в источнике: он отражает порядок
+ * листа, а не алфавит, и не переставляется от выгрузки к выгрузке.
+ */
 export function groupIdByContract(rows: ErpIdRow[]): ErpIdGroup[] {
     const groups: ErpIdGroup[] = []
     const indexByContract = new Map<string, number>()
@@ -46,7 +55,15 @@ export function groupIdByContract(rows: ErpIdRow[]): ErpIdGroup[] {
             indexByContract.set(row.contract, index)
             groups.push({contract: row.contract, rows: []})
         }
-        groups[index].rows.push({status: row.status, area: row.area, amountWithVat: row.amountWithVat})
+
+        const lines = groups[index].rows
+        const line = lines.find(existing => existing.status === row.status)
+        if (line) {
+            line.area += row.area
+            line.amountWithVat += row.amountWithVat
+        } else {
+            lines.push({status: row.status, area: row.area, amountWithVat: row.amountWithVat})
+        }
     }
 
     return groups
