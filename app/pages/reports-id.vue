@@ -140,11 +140,22 @@ const groups = computed(() => groupIdByContract(rows.value))
 
   span:not(:first-child)
     text-align: right
+    // Площадь и стоимость не переносим по разрядам: иначе строка станет
+    // выше и блоки договоров разъедутся по вертикали.
+    white-space: nowrap
     font-variant-numeric: tabular-nums
     font-weight: 600
 
 @media (max-width: 480px)
   .id-group__grid-head,
   .id-group__grid-row
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.6fr) minmax(0, 0.9fr)
+    // Площади бывают дробными («143 868,4») и занимают почти столько же,
+    // сколько стоимость: узкая колонка под них наезжала на соседнюю.
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 1.05fr)
+
+@media (max-width: 360px)
+  .id-group__grid-head,
+  .id-group__grid-row
+    gap: 6px
+    font-size: 11px
 </style>
