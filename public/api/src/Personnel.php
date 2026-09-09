@@ -109,6 +109,7 @@ function erp_personnel_right_labels(): array
         'personnel' => 'Управление кадрами',
         'contracts' => 'Работа с договорами',
         'intake' => 'Доступ к приходу',
+        'project_data' => 'Внесение проектных данных',
     ];
 }
 

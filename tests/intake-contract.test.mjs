@@ -29,7 +29,7 @@ test('право «Доступ к приходу» заведено во все
     // Список кодов, метка для «Кадров», флаги доступа на клиенте, раздел и
     // маршруты — пропуск любого означает право, которое нельзя ни выдать, ни
     // увидеть, ни попасть в раздел напрямую по ссылке.
-    assert.match(auth, /'contracts', 'intake'\]/)
+    assert.match(auth, /'contracts', 'intake', 'project_data'\]/)
     assert.match(personnel, /'intake' => 'Доступ к приходу'/)
     assert.match(types, /intake: boolean/)
     assert.match(types, /intake: false,/)
