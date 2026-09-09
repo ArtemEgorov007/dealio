@@ -105,13 +105,17 @@ const metrics = computed(() => [
 
 .erp-reports-summary__grid
   display: grid
-  grid-template-columns: repeat(3, minmax(0, 1fr))
+  // Одна строка = один показатель: при любом размере экрана подписи образуют
+  // левую колонку, а числа — общий правый край.
+  grid-template-columns: 1fr
   gap: 10px
 
 .erp-reports-summary__metric
   min-width: 0
   display: grid
-  gap: 10px
+  grid-template-columns: minmax(0, 1fr) auto
+  align-items: baseline
+  gap: 12px
   padding: 14px 12px 14px 14px
   border-radius: 16px
   border: 0.5px solid rgba(60, 60, 67, 0.12)
@@ -132,6 +136,10 @@ const metrics = computed(() => [
 
 .erp-reports-summary__label
   padding-left: 6px
+  // Подпись сжимается первой: число рядом стоит в одну строку, и распирать
+  // карточку за край экрана должна не она.
+  min-width: 0
+  overflow-wrap: anywhere
   font-size: 11px
   font-weight: 600
   line-height: 1.3
@@ -141,7 +149,8 @@ const metrics = computed(() => [
 
 .erp-reports-summary__value
   padding-left: 6px
-  overflow-wrap: anywhere
+  white-space: nowrap
+  text-align: right
   font-size: clamp(17px, 4.6vw, 22px)
   font-weight: 800
   line-height: 1.1
@@ -149,15 +158,14 @@ const metrics = computed(() => [
   font-variant-numeric: tabular-nums
 
 @media (max-width: 480px)
-  .erp-reports-summary__grid
-    grid-template-columns: 1fr
-
-  .erp-reports-summary__metric
-    grid-template-columns: 1fr auto
-    align-items: center
-    gap: 8px 12px
-
   .erp-reports-summary__value
     text-align: right
     font-size: 20px
+
+// Годовые суммы вроде «1 399 178 612» в одну строку на узком экране 20-м
+// кеглем распирали карточку за край. Уменьшаем кегль, а не переносим число:
+// разорванный по разрядам показатель читается хуже мелкого.
+@media (max-width: 360px)
+  .erp-reports-summary__value
+    font-size: 16px
 </style>

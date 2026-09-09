@@ -141,6 +141,11 @@ const groups = computed(() => groupKsByContract(rows.value))
     font-variant-numeric: tabular-nums
     font-weight: 600
 
+  // Только сумма: статус — текст, ему перенос нужен, иначе «На согласовании»
+  // вылезет за край карточки на телефоне.
+  span:nth-child(2)
+    white-space: nowrap
+
   &--total
     border-bottom: 0
     border-top: 0.5px solid rgba(60, 60, 67, 0.16)
@@ -153,4 +158,13 @@ const groups = computed(() => groupKsByContract(rows.value))
   .ks-group__grid-head,
   .ks-group__grid-row
     grid-template-columns: minmax(0, 0.5fr) minmax(0, 1fr) minmax(0, 1fr)
+
+
+// На узких экранах кегль меньше, но колонки те же: сумма в одну строку
+// важнее размера шрифта, а перенос сдвинул бы строки соседних блоков.
+@media (max-width: 360px)
+  .ks-group__grid-head,
+  .ks-group__grid-row
+    gap: 6px
+    font-size: 11px
 </style>

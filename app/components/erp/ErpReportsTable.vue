@@ -202,8 +202,8 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 
 .erp-reports-table__metrics
   display: grid
-  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr))
-  gap: 8px
+  grid-template-columns: 1fr
+  gap: 0
   margin: 0
   padding-top: 2px
   border-top: 0.5px solid rgba(60, 60, 67, 0.1)
@@ -211,8 +211,14 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 .erp-reports-table__metric
   min-width: 0
   display: grid
-  gap: 4px
+  grid-template-columns: minmax(0, 1fr) auto
+  align-items: baseline
+  gap: 12px
   padding-top: 10px
+
+  &:not(:last-child)
+    padding-bottom: 10px
+    border-bottom: 0.5px solid rgba(60, 60, 67, 0.08)
 
   dt
     margin: 0
@@ -266,6 +272,9 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 
   span:not(:first-child)
     text-align: right
+    // Перенос по разрядам сдвинул бы строку по высоте, и соседние блоки
+    // разъехались бы даже при одинаковых колонках.
+    white-space: nowrap
     font-variant-numeric: tabular-nums
     font-weight: 600
 
@@ -282,24 +291,21 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
     margin-left: 0
     width: 100%
 
-  .erp-reports-table__metrics
-    grid-template-columns: 1fr
-    gap: 0
-
-  .erp-reports-table__metric
-    grid-template-columns: 1fr auto
-    align-items: baseline
-    gap: 12px
-    padding-top: 10px
-
-    &:not(:last-child)
-      padding-bottom: 10px
-      border-bottom: 0.5px solid rgba(60, 60, 67, 0.08)
-
   .erp-reports-table__grid-head,
   .erp-reports-table__grid-row
-    // Числовые колонки на телефоне разводим зазором: вплотную «1 000 000
-    // 500 12 500» читается одной строкой, и правый край столбца пропадает.
-    grid-template-columns: minmax(0, 1fr) auto auto auto
-    gap: 12px
+    // Доли, а не auto: по содержимому колонки в каждой карточке получались
+    // своей ширины, и числа соседних договоров стояли уступом. Доли держат
+    // столбцы на одном месте во всех блоках раздела.
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.1fr) minmax(0, 0.6fr) minmax(0, 0.75fr)
+    gap: 8px
+    font-size: 12px
+
+
+// На узких экранах кегль меньше, но колонки те же: сумма в одну строку
+// важнее размера шрифта, а перенос сдвинул бы строки соседних блоков.
+@media (max-width: 360px)
+  .erp-reports-table__grid-head,
+  .erp-reports-table__grid-row
+    gap: 6px
+    font-size: 11px
 </style>

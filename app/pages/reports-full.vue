@@ -236,8 +236,8 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 
 .full-report-table__metrics
   display: grid
-  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr))
-  gap: 8px
+  grid-template-columns: 1fr
+  gap: 0
   margin: 0
   padding-top: 2px
   border-top: 0.5px solid rgba(60, 60, 67, 0.1)
@@ -245,8 +245,14 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 .full-report-table__metric
   min-width: 0
   display: grid
-  gap: 4px
+  grid-template-columns: minmax(0, 1fr) auto
+  align-items: baseline
+  gap: 12px
   padding-top: 10px
+
+  &:not(:last-child)
+    padding-bottom: 10px
+    border-bottom: 0.5px solid rgba(60, 60, 67, 0.08)
 
   dt
     margin: 0
@@ -297,6 +303,9 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
 
   span:not(:first-child)
     text-align: right
+    // Перенос по разрядам сдвинул бы строку по высоте, и соседние блоки
+    // разъехались бы даже при одинаковых колонках.
+    white-space: nowrap
     font-variant-numeric: tabular-nums
     font-weight: 600
 
@@ -313,22 +322,19 @@ const groupColumnLabel = computed(() => mode.value === 'contract' ? 'Площа�
     margin-left: 0
     width: 100%
 
-  .full-report-table__metrics
-    grid-template-columns: 1fr
-    gap: 0
-
-  .full-report-table__metric
-    grid-template-columns: 1fr auto
-    align-items: baseline
-    gap: 12px
-    padding-top: 10px
-
-    &:not(:last-child)
-      padding-bottom: 10px
-      border-bottom: 0.5px solid rgba(60, 60, 67, 0.08)
-
   .full-report-table__grid-head,
   .full-report-table__grid-row
-    grid-template-columns: minmax(0, 1fr) auto auto
-    gap: 12px
+    // Доли, а не auto: по содержимому колонки в каждой карточке получались
+    // своей ширины, и числа соседних договоров стояли уступом.
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 0.7fr)
+    gap: 10px
+
+
+// На узких экранах кегль меньше, но колонки те же: сумма в одну строку
+// важнее размера шрифта, а перенос сдвинул бы строки соседних блоков.
+@media (max-width: 360px)
+  .full-report-table__grid-head,
+  .full-report-table__grid-row
+    gap: 6px
+    font-size: 11px
 </style>
