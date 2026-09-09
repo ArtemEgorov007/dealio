@@ -24,6 +24,7 @@ export interface ErpAccessFlags {
     personnel: boolean
     contracts: boolean
     intake: boolean
+    project_data: boolean
 }
 
 // Fail-closed: доступ выдаётся только тем флагам, что сервер (GAS login_) явно
@@ -42,6 +43,7 @@ export const DEFAULT_ACCESS_FLAGS: ErpAccessFlags = {
     personnel: false,
     contracts: false,
     intake: false,
+    project_data: false,
 }
 
 export interface ErpEmployeeProfile {
